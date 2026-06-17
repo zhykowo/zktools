@@ -1,98 +1,77 @@
 import sys
-from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QVBoxLayout
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import Qt, QPropertyAnimation, QPoint, QEasingCurve, Slot
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
-class CustomRoundButton(QPushButton):
-    def __init__(self, text="", parent=None):
-        super().__init__(text, parent)
-        # 1. 设置按钮的推荐大小（避免纯绘图时组件坍塌）
-        self.setMinimumSize(140, 45)
+class DynamicIslandMovementMixin:
+    """
+    灵动岛窗口移动核心逻辑组件
+    可直接混入你的自定义窗口类中，或将其中的方法复制到你的窗口类
+    """
+    def init_island_movement(self, visible_height=10, animation_duration=300):
+        """
+        初始化灵动岛移动参数
+        :param visible_height: 隐藏时留在屏幕顶部的像素高度（底边）
+        :param animation_duration: 动画持续时间（毫秒）
+        """
+        # 1. 确保窗口无边框且置顶
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.SubWindow)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground) # 支持透明（可选）
         
-        # 2. 定义不同状态下的颜色
-        self._normal_bg = QColor("#3498db")   # 默认：蓝色
-        self._hover_bg = QColor("#2980b9")    # 悬停：深蓝
-        self._pressed_bg = QColor("#1c5980")  # 按下：暗蓝
-        self._text_color = QColor("#ffffff")  # 文字：白色
+        # 2. 启用鼠标追踪，确保能实时捕获 hover 事件
+        self.setMouseTracking(True)
         
-        # 3. 设置圆角半径
-        self._radius = 15.0
+        # 3. 记录核心坐标参数
+        self.visible_height = visible_height
+        self.screen_geometry = QApplication.primaryScreen().geometry()
+        self.island_width = self.width()
+        self.island_height = self.height()
+        
+        # 计算隐藏和显示状态下的 Y 坐标
+        self.y_hidden = -self.island_height + self.visible_height
+        self.y_shown = 0  # 贴着屏幕顶端完全显示
+        
+        # 计算居中的 X 坐标
+        self.x_center = (self.screen_geometry.width() - self.island_width) // 2
+        
+        # 4. 初始化窗口位置（默认隐藏，只留个底边）
+        self.move(self.x_center, self.y_hidden)
+        self.is_expanded = False
+        
+        # 5. 设置平滑动画
+        self.anim = QPropertyAnimation(self, b"pos")
+        self.anim.setDuration(animation_duration)
+        self.anim.setEasingCurve(QEasingCurve.Type.OutCubic) # 渐出效果，更灵动
 
-    # 重写鼠标进入事件，触发重绘实现 Hover 效果
     def enterEvent(self, event):
+        """重写鼠标划入事件：鼠标放上去，窗口往下移动显示出来"""
+        self.animate_island(show=True)
         super().enterEvent(event)
-        self.update()  # 强制刷新界面，触发 paintEvent
 
-    # 重写鼠标离开事件，恢复原状
     def leaveEvent(self, event):
+        """重写鼠标划出事件：鼠标移开，窗口往上缩回去"""
+        # 注意：如果你的灵动岛有弹窗或子菜单，可能需要额外判断鼠标是否真的离开了整个组件区域
+        self.animate_island(show=False)
         super().leaveEvent(event)
-        self.update()  # 强制刷新界面，触发 paintEvent
 
-    # 核心绘制逻辑
-    def paintEvent(self, event):
-        # 初始化画布
-        painter = QPainter(self)
+    def animate_island(self, show: bool):
+        """执行上滑/下滑动画"""
+        if self.is_expanded == show:
+            return # 状态未改变，不重复触发动画
+            
+        self.is_expanded = show
+        target_y = self.y_shown if show else self.y_hidden
         
-        # 开启【极其重要】的抗锯齿，否则圆角会有难看的锯齿
-        painter.setRenderHint(QPainter.Antialiasing, True)
-        painter.setRenderHint(QPainter.TextAntialiasing, True)
+        # 停止当前正在进行的动画，防止抽搐
+        self.anim.stop()
+        self.anim.setStartValue(self.pos())
+        self.anim.setEndValue(QPoint(self.x_center, target_y))
+        self.anim.start()
 
-        # 1. 根据当前按钮状态动态切换背景色
-        if self.isDown():
-            bg_color = self._pressed_bg
-        elif self.underMouse():
-            bg_color = self._hover_bg
-        else:
-            bg_color = self._normal_bg
-
-        # 2. 精确计算绘制区域
-        # 将原始矩形整体向内缩 0.5 像素，防止抗锯齿引发的边缘被控件边界裁剪的问题
-        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
-        
-        # 3. 开始绘制背景
-        painter.setPen(Qt.NoPen)             # 禁用边框线
-        painter.setBrush(QBrush(bg_color))    # 设置填充色
-        painter.drawRoundedRect(rect, self._radius, self._radius) # 绘制圆角矩形
-
-        # 4. 开始绘制文本
-        painter.setPen(QPen(self._text_color)) # 设置文字颜色
-        painter.setFont(self.font())           # 使用按钮自带的字体设置
-        
-        # 在矩形正中央绘制传入的文字
-        painter.drawText(rect, Qt.AlignCenter, self.text())
-
-        # 结束绘制（释放资源）
-        painter.end()
-
-
-# ==================== 测试窗口 ====================
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("PySide6 paintEvent 圆角按钮")
-        self.resize(350, 250)
-        
-        # 给窗口加个浅色背景，更能看清按钮的圆角抗锯齿效果
-        self.setStyleSheet("background-color: #f8f9fa;")
-
-        # 布局管理器
-        layout = QVBoxLayout(self)
-        
-        # 创建自定义按钮
-        self.btn1 = CustomRoundButton("标准圆角按钮")
-        
-        self.btn2 = CustomRoundButton("大圆角(胶囊状)")
-        self.btn2._radius = 22.0 # 动态修改圆角半径（高度45的一半，呈现完美胶囊状）
-        self.btn2._normal_bg = QColor("#2ecc71") # 顺便改个绿色主题
-        self.btn2._hover_bg = QColor("#27ae60")
-        self.btn2._pressed_bg = QColor("#1e7e43")
-
-        # 将按钮添加到布局中，并居中显示
-        layout.addWidget(self.btn1, alignment=Qt.AlignCenter)
-        layout.addWidget(self.btn2, alignment=Qt.AlignCenter)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+    @Slot(bool)
+    @Slot()
+    def toggle_island_via_signal(self, show: bool = True):
+        """
+        供外部代码信号（Emit）绑定的槽函数
+        例如：接收到新通知时，外部 emit 一个信号触发此函数
+        """
+        self.animate_island(show)

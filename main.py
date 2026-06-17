@@ -1,47 +1,38 @@
+from enum import Enum, auto
 import sys
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, QParallelAnimationGroup, QSequentialAnimationGroup, Property
-from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QGraphicsOpacityEffect
-from PySide6.QtGui import QPainter, QColor, QBrush, QPen
+import time
+from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QRect, QThread, QTimer, Qt, QParallelAnimationGroup, QSequentialAnimationGroup, Property, Signal, Slot
+from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QGraphicsOpacityEffect
 
-# 如果你本地没有 utils.DragDropMixin，测试时可以先用下面这行 Mock
-# class DragDropMixin: def init_drag_drop(self): pass
 from utils.DragDropMixin import DragDropMixin
+from widgets.CoreButton import CoreButton
+from utils.ClipboardMonitor import ClipboardMonitor
 
-class CoreButton(QPushButton):
-    def __init__(self, text, parent=None):
-        super().__init__(text, parent)
+# ==========================================
+# 0. 路由行为状态与控制信号
+# ==========================================
+class SwitchMode(Enum):
+    GENTLE = auto()    # 温和切换：加入队列排队
+    IMMEDIATE = auto() # 立即切换：插队并强制中断当前页面
+    EXIT_SELF = auto() # 退出自己：当前页面结束，释放并展示队列下一页
 
-    def paintEvent(self, event):
-        # 抛弃默认绘制，自己用 QPainter 描绘一切
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # 开启抗锯齿
+class PageController(QObject):
+    # 统一信号：传递 切换模式 和 目标页面标识
+    page_action = Signal(object, str) 
 
-        # 1. 根据状态决定颜色
-        if not self.isEnabled():
-            bg_color = QColor("#2c3e50")
-        elif self.underMouse():  # Hover 状态
-            bg_color = QColor("#415b76")
-        else:                   # 正常状态
-            bg_color = QColor("#34495e")
+    def gentle_switch(self, page_name: str):
+        """温和切换：仅加入队列"""
+        self.page_action.emit(SwitchMode.GENTLE, page_name)
 
-        # 特殊处理退出按钮颜色
-        if self.objectName() == "CloseBtn":
-            bg_color = QColor("#c0392b") if self.underMouse() else QColor("#e74c3c")
+    def immediate_switch(self, page_name: str):
+        """立即切换：立刻中断并显示目标页"""
+        self.page_action.emit(SwitchMode.IMMEDIATE, page_name)
 
-        # 2. 核心：动态计算当前按钮高度允许的最大圆角 (绝对不坍塌)
-        radius = self.height() // 2 - 1
+    def exit_self(self):
+        """退出自己：通知调度器调度下一页"""
+        self.page_action.emit(SwitchMode.EXIT_SELF, "")
 
-        # 3. 绘制背景
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(bg_color))
-        painter.drawRoundedRect(self.rect(), radius, radius)
-
-        # 4. 绘制文字
-        painter.setPen(QPen(QColor("white")))
-        painter.setFont(self.font())
-        painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text())
-
-
+page_signals = PageController()
 
 # ==========================================
 # 1. 独立的子页面类
@@ -56,36 +47,42 @@ class HomePage(DragDropMixin, QWidget):
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.setting_btn = CoreButton("Setting", self)
-        self.title = QLabel("拖放到此处", self)
-        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.title.setStyleSheet("color: white; font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
+        setting_btn = CoreButton("Setting", self)
+        setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
 
-        self.title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.title.setMaximumWidth(0) 
+        # msg_btn = CoreButton("Message", self)
+        # msg_btn.clicked.connect(lambda: page_signals.immediate_switch("short_text"))
 
-        layout.addWidget(self.setting_btn)
-        layout.addWidget(self.title)
+        self.drop_hint_label = QLabel("拖放到此处", self)
+        self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.drop_hint_label.setStyleSheet("color: white; font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
 
-        self.title_anim = QPropertyAnimation(self.title, b"maximumWidth")
-        self.title_anim.setDuration(800)
-        self.title_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
+        self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.drop_hint_label.setMaximumWidth(0) 
+
+        layout.addWidget(setting_btn)
+        # layout.addWidget(msg_btn)
+        layout.addWidget(self.drop_hint_label)
+
+        self.drop_anim = QPropertyAnimation(self.drop_hint_label, b"maximumWidth")
+        self.drop_anim.setDuration(800)
+        self.drop_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
 
     def on_drag_enter(self):
-        self.title_anim.stop()
-        self.title_anim.setEndValue(200)
-        self.title_anim.start()
+        self.drop_anim.stop()
+        self.drop_anim.setEndValue(200)
+        self.drop_anim.start()
 
     def on_drag_leave(self):
-        self.title_anim.stop()
-        self.title_anim.setEndValue(0)
-        self.title_anim.start()
+        self.drop_anim.stop()
+        self.drop_anim.setEndValue(0)
+        self.drop_anim.start()
         
     # def on_files_dropped(self, file_paths: list[str]):
-    #     self.title_anim.stop()
-    #     self.title_anim.setEndValue(0)
-    #     self.title_anim.start()
+    #     pass
 
+    def on_show(self):
+        pass
 
 class SettingPage(QWidget):
     def __init__(self, parent=None):
@@ -94,14 +91,74 @@ class SettingPage(QWidget):
         self.target_size = (300, 300)
 
         layout = QVBoxLayout(self)
-        self.back_btn = CoreButton("⬅️ Back", self)
+        back_btn = CoreButton("⬅️ Back", self)
+        back_btn.clicked.connect(lambda: page_signals.exit_self())
+
         title = QLabel("⚙️ 这是设置页面", self)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("color: white; font-size: 18px;")
-        layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft) 
+
+        layout.addWidget(back_btn, alignment=Qt.AlignmentFlag.AlignLeft) 
         layout.addStretch()
         layout.addWidget(title)
         layout.addStretch()
+    
+    def on_show(self):
+        pass
+
+class ShortTextPage(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.start_thread()
+        self.target_size = (200, 50)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.label = QLabel("", self)
+        # label.setWordWrap(True)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout.addWidget(self.label)
+
+    def on_show(self):
+        # self.label.setText("这是文字")
+        pass
+
+
+    def start_thread(self):
+
+        # 3. 创建线程和工作者
+        self.thread = QThread()
+        self.worker = ClipboardMonitor()
+
+        # 4. 将工作者移动到新线程
+        self.worker.moveToThread(self.thread)
+
+        # 5. 连接信号与槽
+        # 线程启动时，执行工作者的耗时方法
+        self.thread.started.connect(self.worker.start)
+        
+        # 接收工作者的进度信号，更新 UI
+        self.worker.cbChanged.connect(self.update_ui)
+        
+        # 清理线程
+        # self.worker.finished.connect(self.thread.quit)
+        # self.worker.finished.connect(self.worker.deleteLater)
+        # self.thread.finished.connect(self.thread.deleteLater)
+
+        # 6. 启动线程
+        self.thread.start()
+    
+    def quit_msg(self):
+        page_signals.gentle_switch("home")
+        page_signals.exit_self()
+
+    @Slot()
+    def update_ui(self):
+        page_signals.immediate_switch("short_text")
+        self.label.setText("Copied!")
+        QTimer.singleShot(1500, self.quit_msg)
 
 
 # ==========================================
@@ -110,8 +167,15 @@ class SettingPage(QWidget):
 class MainShellWindow(QWidget):
     def __init__(self):
         super().__init__()
-        
-        
+
+        # 核心数据结构维护
+        self.pages = {}              # 页面注册池 { "page_name": widget_instance }
+        self.page_queue = []         # 页面切换等待队列 [page_name, ...]
+        self.current_page_name = None # 当前正在显示的页面
+
+        # 绑定全新的中心调度器
+        page_signals.page_action.connect(self.handle_page_action)
+
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -138,22 +202,27 @@ class MainShellWindow(QWidget):
                 }}
             """)
 
+    def register_page(self, name: str, widget: QWidget):
+        """动态注册页面，方便未来无缝扩展更多页面"""
+        self.pages[name] = widget
+        self.stacked_widget.addWidget(widget)
+
     def init_ui(self):
         self.main_container = QWidget(self)
         self.main_container.setObjectName("MainContainer")
         container_layout = QHBoxLayout(self.main_container)
-        
+
         self.stacked_widget = QStackedWidget(self.main_container)
-        self.home_page = HomePage()
-        self.setting_page = SettingPage()
-        self.stacked_widget.addWidget(self.home_page)     
-        self.stacked_widget.addWidget(self.setting_page)  
-        
+
         self.opacity_effect = QGraphicsOpacityEffect(self.stacked_widget)
         self.stacked_widget.setGraphicsEffect(self.opacity_effect)
-        
-        self.home_page.setting_btn.clicked.connect(lambda: self.switch_page_to(self.setting_page))
-        self.setting_page.back_btn.clicked.connect(lambda: self.switch_page_to(self.home_page))
+
+        self.register_page("home", HomePage())
+        self.register_page("setting", SettingPage())
+        self.register_page("short_text", ShortTextPage())
+
+        self.current_page_name = "home"
+        self.stacked_widget.setCurrentWidget(self.pages["home"])
 
         close_btn = CoreButton("Exit", self.main_container)
         close_btn.setObjectName("CloseBtn")
@@ -162,7 +231,7 @@ class MainShellWindow(QWidget):
         container_layout.addWidget(self.stacked_widget)
         container_layout.addWidget(close_btn)
         
-        start_w, start_h = self.home_page.target_size
+        start_w, start_h = self.pages["home"].target_size
         self.main_container.setGeometry(
             (self.MAX_W - start_w) // 2, 
             (self.MAX_H - start_h) // 2, 
@@ -173,38 +242,100 @@ class MainShellWindow(QWidget):
         self.setStyleSheet("""
             QPushButton { padding: 8px; }
             QPushButton#CloseBtn { width: 50px; }
+            QLabel { color: white; font-size: 16px; }
         """)
-        
+
         self.container_radius = 25
 
+    # ==========================================
+    # 3. 核心队列与路由调度逻辑
+    # ==========================================
+    def handle_page_action(self, mode: SwitchMode, page_name: str):
+        """核心路由控制阀"""
+        if mode == SwitchMode.GENTLE:
+            # 1. 温和切换：仅塞入队列
+            self.page_queue.append(page_name)
+            # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
+            if self.current_page_name is None:
+                self.next_page()
+                
+        elif mode == SwitchMode.IMMEDIATE:
+            # 2. 立即切换：插队逻辑
+            if page_name not in self.pages: return
+            
+            if self.current_page_name is not None:
+                # 把当前未“退出自己”的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
+                self.page_queue.insert(0, self.current_page_name)
+                
+            self.current_page_name = page_name
+            self.switch_page_to(self.pages[page_name])
+            
+        elif mode == SwitchMode.EXIT_SELF:
+            # 3. 退出自己：交出控制权，加载队列中的下一个页面
+            self.next_page()
+
+    def next_page(self):
+        """从队列中提取并渲染下一个页面"""
+        if self.page_queue:
+            next_name = self.page_queue.pop(0)
+            self.current_page_name = next_name
+            self.switch_page_to(self.pages[next_name])
+        else:
+            # 队列完全清空
+            self.current_page_name = None
+
+    # ==========================================
+    # 4. 动画过渡实现
+    # ==========================================
     def switch_page_to(self, target_page_widget):
+        # 1. 检查并打断正在运行的旧动画
+        if hasattr(self, 'master_timeline') and self.master_timeline is not None:
+            # 停止总控制组，它会自动停止内部包含的所有子动画
+            self.master_timeline.stop()
+            # 显式解除之前的连接，防止打断时触发旧的 finished 槽函数
+            # （虽然 stop() 不会触发 finished，但解绑是个更安全的防御性习惯）
+            try:
+                self.master_timeline.disconnect()
+            except TypeError:
+                pass
+
         index = self.stacked_widget.indexOf(target_page_widget)
-        
         target_w, target_h = target_page_widget.target_size
 
         end_x = (self.MAX_W - target_w) // 2
         end_y = (self.MAX_H - target_h) // 2
         
+        # 2. 动态捕获当前状态作为起始值（实现平滑过渡的关键）
+        current_geometry = self.main_container.geometry()
+        current_opacity = self.opacity_effect.opacity()
+
         # --- 轨道 A：尺寸动画 ---
         size_anim = QPropertyAnimation(self.main_container, b"geometry")
         size_anim.setDuration(500)
         size_anim.setEasingCurve(QEasingCurve.Type.OutBack)
+        size_anim.setStartValue(current_geometry) # 设置当前位置为起点
         size_anim.setEndValue(QRect(end_x, end_y, target_w, target_h))
         size_anim.valueChanged.connect(self.on_frame_changed)
         
         # --- 轨道 C：透明度串行组合 ---
+        # 优化：计算淡出阶段剩余的时间（能让高频连点时动画更自然）
         fade_out_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
-        fade_out_anim.setDuration(400)
+        fade_out_anim.setDuration(int(400 * current_opacity)) # 根据当前透明度缩短淡出时间
         fade_out_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        fade_out_anim.setStartValue(current_opacity) # 设置当前透明度为起点
         fade_out_anim.setEndValue(0.0)
         
-        fade_out_anim.finished.connect(lambda: self.stacked_widget.setCurrentIndex(index))
+        # 使用 lambda 传递当前 index，确保即使 index 变了也能切到正确的页面
+        fade_out_anim.finished.connect(lambda i=index: self.stacked_widget.setCurrentIndex(i))
+        target_page_widget.on_show()
         
         fade_in_anim = QPropertyAnimation(self.opacity_effect, b"opacity")
         fade_in_anim.setDuration(200)
+        fade_in_anim.setStartValue(0.0)
         fade_in_anim.setEndValue(1.0)
         
-        opacity_timeline = QSequentialAnimationGroup()
+        # 为了防止内存泄漏，将动画组的父级设为 self
+        opacity_timeline = QSequentialAnimationGroup(self)
         opacity_timeline.addAnimation(fade_out_anim)
         opacity_timeline.addAnimation(fade_in_anim)
         
@@ -213,7 +344,16 @@ class MainShellWindow(QWidget):
         self.master_timeline.addAnimation(size_anim)
         self.master_timeline.addAnimation(opacity_timeline) 
         
+        # 3. 动画完成后自动清理，释放内存
+        self.master_timeline.finished.connect(self._clear_animation)
+        
         self.master_timeline.start()
+
+    def _clear_animation(self):
+        """动画正常结束后的清理函数"""
+        if hasattr(self, 'master_timeline') and self.master_timeline is not None:
+            self.master_timeline.deleteLater()
+            self.master_timeline = None
 
     def on_frame_changed(self, current_rect):
         # print(f"当前动画实时高度: {current_rect.height()}")
