@@ -1,34 +1,30 @@
 import sys
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, QParallelAnimationGroup, QSequentialAnimationGroup
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QPushButton, QStackedWidget, QGraphicsOpacityEffect
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QGraphicsOpacityEffect
 
 # ==========================================
-# 1. 独立的子页面类（保持不变）
+# 1. 独立的子页面类
 # ==========================================
 class HomePage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.target_size = (300, 200)
+        self.target_size = (400, 80)
         
-        layout = QVBoxLayout(self)
-        title = QLabel("🏠 这是主页面 (来自独立类)", self)
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet("color: white; font-size: 18px;")
+        layout = QHBoxLayout(self)
         self.next_btn = QPushButton("前往设置页面", self)
-        layout.addWidget(title)
         layout.addWidget(self.next_btn)
 
 class SettingPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.target_size = (450, 350)
+        self.target_size = (300, 300)
 
         layout = QVBoxLayout(self)
         self.back_btn = QPushButton("⬅️ 返回主页", self)
         self.back_btn.setStyleSheet("QPushButton { max-width: 100px; font-size: 12px; }") 
-        title = QLabel("⚙️ 这是设置页面 (来自独立类)", self)
+        title = QLabel("⚙️ 这是设置页面", self)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title.setStyleSheet("color: white; font-size: 18px;")
         layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft) 
@@ -54,7 +50,7 @@ class MainShellWindow(QWidget):
     def init_ui(self):
         self.main_container = QWidget(self)
         self.main_container.setObjectName("MainContainer")
-        container_layout = QVBoxLayout(self.main_container)
+        container_layout = QHBoxLayout(self.main_container)
         
         self.stacked_widget = QStackedWidget(self.main_container)
         self.home_page = HomePage()
@@ -62,7 +58,7 @@ class MainShellWindow(QWidget):
         self.stacked_widget.addWidget(self.home_page)     
         self.stacked_widget.addWidget(self.setting_page)  
         
-        # 【核心改动 1】：为堆栈窗口添加“透明度特效”组件，用来控制内容的明暗变幻
+        # 透明度特效组件
         self.opacity_effect = QGraphicsOpacityEffect(self.stacked_widget)
         self.stacked_widget.setGraphicsEffect(self.opacity_effect)
         
@@ -85,8 +81,8 @@ class MainShellWindow(QWidget):
         )
 
         self.setStyleSheet("""
-            QWidget#MainContainer { background-color: black; border-radius: 15px; }
-            QPushButton { background-color: #34495e; color: white; border-radius: 15px; padding: 8px; }
+            QWidget#MainContainer { background-color: black; border-radius: 20px; }
+            QPushButton { background-color: #34495e; color: white; border-radius: 16px; padding: 8px; }
             QPushButton:hover { background-color: #415b76; }
             QPushButton#CloseBtn { background-color: #e74c3c; }
             QPushButton#CloseBtn:hover { background-color: #c0392b; }
@@ -98,7 +94,7 @@ class MainShellWindow(QWidget):
         # 1. 动态获取目标页面在 QStackedWidget 中的索引
         index = self.stacked_widget.indexOf(target_page_widget)
         
-        # 2. 【威力所在】：直接从子页面对象里读取它自己定义的尺寸！
+        # 2. 直接从子页面对象里读取它自己定义的尺寸
         target_w, target_h = target_page_widget.target_size
 
         # 计算居中坐标
@@ -108,7 +104,7 @@ class MainShellWindow(QWidget):
         # --- 轨道 A：尺寸动画 ---
         size_anim = QPropertyAnimation(self.main_container, b"geometry")
         size_anim.setDuration(500)
-        size_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        size_anim.setEasingCurve(QEasingCurve.Type.OutBack)
         size_anim.setStartValue(self.main_container.geometry())
         size_anim.setEndValue(QRect(end_x, end_y, target_w, target_h))
         
