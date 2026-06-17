@@ -1,19 +1,54 @@
 import sys
 from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, Qt, QParallelAnimationGroup, QSequentialAnimationGroup
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QGraphicsOpacityEffect
+from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QStackedWidget, QGraphicsOpacityEffect
+
+from utils.DragDropMixin import DragDropMixin
 
 # ==========================================
 # 1. 独立的子页面类
 # ==========================================
-class HomePage(QWidget):
+
+class HomePage(DragDropMixin, QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.init_drag_drop()
 
-        self.target_size = (400, 80)
+        self.target_size = (400, 50)
         
         layout = QHBoxLayout(self)
-        self.next_btn = QPushButton("前往设置页面", self)
-        layout.addWidget(self.next_btn)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.setting_btn = QPushButton("Setting", self)
+        self.title = QLabel("拖放到此处", self)
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.title.setStyleSheet("color: white; font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
+
+        self.title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.title.setMaximumWidth(0) # 初始宽度
+
+        layout.addWidget(self.setting_btn)
+        layout.addWidget(self.title)
+
+        self.title_anim = QPropertyAnimation(self.title, b"maximumWidth")
+        self.title_anim.setDuration(800)
+        self.title_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
+
+
+    def on_drag_enter(self):
+        print("拖放")
+        self.title_anim.stop()
+        self.title_anim.setEndValue(200)
+        self.title_anim.start()
+
+    def on_drag_leave(self):
+        self.title_anim.stop()
+        self.title_anim.setEndValue(0)
+        self.title_anim.start()
+        
+    def on_files_dropped(self, file_paths: list[str]):
+        print(f"主页接收到文件并开始处理: {file_paths}")
+        self.title_anim.stop()
+        self.title_anim.setEndValue(0)
+        self.title_anim.start()
 
 class SettingPage(QWidget):
     def __init__(self, parent=None):
@@ -22,7 +57,7 @@ class SettingPage(QWidget):
         self.target_size = (300, 300)
 
         layout = QVBoxLayout(self)
-        self.back_btn = QPushButton("⬅️ 返回主页", self)
+        self.back_btn = QPushButton("⬅️ Back", self)
         self.back_btn.setStyleSheet("QPushButton { max-width: 100px; font-size: 12px; }") 
         title = QLabel("⚙️ 这是设置页面", self)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -39,7 +74,11 @@ class SettingPage(QWidget):
 class MainShellWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        
+        # 1. 一次性组合所有 Flag
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         self.MAX_W, self.MAX_H = 450, 350
@@ -62,10 +101,10 @@ class MainShellWindow(QWidget):
         self.opacity_effect = QGraphicsOpacityEffect(self.stacked_widget)
         self.stacked_widget.setGraphicsEffect(self.opacity_effect)
         
-        self.home_page.next_btn.clicked.connect(lambda: self.switch_page_to(self.setting_page))
+        self.home_page.setting_btn.clicked.connect(lambda: self.switch_page_to(self.setting_page))
         self.setting_page.back_btn.clicked.connect(lambda: self.switch_page_to(self.home_page))
 
-        close_btn = QPushButton("完全退出", self.main_container)
+        close_btn = QPushButton("Exit", self.main_container)
         close_btn.setObjectName("CloseBtn")
         close_btn.clicked.connect(self.close)
         
@@ -84,7 +123,7 @@ class MainShellWindow(QWidget):
             QWidget#MainContainer { background-color: black; border-radius: 20px; }
             QPushButton { background-color: #34495e; color: white; border-radius: 16px; padding: 8px; }
             QPushButton:hover { background-color: #415b76; }
-            QPushButton#CloseBtn { background-color: #e74c3c; }
+            QPushButton#CloseBtn { background-color: #e74c3c; width: 50px; }
             QPushButton#CloseBtn:hover { background-color: #c0392b; }
         """)
 
