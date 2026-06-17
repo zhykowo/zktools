@@ -7,29 +7,13 @@ from utils.DragDropMixin import DragDropMixin
 from widgets.CoreButton import CoreButton
 from utils.ClipboardMonitor import ClipboardMonitor
 
+from core.page_controller import PageController, SwitchMode
+from pages.base_page import BasePage
+from core.window_manager import WindowManager
+
 # ==========================================
 # 0. 路由行为状态与控制信号
 # ==========================================
-class SwitchMode(Enum):
-    GENTLE = auto()    # 温和切换：加入队列排队
-    IMMEDIATE = auto() # 立即切换：插队并强制中断当前页面
-    EXIT_SELF = auto() # 退出自己：当前页面结束，释放并展示队列下一页
-
-class PageController(QObject):
-    # 统一信号：传递 切换模式 和 目标页面标识
-    page_action = Signal(object, str) 
-
-    def gentle_switch(self, page_name: str):
-        """温和切换：仅加入队列"""
-        self.page_action.emit(SwitchMode.GENTLE, page_name)
-
-    def immediate_switch(self, page_name: str):
-        """立即切换：立刻中断并显示目标页"""
-        self.page_action.emit(SwitchMode.IMMEDIATE, page_name)
-
-    def exit_self(self):
-        """退出自己：通知调度器调度下一页"""
-        self.page_action.emit(SwitchMode.EXIT_SELF, "")
 
 class OnDragEvent(QObject):
     on_drag_event = Signal(bool)
@@ -41,7 +25,7 @@ on_drag_bus = OnDragEvent()
 # 1. 独立的子页面类
 # ==========================================
 
-class HomePage(DragDropMixin, QWidget):
+class HomePage(DragDropMixin, BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_drag_drop()
@@ -82,10 +66,8 @@ class HomePage(DragDropMixin, QWidget):
     # def on_files_dropped(self, file_paths: list[str]):
     #     pass
 
-    def on_show(self):
-        pass
 
-class SettingPage(QWidget):
+class SettingPage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -103,10 +85,9 @@ class SettingPage(QWidget):
         layout.addWidget(title)
         layout.addStretch()
     
-    def on_show(self):
-        pass
 
-class ShortTextPage(QWidget):
+
+class ShortTextPage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -121,11 +102,6 @@ class ShortTextPage(QWidget):
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(self.label)
-
-    def on_show(self):
-        # self.label.setText("这是文字")
-        pass
-
 
     def start_thread(self):
 
@@ -185,7 +161,9 @@ class MainShellWindow(QWidget):
         self.resize(self.MAX_W, self.MAX_H)
 
 
-        self.init_island_movement()
+        # self.init_island_movement()
+        self.window_manager = WindowManager(self)
+
         self.init_ui()
 
     # 定义响应 Qt 动画系统的 Property
@@ -262,8 +240,8 @@ class MainShellWindow(QWidget):
     def handle_page_action(self, mode: SwitchMode, page_name: str):
         """核心路由控制阀"""
 
-        self.queue_state = True
-        self.animate_island(True)
+        self.window_manager.queue_state = True
+        self.window_manager.animate(True)
 
         if mode == SwitchMode.GENTLE:
             # 1. 温和切换：仅塞入队列
@@ -294,13 +272,13 @@ class MainShellWindow(QWidget):
             self.current_page_name = next_name
             self.switch_page_to(self.pages[next_name])
             if next_name == "home":
-                self.queue_state = False
-                self.animate_island(False)
+                self.window_manager.queue_state = False
+                self.window_manager.animate(False)
         else:
             # 队列完全清空
             self.current_page_name = "home"
-            self.queue_state = False
-            self.animate_island(False)
+            self.window_manager.queue_state = False
+            self.window_manager.animate(False)
 
     # ==========================================
     # 4. 动画过渡实现
@@ -377,59 +355,12 @@ class MainShellWindow(QWidget):
         # print(f"当前动画实时高度: {current_rect.height()}")
         self.container_radius = min(25, current_rect.height() // 2 - 1)
     
-    def init_island_movement(self):
-
-        self.on_focus = False
-        self.queue_state = False
-
-        self.visible_height = 280
-        self.screen_geometry = QApplication.primaryScreen().geometry()
-        self.island_width = self.width()
-        self.island_height = self.height()
-
-        self.y_hidden = -self.island_height + self.visible_height
-        self.y_shown = -30  # 贴着屏幕顶端完全显示
-
-        self.x_center = (self.screen_geometry.width() - self.island_width) // 2
-
-        # 4. 初始化窗口位置（默认隐藏，只留个底边）
-        self.move(self.x_center, self.y_hidden)
-        self.is_expanded = False
-        
-        # 5. 设置平滑动画
-        self.anim = QPropertyAnimation(self, b"pos")
-        self.anim.setDuration(800)
-        self.anim.setEasingCurve(QEasingCurve.Type.OutBack)
-
-    def animate_island(self, show: bool):
-        """执行上滑/下滑动画"""
-        if self.is_expanded == show:
-            return # 状态未改变，不重复触发动画
-        elif self.is_expanded == True and show == False:
-            if self.queue_state == True or self.on_focus == True:
-                return
-
-        self.is_expanded = show
-        target_y = self.y_shown if show else self.y_hidden
-        
-        # 停止当前正在进行的动画，防止抽搐
-        self.anim.stop()
-        self.anim.setEndValue(QPoint(self.x_center, target_y))
-        self.anim.start()
-
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发
         if event.type() == QEvent.Type.ActivationChange:
-            if self.isActiveWindow():
-                print("窗口获得了焦点！")
-                self.on_focus = True
-                self.animate_island(True)
-            else:
-                print("窗口失去了焦点！")
-                self.on_focus = False
-                self.animate_island(False)
+            self.window_manager.handle_focus_change(self.isActiveWindow())
 
-        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = MainShellWindow()
