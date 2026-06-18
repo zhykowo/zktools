@@ -16,15 +16,16 @@ class ClipboardMonitor(QObject):
         self.clipboard = QApplication.clipboard()
         # 直接连接 Qt 内置的剪贴板改变信号
         self.clipboard.dataChanged.connect(self.on_clipboard_change)
-        print("成功启动剪贴板监听...")
+        # print("成功启动剪贴板监听...")
 
     @Slot()
     def on_clipboard_change(self):
-        print("【提示】剪贴板内容已改变！")
+        # print("【提示】剪贴板内容已改变！")
         # 如果需要获取文本：
         text = self.clipboard.text()
         if text:
-            print(f"内容为: {text}")
+            # print(f"内容为: {text}")
+            pass
 
         # 触发自定义信号
         self.cbChanged.emit()

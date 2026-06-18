@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QWidget
 class PageAnimationManager:
     """页面切换动画管理器"""
     
-    def __init__(self, container_widget, stacked_widget, opacity_effect, max_width=450, max_height=350):
+    def __init__(self, container_widget, stacked_widget, opacity_effect, max_width=450, max_height=400):
         """
         Args:
             container_widget: 主容器（需要移动和缩放的widget）
