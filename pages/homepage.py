@@ -25,7 +25,7 @@ class HomePage(DragDropMixin, BasePage):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 设置按钮 (齿轮)
-        setting_btn = SvgButton(size=30, icon_size=24, svg_data=settings_icon, hover_color="#0980ff", enable_rotation=True)
+        setting_btn = SvgButton(size=30, icon_size=22, svg_data=settings_icon, hover_color="#0980ff", enable_rotation=True)
         setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
 
         self.drop_hint_label = QLabel("Drag here", self)

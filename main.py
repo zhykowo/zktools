@@ -67,6 +67,8 @@ class MainShellWindow(QWidget):
         self.main_container = QWidget(self)
         self.main_container.setObjectName("MainContainer")
         container_layout = QHBoxLayout(self.main_container)
+        container_layout.setContentsMargins(10, 0, 10, 0)
+        container_layout.setSpacing(5)
 
         self.stacked_widget = QStackedWidget(self.main_container)
 
