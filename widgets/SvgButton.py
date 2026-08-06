@@ -10,10 +10,14 @@ class SvgButton(QPushButton):
     通用的自定义矢量动画按钮
     支持传入 SVG 路径或 SVG 文本，自带悬停背景渐变、图标变色、图标旋转动画
     """
-    def __init__(self, parent=None, size=36, icon_size=16, svg_data=None):
+    def __init__(self, parent=None, size=36, icon_size=16, svg_data=None, hover_color="#E81123", enable_rotation=False):
         super().__init__(parent)
         self.setFixedSize(size, size)
         self.icon_size = icon_size
+
+        self.normal_color = QColor(255, 255, 255)
+        self.target_color = QColor(hover_color)
+        self.enable_rotation = enable_rotation
 
         self.setCursor(Qt.PointingHandCursor)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -70,7 +74,7 @@ class SvgButton(QPushButton):
 
         # 1. 绘制背景
         bg_alpha = int(p * 40)
-        bg_color = QColor(232, 17, 35, bg_alpha)
+        bg_color = QColor(self.target_color.red(), self.target_color.green(), self.target_color.blue(), bg_alpha)
         painter.setPen(Qt.NoPen)
         painter.setBrush(bg_color)
         painter.drawEllipse(self.rect())
@@ -93,9 +97,9 @@ class SvgButton(QPushButton):
         pix_painter.end()
 
         # 3. 计算颜色
-        r = int(255 + (232 - 255) * p)
-        g = int(255 + (17 - 255) * p)
-        b = int(255 + (35 - 255) * p)
+        r = int(self.normal_color.red() + (self.target_color.red() - self.normal_color.red()) * p)
+        g = int(self.normal_color.green() + (self.target_color.green() - self.normal_color.green()) * p)
+        b = int(self.normal_color.blue() + (self.target_color.blue() - self.normal_color.blue()) * p)
         icon_color = QColor(r, g, b)
 
         # 4. 染色（同样使用高DPI Pixmap）
@@ -113,7 +117,8 @@ class SvgButton(QPushButton):
         angle = -p * 90.0
         painter.save()
         painter.translate(self.width() / 2, self.height() / 2)
-        painter.rotate(angle)
+        if self.enable_rotation:
+            painter.rotate(angle)
         # 绘制位置为逻辑尺寸的一半（因为pixmap逻辑尺寸就是icon_size）
         painter.drawPixmap(-self.icon_size / 2, -self.icon_size / 2, tinted_pixmap)
         painter.restore()

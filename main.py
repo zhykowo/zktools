@@ -1,226 +1,27 @@
 import sys
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, QThread, QTimer, Qt, Signal, Slot
-from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QGraphicsOpacityEffect
+from PySide6.QtCore import QEvent, Qt
+from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
 
-from utils.DragDropMixin import DragDropMixin
-from utils.ClipboardMonitor import ClipboardMonitor
-
-from widgets.CoreButton import CoreButton
 from widgets.SvgButton import SvgButton
 
-from core.page_controller import PageController, SwitchMode
+from core.page_controller import SwitchMode, page_signals
 from core.window_manager import WindowManager
 from core.page_animation import PageAnimationManager
-from core.hotkey_manager import HotkeyManager
 
-from pages.base_page import BasePage
+from pages.homepage import HomePage, on_drag_bus
+from pages.setting_page import SettingPage
+from pages.clipboard_ctl_page import ClipboardCtlPage
+from pages.touchpad_ctl_page import TouchpadCtlPage
 
-from scripts.switch_touchpad.main import run_switch_touchpad
-# ==========================================
-# 0. 路由行为状态与控制信号
-# ==========================================
-
-class OnDragEvent(QObject):
-    on_drag_event = Signal(bool)
-
-page_signals = PageController()
-on_drag_bus = OnDragEvent()
+from resources.svgs import close_icon
 
 # ==========================================
-# 1. 独立的子页面类
+# 0. 路由行为状态与控制信号(已模块化)
 # ==========================================
 
-class HomePage(DragDropMixin, BasePage):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.init_drag_drop()
-
-        self.target_size = (100, 50)
-        
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # 设置按钮 (齿轮)
-        svg_settings = """
-        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-        """
-
-        setting_btn = SvgButton(size=30, icon_size=24, svg_data=svg_settings)
-        setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
-
-        self.drop_hint_label = QLabel("Drag here", self)
-        self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.drop_hint_label.setStyleSheet("color: rgba(0, 0, 0, 0); font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
-
-        self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.drop_hint_label.setMaximumWidth(0) 
-
-        layout.addWidget(setting_btn)
-        layout.addWidget(self.drop_hint_label)
-
-        self.drop_anim = QPropertyAnimation(self.drop_hint_label, b"maximumWidth")
-        self.drop_anim.setDuration(800)
-        self.drop_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
-
-    def on_drag_enter(self):
-        self.drop_hint_label.setStyleSheet("color: white; font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
-
-        on_drag_bus.on_drag_event.emit(True)
-        self.drop_anim.stop()
-        self.drop_anim.setEndValue(0)
-        self.drop_anim.start()
-
-    def on_drag_leave(self):
-        on_drag_bus.on_drag_event.emit(False)
-        self.drop_anim.stop()
-        self.drop_anim.setEndValue(0)
-        self.drop_anim.start()
-        
-    # def on_files_dropped(self, file_paths: list[str]):
-    #     pass
-
-
-class SettingPage(BasePage):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.target_size = (300, 300)
-
-        layout = QVBoxLayout(self)
-        back_btn = CoreButton("⬅️ Back", self)
-        back_btn.clicked.connect(lambda: page_signals.exit_self())
-
-        title = QLabel("⚙️ 这是设置页面", self)
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        layout.addWidget(back_btn, alignment=Qt.AlignmentFlag.AlignLeft) 
-        layout.addStretch()
-        layout.addWidget(title)
-        layout.addStretch()
-    
-
-
-class ShortTextPage(BasePage):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.start_thread()
-        self.target_size = (200, 50)
-
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self.label = QLabel("", self)
-        # label.setWordWrap(True)
-        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        layout.addWidget(self.label)
-
-    def start_thread(self):
-
-        # 3. 创建线程和工作者
-        self.thread = QThread()
-        self.worker = ClipboardMonitor()
-
-        # 4. 将工作者移动到新线程
-        self.worker.moveToThread(self.thread)
-
-        # 5. 连接信号与槽
-        # 线程启动时，执行工作者的耗时方法
-        self.thread.started.connect(self.worker.start)
-        
-        # 接收工作者的进度信号，更新 UI
-        self.worker.cbChanged.connect(self.update_ui)
-        
-        # 清理线程
-        # self.worker.finished.connect(self.thread.quit)
-        # self.worker.finished.connect(self.worker.deleteLater)
-        # self.thread.finished.connect(self.thread.deleteLater)
-
-        # 6. 启动线程
-        self.thread.start()
-    
-    def quit_msg(self):
-        page_signals.exit_self()
-
-    @Slot()
-    def update_ui(self):
-        page_signals.immediate_switch("short_text")
-        self.label.setText("Copied!")
-        QTimer.singleShot(1500, self.quit_msg)
-
-class SwitchTouchpadPage(BasePage):
-    # 1. 明确定义一个 Qt 信号，用于将子线程的触发通知安全送回主线程
-    trigger_switch_signal = Signal()
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.hotkey_manager = None
-        self.current_struct = "Disabled"
-        
-        # 2. 将此信号绑定到主线程安全的执行函数上
-        self.trigger_switch_signal.connect(self.on_hotkey_triggered)
-        
-        self.start()
-        
-        self.target_size = (250, 50)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.label = QLabel("", self)
-        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.label)
-
-    def action_a(self):
-        print("\n💥 触发了测试动作 (Ctrl + Alt + A)")
-
-    def quit_msg(self):
-        page_signals.exit_self()
-
-    def update_text(self):
-        if self.current_struct:
-            self.label.setText(f"TouchPad {self.current_struct}")
-            page_signals.immediate_switch("switch_touchpad")
-
-    def switch_action(self):
-        if self.current_struct == "Disabling" or self.current_struct == "Enabling":
-            return
-
-        # 发射信号，通知主线程
-        self.trigger_switch_signal.emit()
-
-        if self.current_struct == "Enabled":
-            self.current_struct = "Disabling"
-            run_switch_touchpad(enable=False)
-            self.current_struct = "Disabled"
-
-        elif self.current_struct == "Disabled":
-            self.current_struct = "Enabling"
-            run_switch_touchpad(enable=True)
-            self.current_struct = "Enabled"
-
-        self.quit_msg()
-        self.trigger_switch_signal.emit()
-
-
-
-
-    # 4. 这个槽函数由信号触发，会自动在【主线程】中执行
-    @Slot()
-    def on_hotkey_triggered(self):
-        # 此时已经安全回到主线程，可以放心操作 UI 和 QTimer
-        self.update_text()
-        QTimer.singleShot(3000, self.quit_msg) 
-
-    def start(self):
-        self.manager = HotkeyManager()
-        self.manager.register("ctrl+alt+a", self.action_a)
-        self.manager.register("ctrl+shift+b", self.switch_action)
-        self.manager.start()
-
+# ==========================================
+# 1. 独立的子页面类(已模块化)
+# ==========================================
 
 # ==========================================
 # 2. 主窗口类
@@ -274,20 +75,13 @@ class MainShellWindow(QWidget):
 
         self.register_page("home", HomePage())
         self.register_page("setting", SettingPage())
-        self.register_page("short_text", ShortTextPage())
-        self.register_page("switch_touchpad", SwitchTouchpadPage())
+        self.register_page("short_text", ClipboardCtlPage())
+        self.register_page("switch_touchpad", TouchpadCtlPage())
 
         self.current_page_name = "home"
         self.stacked_widget.setCurrentWidget(self.pages["home"])
 
-        svg_close = """
-        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-        """
-
-        close_btn = SvgButton(size=30, icon_size=24, svg_data=svg_close)
+        close_btn = SvgButton(size=30, icon_size=24, svg_data=close_icon, enable_rotation=True)
         close_btn.clicked.connect(QApplication.instance().quit)
         
         container_layout.addWidget(self.stacked_widget)
@@ -342,7 +136,7 @@ class MainShellWindow(QWidget):
             # 1. 温和切换：仅塞入队列
             self.page_queue.append(page_name)
             # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
-            if self.current_page_name is None:
+            if self.current_page_name is None or self.current_page_name == "home":
                 self.next_page()
                 
         elif mode == SwitchMode.IMMEDIATE:
@@ -379,7 +173,7 @@ class MainShellWindow(QWidget):
             self.window_manager.animate(False)
 
     # ==========================================
-    # 4. 动画过渡实现（已组件化）
+    # 4. 动画过渡实现（已模块化）
     # # ==========================================
 
     def changeEvent(self, event):

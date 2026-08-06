@@ -24,3 +24,5 @@ class PageController(QObject):
     def exit_self(self):
         """退出自己：通知调度器调度下一页"""
         self.page_action.emit(SwitchMode.EXIT_SELF, "")
+
+page_signals = PageController()
