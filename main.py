@@ -12,6 +12,8 @@ from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
+from pages.app_center_page import AppCenterPage
+from pages.tanslator_page import TranslatorPage
 
 from resources.svgs import close_icon
 
@@ -79,11 +81,12 @@ class MainShellWindow(QWidget):
         self.register_page("setting", SettingPage())
         self.register_page("short_text", ClipboardCtlPage())
         self.register_page("switch_touchpad", TouchpadCtlPage())
+        self.register_page("app_center", TranslatorPage())
 
         self.current_page_name = "home"
         self.stacked_widget.setCurrentWidget(self.pages["home"])
 
-        close_btn = SvgButton(size=30, icon_size=24, svg_data=close_icon, enable_rotation=True)
+        close_btn = SvgButton(size=36, icon_size=24, svg_data=close_icon, hover_color="#E81123", enable_rotation=True)
         close_btn.clicked.connect(QApplication.instance().quit)
         
         container_layout.addWidget(self.stacked_widget)

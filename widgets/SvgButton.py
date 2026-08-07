@@ -4,19 +4,23 @@ from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QHBoxLayout, QWidget
 
-
+from resources.colors import get_accent_color
 class SvgButton(QPushButton):
     """
     通用的自定义矢量动画按钮
     支持传入 SVG 路径或 SVG 文本，自带悬停背景渐变、图标变色、图标旋转动画
     """
-    def __init__(self, parent=None, size=36, icon_size=16, svg_data=None, hover_color="#E81123", enable_rotation=False):
+    def __init__(self, parent=None, size=36, icon_size=16, svg_data=None, hover_color=None, enable_rotation=False):
         super().__init__(parent)
         self.setFixedSize(size, size)
         self.icon_size = icon_size
 
         self.normal_color = QColor(255, 255, 255)
-        self.target_color = QColor(hover_color)
+        if not hover_color:
+            self.target_color = get_accent_color()
+        else:
+            self.target_color = QColor(hover_color)
+
         self.enable_rotation = enable_rotation
 
         self.setCursor(Qt.PointingHandCursor)

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QSizePolicy, QHBoxLayout, QLabel
 from widgets.SvgButton import SvgButton
 from core.page_controller import page_signals
 
-from resources.svgs import settings_icon
+from resources.svgs import settings_icon, app_center_icon
 
 class OnDragEvent(QObject):
     on_drag_event = Signal(bool)
@@ -19,14 +19,17 @@ class HomePage(DragDropMixin, BasePage):
         super().__init__(parent)
         self.init_drag_drop()
 
-        self.target_size = (100, 50)
+        self.target_size = (140, 50)
         
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 设置按钮 (齿轮)
-        setting_btn = SvgButton(size=30, icon_size=22, svg_data=settings_icon, hover_color="#0980ff", enable_rotation=True)
+        setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)
         setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
+
+        app_center_btn = SvgButton(size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True)
+        app_center_btn.clicked.connect(lambda: page_signals.immediate_switch("app_center"))
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -36,6 +39,7 @@ class HomePage(DragDropMixin, BasePage):
         self.drop_hint_label.setMaximumWidth(0) 
 
         layout.addWidget(setting_btn)
+        layout.addWidget(app_center_btn)
         layout.addWidget(self.drop_hint_label)
 
         self.drop_anim = QPropertyAnimation(self.drop_hint_label, b"maximumWidth")
