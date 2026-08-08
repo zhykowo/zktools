@@ -1,39 +1,34 @@
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush, QColor, QPainter
 from PySide6.QtWidgets import QPushButton
-from resources.colors import get_accent_color
+from resources.colors import get_accent_color, get_purest_color
 
 class CoreButton(QPushButton):
 
-  def __init__(self, text, parent=None):
+  def __init__(self, text, bg_color=None, text_color=None, parent=None):
     super().__init__(text, parent)
+
+    accent_qcolor = get_accent_color()
+    accent_qcolor = get_purest_color(accent_qcolor)
+
+    self.bg_color = QColor(bg_color) if bg_color else accent_qcolor
+    self.text_color = QColor(text_color) if text_color else QColor("white")
 
   def paintEvent(self, event):
     painter = QPainter(self)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # 开启抗锯齿
 
-    accent_qcolor = get_accent_color()
-
-    # 特殊处理退出按钮
-    is_close_btn = self.objectName() == "CloseBtn"
-
     # 1. 状态判断 (Disabled -> Pressed -> Hover -> Normal)
     if not self.isEnabled():
-      bg_color = QColor("#3a3a3a")  # 禁用状态：暗灰色
-      text_color = QColor("#777777")
+      bg_color = QColor("gray")
     elif self.isDown():  # 点击按下状态
-      bg_color = (
-          QColor("#962d22") if is_close_btn else accent_qcolor.darker(120)
-      )
-      text_color = QColor("white")
+      bg_color = self.bg_color.darker(120)
     elif self.underMouse():  # 悬停 Hover 状态
-      bg_color = (
-          QColor("#c0392b") if is_close_btn else accent_qcolor.lighter(110)
-      )
-      text_color = QColor("white")
+      bg_color = self.bg_color.lighter(110)
     else:  # 正常状态
-      bg_color = QColor("#e74c3c") if is_close_btn else accent_qcolor
-      text_color = QColor("white")
+      bg_color = self.bg_color
+
+    text_color = self.text_color
 
     # 2. 动态计算胶囊圆角
     radius = self.height() // 2 - 1
@@ -47,3 +42,9 @@ class CoreButton(QPushButton):
     painter.setPen(text_color)
     painter.setFont(self.font())
     painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text())
+
+  def setBgColor(self, bg_color: QColor):
+    self.bg_color = bg_color
+
+  def resetBgColor(self):
+    self.bg_color = get_accent_color()

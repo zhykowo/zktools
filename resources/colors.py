@@ -9,7 +9,7 @@ def get_purest_color(color: QColor) -> QColor:
   if h == -1:
     return QColor(color)
 
-  return QColor.fromHsv(h, s, v, a)
+  return QColor.fromHsv(h, s, int(v*0.9), a)
 
 def get_accent_color():
     purest_color = get_purest_color(QApplication.palette().color(QPalette.ColorRole.Accent))

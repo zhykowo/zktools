@@ -1,0 +1,10 @@
+{
+    "translator": {
+        "apis": {
+            "baidu": {
+                "appid": "your_appid",
+                "secret_key": "your_secret_key"
+            }
+        }
+    }
+}

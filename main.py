@@ -143,7 +143,7 @@ class MainShellWindow(QWidget):
             # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
             if self.current_page_name is None or self.current_page_name == "home":
                 self.next_page()
-                
+
         elif mode == SwitchMode.IMMEDIATE:
             # 2. 立即切换：插队逻辑
             if page_name not in self.pages: return
