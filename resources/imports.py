@@ -2,10 +2,10 @@ import sys
 from PySide6.QtCore import QEasingCurve, QEvent, QObject, QPropertyAnimation, QThread, QTimer, Qt, Signal, Slot
 from PySide6.QtWidgets import QApplication, QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QStackedWidget, QGraphicsOpacityEffect
 
-from utils.ClipboardMonitor import ClipboardMonitor
+from utils.clipboard_monitor import ClipboardMonitor
 
-from widgets.CoreButton import CoreButton
-from widgets.SvgButton import SvgButton
+from widgets.core_button import CoreButton
+from widgets.svg_button import SvgButton
 
 from core.page_controller import SwitchMode, page_signals
 from core.window_manager import WindowManager

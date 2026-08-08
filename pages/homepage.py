@@ -1,10 +1,10 @@
-from utils.DragDropMixin import DragDropMixin
+from utils.drag_drop_mixin import DragDropMixin
 from pages.base_page import BasePage
 
 from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QHBoxLayout, QLabel
 
-from widgets.SvgButton import SvgButton
+from widgets.svg_button import SvgButton
 from core.page_controller import page_signals
 
 from resources.svgs import settings_icon, app_center_icon

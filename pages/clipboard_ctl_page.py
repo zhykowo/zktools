@@ -2,7 +2,7 @@
 from PySide6.QtCore import QThread, QTimer, Qt, Slot
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from utils.ClipboardMonitor import ClipboardMonitor
+from utils.clipboard_monitor import ClipboardMonitor
 
 
 from core.page_controller import page_signals

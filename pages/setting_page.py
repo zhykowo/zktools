@@ -2,7 +2,7 @@ from pages.base_page import BasePage
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QLabel
-from widgets.SvgButton import SvgButton
+from widgets.svg_button import SvgButton
 
 from core.page_controller import page_signals
 

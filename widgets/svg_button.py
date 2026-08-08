@@ -61,11 +61,13 @@ class SvgButton(QPushButton):
         self.update()
 
     def enterEvent(self, event):
+        print("鼠标进入了某个组件")
         self.animation.setDirection(QPropertyAnimation.Forward)
         self.animation.start()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        print("鼠标离开了某个组件")
         self.animation.setDirection(QPropertyAnimation.Backward)
         self.animation.start()
         super().leaveEvent(event)
@@ -126,51 +128,3 @@ class SvgButton(QPushButton):
         # 绘制位置为逻辑尺寸的一半（因为pixmap逻辑尺寸就是icon_size）
         painter.drawPixmap(-self.icon_size / 2, -self.icon_size / 2, tinted_pixmap)
         painter.restore()
-
-
-# --- 测试窗口：展示复用性 ---
-class DemoWindow(QMainWindow):
-
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Universal SVG Animated Buttons")
-        self.resize(400, 200)
-        self.setStyleSheet("background-color: #1E1E1E;")
-
-        # 关闭按钮 (X)
-        svg_close = """
-        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-        """
-        # 设置按钮 (齿轮)
-        svg_settings = """
-        <svg viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-        </svg>
-        """
-
-        center_widget = QWidget()
-        layout = QHBoxLayout(center_widget)
-        layout.setSpacing(30)
-        layout.setAlignment(Qt.AlignCenter)
-
-        # 按钮1：关闭按钮
-        self.btn_close = SvgButton(self, size=46, icon_size=30, svg_data=svg_close)
-        self.btn_close.clicked.connect(self.close)
-
-        # 按钮2：设置按钮
-        self.btn_settings = SvgButton(self, size=46, icon_size=30, svg_data=svg_settings)
-
-        layout.addWidget(self.btn_settings)
-        layout.addWidget(self.btn_close)
-        self.setCentralWidget(center_widget)
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = DemoWindow()
-    window.show()
-    sys.exit(app.exec())

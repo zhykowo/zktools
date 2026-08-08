@@ -1,4 +1,10 @@
 {
+    "touchpad_ctl": {
+        "hotkeys": {
+            "switch": "ctrl+shift+b",
+            "test": "ctrl+alt+a"
+        }
+    },
     "translator": {
         "apis": {
             "baidu": {

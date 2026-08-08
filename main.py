@@ -1,8 +1,10 @@
 import sys
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import QEvent, QVariantAnimation, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
+from PySide6.QtGui import QFont, QPalette
 
-from widgets.SvgButton import SvgButton
+from widgets.svg_button import SvgButton
+from widgets.main_container import MainContainerWidget
 
 from core.page_controller import SwitchMode, page_signals
 from core.window_manager import WindowManager
@@ -12,22 +14,16 @@ from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
-from pages.app_center_page import AppCenterPage
-from pages.tanslator_page import TranslatorPage
+from pages.app_center_page import ModuleCenterPage
+from pages.translator_page import TranslatorPage
 
 from resources.svgs import close_icon
 
-# ==========================================
-# 0. 路由行为状态与控制信号(已模块化)
-# ==========================================
+# 路由行为状态与控制信号(已模块化)
+# 独立的子页面类(已模块化)
+# 动画过渡实现（已模块化）
 
-# ==========================================
-# 1. 独立的子页面类(已模块化)
-# ==========================================
-
-# ==========================================
-# 2. 主窗口类
-# ==========================================
+# 主窗口类
 class MainShellWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -65,9 +61,19 @@ class MainShellWindow(QWidget):
 
 
     def init_ui(self):
+
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        self.setPalette(palette)
+
+        font = QFont()
+        font.setPointSize(12)
+        self.setFont(font)
         
-        self.main_container = QWidget(self)
+        self.main_container = MainContainerWidget(self)
         self.main_container.setObjectName("MainContainer")
+        self.main_container.installEventFilter(self)
+
         container_layout = QHBoxLayout(self.main_container)
         container_layout.setContentsMargins(10, 0, 10, 0)
         container_layout.setSpacing(5)
@@ -81,7 +87,8 @@ class MainShellWindow(QWidget):
         self.register_page("setting", SettingPage())
         self.register_page("short_text", ClipboardCtlPage())
         self.register_page("switch_touchpad", TouchpadCtlPage())
-        self.register_page("app_center", TranslatorPage())
+        self.register_page("app_center", ModuleCenterPage())
+        self.register_page("translator", TranslatorPage())
 
         self.current_page_name = "home"
         self.stacked_widget.setCurrentWidget(self.pages["home"])
@@ -100,13 +107,7 @@ class MainShellWindow(QWidget):
             start_h
         )
 
-        self.setStyleSheet("""
-            QPushButton { padding: 8px; }
-            QPushButton#CloseBtn { width: 50px; }
-            QLabel { color: white; font-size: 16px; }
-        """)
-
-        # 在 init_ui() 之后
+        # 动画管理器设置
         self.animation_manager = PageAnimationManager(
             container_widget=self.main_container,
             stacked_widget=self.stacked_widget,
@@ -118,19 +119,38 @@ class MainShellWindow(QWidget):
         # 设置圆角更新回调
         self.animation_manager.on_radius_update = self.update_container_radius
         self.update_container_radius(25)
+        self.create_anim()
 
     def update_container_radius(self, radius):
-        """更新容器圆角"""
-        self.main_container.setStyleSheet(f"""
-            QWidget#MainContainer {{ 
-                background-color: #1d1d1f; 
-                border-radius: {radius}px; 
-            }}
-        """)
+        """原生更新容器圆角"""
+        self.main_container.set_radius(radius)
 
-    # ==========================================
-    # 3. 核心队列与路由调度逻辑
-    # ==========================================
+    def eventFilter(self, watched, event):
+        """当鼠标进入灵动岛容器时触发闪烁"""
+        if watched == self.main_container and event.type() == QEvent.Type.Enter:
+            self.trigger_flash_effect()
+        return super().eventFilter(watched, event)
+
+    def create_anim(self):
+        # 创建颜色渐变动画
+        self._flash_anim = QVariantAnimation(self)
+        self._flash_anim.setDuration(220)  # 闪烁持续时间 (毫秒)
+        self._flash_anim.setStartValue(self.main_container.default_background_color.lighter(255))  # 闪烁高亮颜色
+        self._flash_anim.setEndValue(self.main_container.default_background_color)    # 恢复基础背景色
+
+        self._flash_anim.valueChanged.connect(self.main_container.set_background_color)
+
+    def trigger_flash_effect(self):
+        """灵动岛高亮脉冲闪烁动画"""
+        if not self.current_page_name == 'home':
+            return
+        # 防止动画重复叠加
+        if hasattr(self, "_flash_anim") and self._flash_anim.state() == QVariantAnimation.State.Running:
+            return
+
+        self._flash_anim.start()
+
+    # 核心队列与路由调度逻辑
     def handle_page_action(self, mode: SwitchMode, page_name: str):
         """核心路由控制阀"""
 
@@ -176,10 +196,6 @@ class MainShellWindow(QWidget):
             self.current_page_name = "home"
             self.window_manager.queue_state = False
             self.window_manager.animate(False)
-
-    # ==========================================
-    # 4. 动画过渡实现（已模块化）
-    # # ==========================================
 
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发

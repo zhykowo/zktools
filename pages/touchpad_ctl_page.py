@@ -6,8 +6,9 @@ from core.hotkey_manager import HotkeyManager
 
 from pages.base_page import BasePage
 
-from scripts.switch_touchpad.main import run_switch_touchpad
+from utils.switch_touchpad.switch_touchpad import run_switch_touchpad
 
+from resources.constants import CONFIG
 
 class TouchpadCtlPage(BasePage):
     # 1. 明确定义一个 Qt 信号，用于将子线程的触发通知安全送回主线程
@@ -71,6 +72,6 @@ class TouchpadCtlPage(BasePage):
 
     def start(self):
         self.manager = HotkeyManager()
-        self.manager.register("ctrl+alt+a", self.action_a)
-        self.manager.register("ctrl+shift+b", self.switch_action)
+        self.manager.register(CONFIG['touchpad_ctl']['hotkeys']['test'], self.action_a)
+        self.manager.register(CONFIG['touchpad_ctl']['hotkeys']['switch'], self.switch_action)
         self.manager.start()
