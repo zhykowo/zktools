@@ -2,7 +2,7 @@ from utils.drag_drop_mixin import DragDropMixin
 from pages.base_page import BasePage
 
 from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt, Signal
-from PySide6.QtWidgets import QSizePolicy, QHBoxLayout, QLabel
+from PySide6.QtWidgets import QSizePolicy, QLabel
 
 from widgets.svg_button import SvgButton
 from core.page_controller import page_signals
@@ -20,9 +20,8 @@ class HomePage(DragDropMixin, BasePage):
         self.init_drag_drop()
 
         self.target_size = (140, 50)
-        
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+
+        layout = self.set_main_layout('h')
 
         # 设置按钮 (齿轮)
         setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)

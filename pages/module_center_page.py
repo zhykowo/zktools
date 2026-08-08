@@ -2,7 +2,7 @@ from pages.base_page import BasePage
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QWidget
+    QVBoxLayout, QGridLayout, QLabel, QWidget
 )
 from PySide6.QtGui import QPalette, QColor
 
@@ -10,7 +10,7 @@ from widgets.svg_button import SvgButton
 
 from core.page_controller import page_signals
 
-from resources.svgs import arrow_left_icon, square_icon
+from resources.svgs import square_icon
 
 
 class ModuleCard(QWidget):
@@ -41,41 +41,13 @@ class ModuleCard(QWidget):
         layout.addWidget(self.icon_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label, alignment=Qt.AlignmentFlag.AlignCenter)
 
-
 class ModuleCenterPage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.target_size = (300, 300)
 
-        # 主布局：紧凑外边距，为网格留出充分空间
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(10, 8, 10, 10)
-        main_layout.setSpacing(8)
-
-        # 1. 顶部栏（返回按钮 + 页面标题）
-        header_layout = QHBoxLayout()
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(6)
-
-        back_btn = SvgButton(self, icon_size=20, svg_data=arrow_left_icon)
-        back_btn.clicked.connect(lambda: page_signals.exit_self())
-
-        title_label = QLabel("模块中心", self)
-        title_font = title_label.font()
-        title_font.setPixelSize(13)
-        title_font.setBold(True)
-        title_label.setFont(title_font)
-
-        title_palette = title_label.palette()
-        title_palette.setColor(QPalette.ColorRole.WindowText, QColor("#FFFFFF"))
-        title_label.setPalette(title_palette)
-
-        header_layout.addWidget(back_btn)
-        header_layout.addWidget(title_label)
-        header_layout.addStretch()
-
-        main_layout.addLayout(header_layout)
+        main_layout = self.set_main_layout(d='v', title='Module Center')
 
         # 2. 模块网格 (3列 x 2行，共6个核心模块)
         grid_widget = QWidget(self)

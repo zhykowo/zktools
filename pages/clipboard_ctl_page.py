@@ -1,6 +1,6 @@
 
 from PySide6.QtCore import QTimer, Qt, Slot
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtWidgets import QLabel
 
 from core.page_controller import page_signals
 
@@ -14,8 +14,7 @@ class ClipboardCtlPage(BasePage):
 
         self.target_size = (200, 50)
 
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = self.set_main_layout('h')
 
         self.label = QLabel("", self)
         # label.setWordWrap(True)

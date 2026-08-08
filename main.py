@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget
 from PySide6.QtGui import QFont, QPalette
 
 from core.page_controller import SwitchMode, page_signals
-from core.window_manager import WindowManager
+from core.window_manager import WindowManager, drag_bus
 from core.page_animation import PageAnimationManager
 
 from resources.svgs import close_icon
@@ -48,7 +48,10 @@ class MainShellWindow(QWidget):
 
         # self.init_island_movement()
         self.window_manager = WindowManager(self)
-
+        drag_bus.register_drag_handle_requested.connect(
+            self.window_manager.register_drag_handle
+        ) # 监听全局拖拽注册请求
+        
         self.init_ui()
 
     def register_page(self, name: str, widget: QWidget):
@@ -195,12 +198,12 @@ class MainShellWindow(QWidget):
             self.animation_manager.switch_to(self.pages[next_name])
             if next_name == "home":
                 self.window_manager.queue_state = False
-                self.window_manager.animate(False)
+                self.window_manager.reset_position(True)
         else:
             # 队列完全清空
             self.current_page_name = "home"
             self.window_manager.queue_state = False
-            self.window_manager.animate(False)
+            self.window_manager.reset_position(True)
 
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发

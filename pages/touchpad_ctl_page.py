@@ -1,5 +1,5 @@
 from PySide6.QtCore import QTimer, Qt, Signal, Slot
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtWidgets import QLabel
 
 from core.page_controller import page_signals
 from core.hotkey_manager import HotkeyManager
@@ -17,20 +17,18 @@ class TouchpadCtlPage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.hotkey_manager = None
-        self.current_struct = "Disabled"
-        
-        # 2. 将此信号绑定到主线程安全的执行函数上
-        self.trigger_switch_signal.connect(self.on_hotkey_triggered)
-        
-        self.start()
-        
         self.target_size = (250, 50)
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout = self.set_main_layout('h')
         self.label = QLabel("", self)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
+
+        self.hotkey_manager = None
+        self.current_struct = "Disabled"
+        # 将此信号绑定到主线程安全的执行函数上
+        self.trigger_switch_signal.connect(self.on_hotkey_triggered)
+
+        self.start()
 
     def action_a(self):
         print("\n💥 触发了测试动作 (Ctrl + Alt + A)")

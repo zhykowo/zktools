@@ -2,13 +2,13 @@ import time
 
 from pages.base_page import BasePage
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QWidget, QGridLayout
+from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QPushButton, QWidget, QGridLayout
 from PySide6.QtGui import QPalette, QColor, QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from core.page_controller import page_signals
 
-from resources.svgs import arrow_left_icon, arrow_right_icon
+from resources.svgs import arrow_right_icon
 from resources.colors import get_accent_color
 from resources.constants import CONFIG
 
@@ -92,11 +92,11 @@ class TranslatorPage(BasePage):
         # 当前展开的网格类型状态
         self._current_grid_mode = GridMode.NONE
 
-        layout = QVBoxLayout(self)
+        layout = self.set_main_layout(d='v', title='Translator')
 
         # 1. 返回按钮
-        self.back_btn = SvgButton(self, icon_size=24, svg_data=arrow_left_icon)
-        self.back_btn.clicked.connect(self._on_back_clicked)
+        # self.back_btn = SvgButton(self, icon_size=24, svg_data=arrow_left_icon)
+        # self.back_btn.clicked.connect(self._on_back_clicked)
 
         # 透明调色板处理
         self.transparent_accent_color = QColor(get_accent_color())
@@ -162,7 +162,7 @@ class TranslatorPage(BasePage):
         footer_layout.addWidget(self.translation_server_btn)
 
         # 布局组织
-        layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft)
+        # layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
         layout.addWidget(self.selection_grid_widget)
