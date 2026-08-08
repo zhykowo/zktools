@@ -29,7 +29,7 @@ class HomePage(DragDropMixin, BasePage):
         setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
 
         app_center_btn = SvgButton(size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True)
-        app_center_btn.clicked.connect(lambda: page_signals.immediate_switch("app_center"))
+        app_center_btn.clicked.connect(lambda: page_signals.immediate_switch("module_center"))
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)

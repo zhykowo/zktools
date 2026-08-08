@@ -86,11 +86,11 @@ class ModuleCenterPage(BasePage):
 
         modules = [
             ("translator", self._on_module_click),
-            ("设备控制", self._on_module_click),
-            ("数据分析", self._on_module_click),
-            ("日志查看", self._on_module_click),
-            ("传感器",   self._on_module_click),
-            ("系统设置", self._on_module_click),
+            ("占位符", self._on_module_click),
+            ("占位符", self._on_module_click),
+            ("占位符", self._on_module_click),
+            ("占位符",   self._on_module_click),
+            ("占位符", self._on_module_click),
         ]
 
         for index, (mod_name, callback) in enumerate(modules):

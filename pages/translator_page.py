@@ -1,3 +1,5 @@
+import time
+
 from pages.base_page import BasePage
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QTextEdit, QPushButton, QWidget, QGridLayout
@@ -5,9 +7,14 @@ from PySide6.QtGui import QPalette, QColor, QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from core.page_controller import page_signals
+
 from resources.svgs import arrow_left_icon, arrow_right_icon
 from resources.colors import get_accent_color
+from resources.constants import CONFIG
+
 from utils.translator import Translator
+import utils.text_manager as text_manager
+
 from enum import Enum, auto
 from functools import partial
 
@@ -132,7 +139,7 @@ class TranslatorPage(BasePage):
 
         footer_layout.addStretch()
 
-        self.origin_lang = QPushButton("English", self)
+        self.origin_lang = QPushButton(CONFIG['translator']['default_from_lang'], self)
         self.origin_lang.setStyleSheet(btn_style_sheet)
         self.origin_lang.clicked.connect(lambda: self.display_lang_list("origin"))
         footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -141,14 +148,14 @@ class TranslatorPage(BasePage):
         self.swap_btn.clicked.connect(self._swap_languages)
         footer_layout.addWidget(self.swap_btn)
 
-        self.target_lang = QPushButton("Chinese", self)
+        self.target_lang = QPushButton(CONFIG['translator']['default_to_lang'], self)
         self.target_lang.setStyleSheet(btn_style_sheet)
         self.target_lang.clicked.connect(lambda: self.display_lang_list("target"))
         footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
         footer_layout.addStretch()
 
-        self.translation_server_btn = CoreButton("Google")
+        self.translation_server_btn = CoreButton(CONFIG['translator']['default_server'], parent=self)
         self.translation_server_btn.clicked.connect(self._start_translation)
         self.translation_server_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
@@ -161,6 +168,18 @@ class TranslatorPage(BasePage):
         layout.addWidget(self.selection_grid_widget)
         layout.addLayout(footer_layout)
         layout.addStretch()
+
+    def on_show(self):
+        tm = text_manager.get()
+        now_time = time.perf_counter()
+        elapsed = now_time - tm.selection_time
+        if elapsed <= 10 and self.input_text.toPlainText() == '':
+            selected_text = tm.selected_text
+            if selected_text:
+                self.input_text.setText(selected_text)
+            elif (now_time - tm.copy_time) <= 10:
+                self.input_text.setText(tm.clipboard_text)
+
 
     # ==================== 抽象核心逻辑 ====================
     def _request_grid_switch(self, mode: GridMode, items: list[str], current_value: str, on_select_callback):
@@ -282,3 +301,12 @@ class TranslatorPage(BasePage):
             self._collapse_grid()
         else:
             page_signals.exit_self()
+
+    def clear_data(self):
+        self.input_text.setText('')
+        self.result_text.setText('')
+
+        self.animator.animate_heights([
+            (self.selection_grid_widget, self.selection_grid_widget.height(), 0),
+            (self.result_text, self.result_text.height(), 0)
+        ])

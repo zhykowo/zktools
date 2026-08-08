@@ -6,6 +6,9 @@
         }
     },
     "translator": {
+        "default_server": "Baidu",
+        "default_from_lang": "Auto",
+        "default_to_lang": "Chinese",
         "apis": {
             "baidu": {
                 "appid": "your_appid",

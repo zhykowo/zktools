@@ -3,25 +3,27 @@ from PySide6.QtCore import QEvent, QVariantAnimation, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
 from PySide6.QtGui import QFont, QPalette
 
-from widgets.svg_button import SvgButton
-from widgets.main_container import MainContainerWidget
-
 from core.page_controller import SwitchMode, page_signals
 from core.window_manager import WindowManager
 from core.page_animation import PageAnimationManager
+
+from resources.svgs import close_icon
+
+import utils.text_manager as text_manager
+import utils.clipboard_monitor as clipboard_monitor
+from utils.mouse_tracker import MouseHoverEventFilter
+
+from widgets.svg_button import SvgButton
+from widgets.main_container import MainContainerWidget
 
 from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
-from pages.app_center_page import ModuleCenterPage
+from pages.module_center_page import ModuleCenterPage
 from pages.translator_page import TranslatorPage
 
-from resources.svgs import close_icon
 
-# 路由行为状态与控制信号(已模块化)
-# 独立的子页面类(已模块化)
-# 动画过渡实现（已模块化）
 
 # 主窗口类
 class MainShellWindow(QWidget):
@@ -43,7 +45,6 @@ class MainShellWindow(QWidget):
         
         self.MAX_W, self.MAX_H = 450, 400
         self.resize(self.MAX_W, self.MAX_H)
-
 
         # self.init_island_movement()
         self.window_manager = WindowManager(self)
@@ -87,7 +88,7 @@ class MainShellWindow(QWidget):
         self.register_page("setting", SettingPage())
         self.register_page("short_text", ClipboardCtlPage())
         self.register_page("switch_touchpad", TouchpadCtlPage())
-        self.register_page("app_center", ModuleCenterPage())
+        self.register_page("module_center", ModuleCenterPage())
         self.register_page("translator", TranslatorPage())
 
         self.current_page_name = "home"
@@ -128,6 +129,7 @@ class MainShellWindow(QWidget):
     def eventFilter(self, watched, event):
         """当鼠标进入灵动岛容器时触发闪烁"""
         if watched == self.main_container and event.type() == QEvent.Type.Enter:
+            text_manager.get().get_selected_text()
             self.trigger_flash_effect()
         return super().eventFilter(watched, event)
 
@@ -169,7 +171,7 @@ class MainShellWindow(QWidget):
             if page_name not in self.pages: return
             
             if self.current_page_name is not None:
-                # 把当前未“退出自己”的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
+                # 把当前未"退出自己"的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
                 self.page_queue.insert(0, self.current_page_name)
                 
             self.current_page_name = page_name
@@ -178,9 +180,12 @@ class MainShellWindow(QWidget):
             self.animation_manager.switch_to(self.pages[page_name])
             
         elif mode == SwitchMode.EXIT_SELF:
-            # 3. 退出自己：交出控制权，加载队列中的下一个页面
+            if self.current_page_name:
+                current_page = self.pages.get(self.current_page_name)
+                if current_page and hasattr(current_page, 'clear_data'):
+                    current_page.clear_data()
             self.next_page()
-
+            
     def next_page(self):
         """从队列中提取并渲染下一个页面"""
         if self.page_queue:
@@ -204,7 +209,17 @@ class MainShellWindow(QWidget):
 
 
 if __name__ == "__main__":
+
     app = QApplication(sys.argv)
+
+    clipboard_monitor.init()
+    text_manager.init()
+    
+    # 安装全局鼠标追踪事件过滤器 
+    # 创建过滤器实例，debug_enabled=True 表示启用调试输出
+    mouse_tracker = MouseHoverEventFilter(debug_enabled=False)
+    app.installEventFilter(mouse_tracker)
+    
     window = MainShellWindow()
     window.show()
     sys.exit(app.exec())
