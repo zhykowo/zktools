@@ -11,3 +11,4 @@ wheels/
 config_dev.json
 .vscode/
 changes.patch
+.reasonix
