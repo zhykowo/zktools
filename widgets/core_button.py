@@ -8,10 +8,10 @@ class CoreButton(QPushButton):
   def __init__(self, text, bg_color=None, text_color=None, parent=None):
     super().__init__(text, parent)
 
-    accent_qcolor = get_accent_color()
-    accent_qcolor = get_purest_color(accent_qcolor)
+    self.accent_qcolor = get_accent_color()
+    self.accent_qcolor = get_purest_color(self.accent_qcolor)
 
-    self.bg_color = QColor(bg_color) if bg_color else accent_qcolor
+    self.bg_color = QColor(bg_color) if bg_color else self.accent_qcolor
     self.text_color = QColor(text_color) if text_color else QColor("white")
 
   def paintEvent(self, event):
@@ -47,4 +47,4 @@ class CoreButton(QPushButton):
     self.bg_color = bg_color
 
   def resetBgColor(self):
-    self.bg_color = get_accent_color()
+    self.bg_color = self.accent_qcolor
