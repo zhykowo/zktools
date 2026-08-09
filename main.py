@@ -60,8 +60,7 @@ class MainShellWindow(QWidget):
         self.stacked_widget.addWidget(widget)
 
     def change_drag_state(self, state):
-        if state:
-            window.activateWindow()
+        pass
 
 
     def init_ui(self):

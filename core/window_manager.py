@@ -1,4 +1,4 @@
-from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, QObject, Qt, QObject, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, Qt, QObject, Signal
 from PySide6.QtWidgets import QApplication, QWidget
 
 class WindowDragFilter(QObject):
