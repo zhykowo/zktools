@@ -121,3 +121,5 @@ class HotkeyManager:
             self._hotkeys.clear()
             self._current_keys.clear()
         print("[HotkeyManager] 监听已安全停止。")
+
+hotkey_manager = HotkeyManager()

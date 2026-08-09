@@ -2,7 +2,7 @@ from PySide6.QtCore import QTimer, Qt, Signal, Slot
 from PySide6.QtWidgets import QLabel
 
 from core.page_controller import page_signals
-from core.hotkey_manager import HotkeyManager
+from core.hotkey_manager import hotkey_manager
 
 from pages.base_page import BasePage
 
@@ -69,7 +69,6 @@ class TouchpadCtlPage(BasePage):
         QTimer.singleShot(3000, self.quit_msg) 
 
     def start(self):
-        self.manager = HotkeyManager()
-        self.manager.register(CONFIG['touchpad_ctl']['hotkeys']['test'], self.action_a)
-        self.manager.register(CONFIG['touchpad_ctl']['hotkeys']['switch'], self.switch_action)
-        self.manager.start()
+        hotkey_manager.register(CONFIG['touchpad_ctl']['hotkeys']['test'], self.action_a)
+        hotkey_manager.register(CONFIG['touchpad_ctl']['hotkeys']['switch'], self.switch_action)
+        hotkey_manager.start()
