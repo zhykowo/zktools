@@ -198,12 +198,14 @@ class MainShellWindow(QWidget):
             self.animation_manager.switch_to(self.pages[next_name])
             if next_name == "home":
                 self.window_manager.queue_state = False
-                self.window_manager.reset_position(True)
+                # 归位居中显示
+                self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
         else:
             # 队列完全清空
             self.current_page_name = "home"
             self.window_manager.queue_state = False
-            self.window_manager.reset_position(True)
+            # 归位居中显示
+            self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
 
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发

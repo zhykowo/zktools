@@ -58,30 +58,27 @@ class WindowManager:
         """便捷接口：注册任意组件/按钮为拖拽手柄"""
         widget.installEventFilter(self.drag_filter)
 
-    def reset_position(self, show: bool = True):
-        """复位动画：平滑地从当前拖拽位置返回顶部居中默认锚点"""
-        target_y = self.y_shown if show else self.y_hidden
-        target_point = QPoint(self.x_center, target_y)
-
-        self.is_expanded = show
-        self.anim.stop()
-        # QPropertyAnimation 不设置 startValue 时，默认以当前 window.pos() 为起始点
-        self.anim.setEndValue(target_point)
-        self.anim.start()
-
-    def animate(self, show: bool):
-        """执行显示/隐藏动画"""
-        if self.is_expanded == show:
-            return
-        if self.is_expanded and not show and (self.queue_state or self.on_focus):
-            return
+    def animate(self, show: bool, recenter: bool = False):
+        """执行显示/隐藏或复位动画
+        
+        :param show: True 为显示，False 为隐藏
+        :param recenter: True 时强制将 X 轴水平归位到中央锚点，False 时保持当前 X 轴位置
+        """
+        # 若非强制归位，且展开状态无变化，或触发了阻止隐藏的保护条件，则跳过
+        if not recenter:
+            if self.is_expanded == show:
+                return
+            if self.is_expanded and not show and (self.queue_state or self.on_focus):
+                return
         
         self.is_expanded = show
+        
+        # 确定目标坐标
+        target_x = self.x_center if recenter else self.window.x()
         target_y = self.y_shown if show else self.y_hidden
         
         self.anim.stop()
-        # 保持当前的 X 坐标（如果只是上下收缩），或者恢复居中
-        self.anim.setEndValue(QPoint(self.window.x(), target_y))
+        self.anim.setEndValue(QPoint(target_x, target_y))
         self.anim.start()
     
     def handle_focus_change(self, is_active: bool):
