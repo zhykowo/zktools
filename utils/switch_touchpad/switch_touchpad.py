@@ -1,8 +1,7 @@
 import ctypes
-from pathlib import Path
 import json
 import subprocess
-from pynput import keyboard
+from resources.constants import root_dir
 
 def get_touchpad_devices():
     # 1. 编写 PowerShell 脚本，最后加上 | ConvertTo-Json 转化为 JSON 格式
@@ -15,7 +14,7 @@ def get_touchpad_devices():
     # 2. 构造执行命令
     # -NoProfile: 不加载用户配置，加快启动速度
     # -Command: 执行后面的脚本字符串
-    command = ["powershell", "-NoProfile", "-Command", powershell_script]
+    command = ["pwsh.exe", "-NoProfile", "-Command", powershell_script]
 
     try:
         # 3. 运行命令并捕获输出
@@ -86,7 +85,7 @@ def run_ps_as_admin(script_path, arguments=""):
 
 def run_switch_touchpad(enable=True):
 
-    current_dir = Path(__file__).resolve().parent
+    current_dir = root_dir / 'utils' / 'switch_touchpad'
     target_script = current_dir / "switch.ps1"
     # 将 Path 对象显式转换为字符串
     script_path_str = str(target_script)
@@ -107,9 +106,6 @@ def run_switch_touchpad(enable=True):
         # 构建符合 PowerShell 规范的参数字符串 (-参数名 参数值)
         ps_arguments = f'-Action "{action_value}" -InstanceId "{device_id}"'
         run_ps_as_admin(script_path_str, arguments=ps_arguments)
-
-    
-
 
 # --- 示例调用 ---
 if __name__ == "__main__":

@@ -1,8 +1,10 @@
 import json
+
+import sys
 from pathlib import Path
 
 # 获取当前文件所在目录（根目录）
-root_dir = Path.cwd()
+root_dir = Path(sys.argv[0]).resolve().parent
 
 # 构建配置文件路径
 dev_config_path = root_dir / 'config_dev.json'
