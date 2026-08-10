@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QKeySequence, QPalette, QShortcut
 
@@ -7,7 +7,7 @@ from core.window_manager import drag_bus
 
 from widgets.svg_button import SvgButton
 
-from resources.svgs import arrow_left_icon, square_icon, drag_icon
+from resources.svgs import arrow_left_icon, close_icon, square_icon, drag_icon
 
 class BasePage(QWidget):
     """所有页面的基类"""
@@ -21,6 +21,9 @@ class BasePage(QWidget):
         # 创建页面级 Esc 快捷键
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.esc_shortcut.activated.connect(page_signals.exit_self)
+        # 全局关闭按钮
+        self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color="#E81123", enable_rotation=True)
+        self.close_btn.clicked.connect(QApplication.instance().quit)
 
     def set_main_layout(self, d: str, title: str='标题占位符'):
         if d == 'v':
@@ -28,10 +31,17 @@ class BasePage(QWidget):
             self.main_layout.setContentsMargins(10, 8, 10, 10)
             self.main_layout.setSpacing(8)
             self.set_header(self.main_layout, title)
+            self.content_layout = QVBoxLayout()
+            self.main_layout.addLayout(self.content_layout)
+
         elif d == 'h':
             self.main_layout = QHBoxLayout(self)
             self.main_layout.setContentsMargins(0, 0, 0, 0)
-        return self.main_layout
+            self.content_layout = QHBoxLayout()
+            self.main_layout.addLayout(self.content_layout)
+            self.main_layout.addWidget(self.close_btn)
+
+        return self.content_layout
 
     def set_header(self, main_layout: QVBoxLayout, title: str):
         header_layout = QHBoxLayout()
@@ -40,7 +50,7 @@ class BasePage(QWidget):
         # 返回按钮 + 页面标题
         header_left = QHBoxLayout()
 
-        # 拖拽按钮
+        # 拖拽按钮 + 全局关闭按钮
         header_right = QHBoxLayout()
 
         title_label = QLabel(title, self)
@@ -61,6 +71,7 @@ class BasePage(QWidget):
 
         header_left.addWidget(back_btn)
         header_right.addWidget(drag_btn)
+        header_right.addWidget(self.close_btn)
         header_left.addWidget(title_label)
         header_left.addStretch()
 

@@ -7,13 +7,10 @@ from core.page_controller import SwitchMode, page_signals
 from core.window_manager import WindowManager, drag_bus
 from core.page_animation import PageAnimationManager
 
-from resources.svgs import close_icon
-
 import utils.text_manager as text_manager
 import utils.clipboard_monitor as clipboard_monitor
 from utils.mouse_tracker import MouseHoverEventFilter
 
-from widgets.svg_button import SvgButton
 from widgets.main_container import MainContainerWidget
 
 from pages.homepage import HomePage, on_drag_bus
@@ -96,11 +93,7 @@ class MainShellWindow(QWidget):
         self.current_page_name = "home"
         self.stacked_widget.setCurrentWidget(self.pages["home"])
 
-        close_btn = SvgButton(size=36, icon_size=24, svg_data=close_icon, hover_color="#E81123", enable_rotation=True)
-        close_btn.clicked.connect(QApplication.instance().quit)
-        
         container_layout.addWidget(self.stacked_widget)
-        container_layout.addWidget(close_btn)
         
         start_w, start_h = self.pages["home"].target_size
         self.main_container.setGeometry(
