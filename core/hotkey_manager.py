@@ -112,13 +112,13 @@ class HotkeyManager:
             self.user32.PostThreadMessageW(self._thread_id, WM_NULL, 0, 0)
 
     def _release_all_modifiers(self):
-            """
-            [底层通用状态清理] 
-            在任何热键触发时自动调用，向系统广播所有修饰键的抬起事件，
-            确保后续顶层应用执行任何按键模拟时，系统上下文都是绝对干净的。
-            """
-            for vk in (VK_CONTROL, VK_SHIFT, VK_MENU, VK_LWIN, VK_RWIN):
-                self.user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+        """
+        [底层通用状态清理]
+        在任何热键触发时自动调用，向系统广播所有修饰键的抬起事件，
+        确保后续顶层应用执行任何按键模拟时，系统上下文都是绝对干净的。
+        """
+        for vk in (VK_CONTROL, VK_SHIFT, VK_MENU, VK_LWIN, VK_RWIN):
+            self.user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
 
     def _msg_loop(self):
         """原生 Windows 消息循环线程"""
