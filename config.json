@@ -6,6 +6,7 @@
         }
     },
     "translator": {
+        "hotkey": "ctrl+shift+s",
         "default_server": "Baidu",
         "default_from_lang": "Auto",
         "default_to_lang": "Chinese",

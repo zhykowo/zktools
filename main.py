@@ -175,11 +175,25 @@ class MainShellWindow(QWidget):
             self.animation_manager.switch_to(self.pages[page_name])
             
         elif mode == SwitchMode.EXIT_SELF:
-            if self.current_page_name:
-                current_page = self.pages.get(self.current_page_name)
-                if current_page and hasattr(current_page, 'clear_data'):
-                    current_page.clear_data()
-            self.next_page()
+            # 精确退出：page_name 指定要退出的页面，而不是盲目退当前页
+            if page_name:
+                if self.current_page_name == page_name:
+                    # 目标页面正在显示：清数据并调度下一页
+                    current_page = self.pages.get(page_name)
+                    if current_page and hasattr(current_page, 'clear_data'):
+                        current_page.clear_data()
+                    self.next_page()
+                elif page_name in self.page_queue:
+                    # 目标页面被插队顶到队列中：直接从队列移除，无需切换
+                    self.page_queue.remove(page_name)
+                # 否则：目标页面既不在当前也不在队列，什么都不做
+            else:
+                # 兼容旧调用：无参数时退出当前正在显示的页面
+                if self.current_page_name:
+                    current_page = self.pages.get(self.current_page_name)
+                    if current_page and hasattr(current_page, 'clear_data'):
+                        current_page.clear_data()
+                self.next_page()
             
     def next_page(self):
         """从队列中提取并渲染下一个页面"""

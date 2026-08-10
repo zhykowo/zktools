@@ -1,12 +1,13 @@
 import time
 
 from pages.base_page import BasePage
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QPushButton, QWidget, QGridLayout
 from PySide6.QtGui import QPalette, QColor, QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from core.page_controller import page_signals
+from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon
 from resources.colors import get_accent_color
@@ -66,6 +67,49 @@ class _Animator(QObject):
 
         self._active_group.start()
 
+class TranslationHotkey(QObject):
+    """一键翻译全局热键
+
+    按下快捷键后自动完成：复制选中文本 → 填入输入框 → 使用默认服务翻译。
+    pynput 的回调运行在监听线程，不能直接操作 Qt 控件，
+    因此通过信号以 QueuedConnection 转发到 Qt 主线程执行。
+    """
+
+    _triggered = Signal()
+
+    def __init__(self, callback, hotkey: str = None, parent=None):
+        super().__init__(parent)
+        self._callback = callback
+        self._hotkey = hotkey or CONFIG['translator'].get('hotkey', 'ctrl+shift+t')
+        self._registered = False
+        self._triggered.connect(self._run_in_main_thread, Qt.ConnectionType.QueuedConnection)
+
+    @property
+    def hotkey(self) -> str:
+        return self._hotkey
+
+    def start(self):
+        """注册全局热键并启动全局键盘监听（幂等）"""
+        hotkey_manager.start()
+        hotkey_manager.register(self._hotkey, self._fire)
+        self._registered = True
+        print(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
+
+    def stop(self):
+        """注销全局热键"""
+        if self._registered:
+            hotkey_manager.unregister(self._hotkey)
+            self._registered = False
+
+    def _fire(self):
+        """pynput 监听线程回调：仅转发信号，不做任何 Qt 操作"""
+        self._triggered.emit()
+
+    @Slot()
+    def _run_in_main_thread(self):
+        """Qt 主线程中执行实际的一键翻译流程"""
+        if self._callback:
+            self._callback()
 
 class TranslatorPage(BasePage):
     SUPPORTED_LANGUAGES = [
@@ -169,6 +213,10 @@ class TranslatorPage(BasePage):
         layout.addLayout(footer_layout)
         layout.addStretch()
 
+        # 一键翻译：注册全局热键（复制选中文本 → 填入输入框 → 默认服务翻译）
+        self.one_click_hotkey = TranslationHotkey(self._on_one_click_translate, parent=self)
+        self.one_click_hotkey.start()
+
     def on_show(self):
         tm = text_manager.get()
         now_time = time.perf_counter()
@@ -179,6 +227,26 @@ class TranslatorPage(BasePage):
                 self.input_text.setText(selected_text)
             elif (now_time - tm.copy_time) <= 10:
                 self.input_text.setText(tm.clipboard_text)
+
+    def _on_one_click_translate(self):
+        """一键翻译：复制选中文本 → 填入输入框 → 使用默认服务翻译"""
+        tm = text_manager.get()
+        selected = tm.copy_selected_text()
+        if not selected:
+            print("[TranslatorPage] 未获取到选中的文本，一键翻译已取消")
+            return
+
+        # 1. 切换到翻译页并展示选中文本
+        page_signals.immediate_switch("translator")
+        self.input_text.setText(selected)
+        self.input_text.setFocus()
+
+        self.origin_lang.setText(CONFIG['translator']['default_from_lang'],)
+        self.target_lang.setText(CONFIG['translator']['default_to_lang'])
+
+        # 2. 使用默认服务与默认语言执行翻译
+        self.translation_server_btn.setText(CONFIG['translator']['default_server'])
+        self._start_translation()
 
 
     # ==================== 抽象核心逻辑 ====================

@@ -41,6 +41,36 @@ class _textManager:
         self.clipboard_text = text
         self.copy_time = time.perf_counter()
 
+    def copy_selected_text(self, retries=5, delay=0.05):
+        """复制当前选中文本（供一键翻译使用）
+
+        优先通过 UI Automation 的文本模式直接读取选中内容（不污染剪贴板）；
+        若目标控件不支持文本模式，则模拟 Ctrl+C 复制后再从剪贴板读取。
+        """
+        # 1. 优先直接读取选中文本，避免覆盖用户剪贴板
+        text = self.get_selected_text()
+        if text:
+            return text
+
+        # 2. 回退方案：模拟 Ctrl+C 后从剪贴板读取
+        try:
+            self.auto.SendKeys('{Ctrl}c')
+        except Exception as e:
+            print(f"[text_manager] 模拟 Ctrl+C 失败: {e}")
+            return ""
+
+        # 剪贴板内容更新是异步的，做几次短重试
+        for _ in range(retries):
+            clipboard_text = self.auto.GetClipboardText()
+            if clipboard_text:
+                self.selected_text = clipboard_text
+                self.selection_time = time.perf_counter()
+                return clipboard_text
+            time.sleep(delay)
+
+        print("[text_manager] 未获取到选中文本")
+        return ""
+
 _instance = None
 
 def init(*args, **kwargs) -> None:

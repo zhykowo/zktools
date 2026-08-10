@@ -21,8 +21,13 @@ class PageController(QObject):
         """立即切换：立刻中断并显示目标页"""
         self.page_action.emit(SwitchMode.IMMEDIATE, page_name)
     
-    def exit_self(self):
-        """退出自己：通知调度器调度下一页"""
-        self.page_action.emit(SwitchMode.EXIT_SELF, "")
+    def exit_self(self, page_name: str = ""):
+        """退出指定页面：通知调度器调度下一页
+
+        - 带 page_name：精确退出该页面（若它是当前页则调度下一页，
+          若它在队列中则直接移除），避免退错正在显示的页面。
+        - 不带参数：保持旧语义，退出当前正在显示的页面。
+        """
+        self.page_action.emit(SwitchMode.EXIT_SELF, page_name)
 
 page_signals = PageController()

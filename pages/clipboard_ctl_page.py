@@ -24,9 +24,9 @@ class ClipboardCtlPage(BasePage):
 
         clipboard_monitor.get().cbChanged.connect(self.update_ui)
 
-    
+
     def quit_msg(self):
-        page_signals.exit_self()
+        page_signals.exit_self("short_text")
 
     @Slot()
     def update_ui(self, text):
