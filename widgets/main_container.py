@@ -1,6 +1,6 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QRectF
 from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QColor, QPainter
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 
 # 自定义主容器 (替代 QSS 绘制背景和圆角)
 class MainContainerWidget(QWidget):
@@ -8,6 +8,10 @@ class MainContainerWidget(QWidget):
         super().__init__(parent)
         self.default_background_color = QColor("#1d1d1f")
         self.background_color = self.default_background_color
+        # 外边框使用渐变描边：左上亮（白）→ 右下暗（灰），比单色更有层次
+        self.border_color_start = QColor("#b0b0b0")   # 渐变起点（左上，最亮）
+        self.border_color_end = QColor("#545454")     # 渐变终点（右下，偏灰）
+        self.border_width = 5                         # 边框粗细
         self.current_radius = 25
 
     def set_background_color(self, color: QColor):
@@ -21,12 +25,20 @@ class MainContainerWidget(QWidget):
         self.update()
 
     def paintEvent(self, event):
-        """使用 QPainter 纯原生高效绘制圆角矩形"""
+        """使用 QPainter 纯原生高效绘制圆角矩形 + 细边框"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)  # 开启抗锯齿
+
+        # 绘制抗锯齿圆角背景（用完整矩形，保证填充不留毛边）
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(self.background_color)
+        painter.drawRoundedRect(self.rect(), self.current_radius, self.current_radius)
 
-        # 绘制抗锯齿圆角背景
-        rect = self.rect()
-        painter.drawRoundedRect(rect, self.current_radius, self.current_radius)
+        # 绘制外圈渐变边框（向内缩 0.5px，让 1px 线条落在像素中心，保持清晰）
+        border_rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        gradient = QLinearGradient(border_rect.topLeft(), border_rect.bottomRight())
+        gradient.setColorAt(0.0, self.border_color_start)   # 左上：白
+        gradient.setColorAt(1.0, self.border_color_end)     # 右下：灰
+        painter.setPen(QPen(QBrush(gradient), self.border_width))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawRoundedRect(border_rect, self.current_radius, self.current_radius)
