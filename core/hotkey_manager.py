@@ -1,5 +1,4 @@
 import ctypes
-from ctypes import wintypes
 import threading
 import queue
 
@@ -123,7 +122,7 @@ class HotkeyManager:
     def _msg_loop(self):
         """原生 Windows 消息循环线程"""
         self._thread_id = self.kernel32.GetCurrentThreadId()
-        msg = wintypes.MSG()
+        msg = ctypes.wintypes.MSG()
 
         while self._running:
             self._process_queue()
@@ -156,7 +155,7 @@ class HotkeyManager:
 
 
 
-    # ================= 公开 API（完全与原接口一致） =================
+    # ================= 公开 API =================
 
     def register(self, hotkey_str: str, callback):
         """动态注册快捷键（如 'ctrl+alt+a'），注册成功后将自动独占拦截"""
@@ -194,5 +193,5 @@ class HotkeyManager:
         print("[HotkeyManager] 监听已安全停止。")
 
 
-# 单例导出（保持与原脚本使用方式完全一致）
+# 单例导出
 hotkey_manager = HotkeyManager()

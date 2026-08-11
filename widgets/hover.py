@@ -8,7 +8,7 @@ class HoverShape(Enum):
     RECTANGLE = 0   # 矩形
     CIRCLE = 1      # 内切圆/正圆
     ROUNDED_RECT = 2# 圆角矩形
-    CUSTOM = 3      # 自定义路径 (重写 get_custom_path)
+    CUSTOM = 3      # 自定义路径
 
 
 class HoverWidget(QWidget):

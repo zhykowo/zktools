@@ -209,8 +209,8 @@ class TranslatorPage(BasePage):
         # layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
-        layout.addWidget(self.selection_grid_widget)
         layout.addLayout(footer_layout)
+        layout.addWidget(self.selection_grid_widget)
         layout.addStretch()
 
         # 一键翻译：注册全局热键（复制选中文本 → 填入输入框 → 默认服务翻译）

@@ -28,7 +28,7 @@ class BasePage(QWidget):
     def set_main_layout(self, d: str, title: str='标题占位符'):
         if d == 'v':
             self.main_layout = QVBoxLayout(self)
-            self.main_layout.setContentsMargins(10, 8, 10, 10)
+            self.main_layout.setContentsMargins(0, 8, 0, 0)
             self.main_layout.setSpacing(8)
             self.set_header(self.main_layout, title)
             self.content_layout = QVBoxLayout()
