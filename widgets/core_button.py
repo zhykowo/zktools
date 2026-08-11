@@ -1,18 +1,18 @@
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QColor, QPainter
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
 from resources.colors import get_accent_color, get_purest_color
 
 class CoreButton(QPushButton):
 
-  def __init__(self, text, bg_color=None, text_color=None, parent=None):
+  def __init__(self, text, bg_color=None, text_color=None, radius=12, parent=None):
     super().__init__(text, parent)
 
-    self.accent_qcolor = get_accent_color()
-    self.accent_qcolor = get_purest_color(self.accent_qcolor)
+    self.accent_qcolor = get_purest_color(get_accent_color())
 
     self.bg_color = QColor(bg_color) if bg_color else self.accent_qcolor
     self.text_color = QColor(text_color) if text_color else QColor("white")
+    self.radius = radius
 
   def paintEvent(self, event):
     painter = QPainter(self)
@@ -29,14 +29,22 @@ class CoreButton(QPushButton):
       bg_color = self.bg_color
 
     text_color = self.text_color
+    radius = self.radius
 
-    # 2. 动态计算胶囊圆角
-    radius = self.height() // 2 - 1
-
-    # 3. 绘制背景
+    # 2. 绘制背景（固定圆角，参考 text_editor 的圆角风格）
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QBrush(bg_color))
     painter.drawRoundedRect(self.rect(), radius, radius)
+
+    # 3. 圆角边框：颜色取决于当前背景色（切换 bg_color 或 hover/按下后自动随之更新），
+    #    圆角采用与 text_editor 相同的同心内缩画法，粗角处也能平滑贴合
+    border_color = bg_color.lighter(120)
+    half = 1.0
+    border_rect = QRectF(self.rect()).adjusted(half, half, -half, -half)
+    border_radius = max(radius - half, 0.0)
+    painter.setPen(QPen(border_color, 1.0))
+    painter.setBrush(Qt.BrushStyle.NoBrush)
+    painter.drawRoundedRect(border_rect, border_radius, border_radius)
 
     # 4. 绘制文字
     painter.setPen(text_color)
@@ -45,6 +53,8 @@ class CoreButton(QPushButton):
 
   def setBgColor(self, bg_color: QColor):
     self.bg_color = bg_color
+    self.update()
 
   def resetBgColor(self):
     self.bg_color = self.accent_qcolor
+    self.update()

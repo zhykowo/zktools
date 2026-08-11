@@ -2,15 +2,16 @@ import time
 
 from pages.base_page import BasePage
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, Signal, Slot
-from PySide6.QtWidgets import QHBoxLayout, QTextEdit, QPushButton, QWidget, QGridLayout
-from PySide6.QtGui import QPalette, QColor, QFont
+from PySide6.QtWidgets import QHBoxLayout, QWidget, QGridLayout
+from PySide6.QtGui import QColor, QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
+from widgets.text_editor import RoundedTextEdit
 from core.page_controller import page_signals
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon
-from resources.colors import get_accent_color
+from resources.colors import get_accent_color, get_purest_color
 from resources.constants import CONFIG
 
 from utils.translator import Translator
@@ -138,24 +139,13 @@ class TranslatorPage(BasePage):
 
         layout = self.set_main_layout(d='v', title='Translator')
 
-        # 1. 返回按钮
-        # self.back_btn = SvgButton(self, icon_size=24, svg_data=arrow_left_icon)
-        # self.back_btn.clicked.connect(self._on_back_clicked)
+        # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
+        self.accent_qcolor = get_purest_color(get_accent_color())
+        self.idle_btn_bg = QColor('#3a3a3d')
 
-        # 透明调色板处理
-        self.transparent_accent_color = QColor(get_accent_color())
-        self.transparent_accent_color.setAlpha(10)
-
-        # 2. 文本输入框与结果框
-        self.input_text = QTextEdit(self)
-        palette = self.input_text.palette()
-        palette.setColor(QPalette.Active, QPalette.Base, self.transparent_accent_color)
-        palette.setColor(QPalette.Inactive, QPalette.Base, QColor("#00000000"))
-        palette.setColor(QPalette.Active, QPalette.Text, QColor("#ffffff"))
-        self.input_text.setPalette(palette)
-
-        self.result_text = QTextEdit(self)
-        self.result_text.setPalette(palette)
+        # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
+        self.input_text = RoundedTextEdit(placeholder='Enter or paste text here...', bg_color='#26262b', parent=self)
+        self.result_text = RoundedTextEdit(placeholder='Translation result', bg_color='#1f1f23', radius=10, parent=self)
 
         font = QFont()
         font.setPointSize(12)
@@ -176,15 +166,10 @@ class TranslatorPage(BasePage):
 
         # 4. 底部控制栏
         footer_layout = QHBoxLayout()
-        btn_style_sheet = """
-            QPushButton {border: none; color: white; background: transparent; padding: 0; font-size: 18px;}
-            QPushButton:hover {color: grey; }
-        """
 
         footer_layout.addStretch()
 
-        self.origin_lang = QPushButton(CONFIG['translator']['default_from_lang'], self)
-        self.origin_lang.setStyleSheet(btn_style_sheet)
+        self.origin_lang = CoreButton(text=CONFIG['translator']['default_from_lang'])
         self.origin_lang.clicked.connect(lambda: self.display_lang_list("origin"))
         footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -192,8 +177,7 @@ class TranslatorPage(BasePage):
         self.swap_btn.clicked.connect(self._swap_languages)
         footer_layout.addWidget(self.swap_btn)
 
-        self.target_lang = QPushButton(CONFIG['translator']['default_to_lang'], self)
-        self.target_lang.setStyleSheet(btn_style_sheet)
+        self.target_lang = CoreButton(CONFIG['translator']['default_to_lang'])
         self.target_lang.clicked.connect(lambda: self.display_lang_list("target"))
         footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -206,12 +190,14 @@ class TranslatorPage(BasePage):
         footer_layout.addWidget(self.translation_server_btn)
 
         # 布局组织
-        # layout.addWidget(self.back_btn, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
         layout.addLayout(footer_layout)
         layout.addWidget(self.selection_grid_widget)
         layout.addStretch()
+
+        # 初始状态：网格未展开，from/to 语言按钮均置为灰色（否则默认 accent 高亮）
+        self._set_lang_buttons_active(GridMode.NONE)
 
         # 一键翻译：注册全局热键（复制选中文本 → 填入输入框 → 默认服务翻译）
         self.one_click_hotkey = TranslationHotkey(self._on_one_click_translate, parent=self)
@@ -261,6 +247,7 @@ class TranslatorPage(BasePage):
 
         # 填充新按钮并强制固定当前高度防止跳变
         self._populate_grid(items, current_value, on_select_callback)
+        self._set_lang_buttons_active(mode)
         self.selection_grid_widget.setMaximumHeight(current_height)
 
         target_height = self._calculate_grid_height(len(items))
@@ -275,6 +262,7 @@ class TranslatorPage(BasePage):
     def _collapse_grid(self, on_finished=None):
         """收起当前网格动画"""
         self._current_grid_mode = GridMode.NONE
+        self._set_lang_buttons_active(GridMode.NONE)
         current_height = self.selection_grid_widget.height()
 
         self.animator.animate_heights(
@@ -294,8 +282,9 @@ class TranslatorPage(BasePage):
         for idx, text in enumerate(items):
             btn = CoreButton(text)
             btn.setCursor(Qt.PointingHandCursor)
+            # 仅当前选中项（激活）以 accent 高亮，其余显示灰色
             if text != current_value:
-                btn.setBgColor(self.transparent_accent_color)
+                btn.setBgColor(self.idle_btn_bg)
             
             # 使用 functools.partial 代替 lambda 绑定，代码更清晰
             btn.clicked.connect(partial(self._handle_grid_item_click, text, on_select_callback))
@@ -348,6 +337,7 @@ class TranslatorPage(BasePage):
         self.result_text.setText(result)
 
         self._current_grid_mode = GridMode.NONE
+        self._set_lang_buttons_active(GridMode.NONE)
         
         grid_start_h = self.selection_grid_widget.height()
         result_start_h = self.result_text.height()
@@ -356,6 +346,11 @@ class TranslatorPage(BasePage):
             (self.selection_grid_widget, grid_start_h, 0),
             (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT)
         ])
+
+    def _set_lang_buttons_active(self, mode: GridMode):
+        """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
+        self.origin_lang.setBgColor(self.accent_qcolor if mode == GridMode.ORIGIN_LANG else self.idle_btn_bg)
+        self.target_lang.setBgColor(self.accent_qcolor if mode == GridMode.TARGET_LANG else self.idle_btn_bg)
 
     def _swap_languages(self):
         """互换源语言与目标语言"""
@@ -373,6 +368,8 @@ class TranslatorPage(BasePage):
     def clear_data(self):
         self.input_text.setText('')
         self.result_text.setText('')
+
+        self._set_lang_buttons_active(GridMode.NONE)
 
         self.animator.animate_heights([
             (self.selection_grid_widget, self.selection_grid_widget.height(), 0),
