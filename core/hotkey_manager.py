@@ -1,4 +1,5 @@
 import ctypes
+import ctypes.wintypes
 import threading
 import queue
 
