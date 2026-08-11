@@ -5,7 +5,7 @@ from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QLabel
 
 from widgets.svg_button import SvgButton
-from core.page_controller import page_signals
+from core.page_router import page_router
 
 from resources.svgs import settings_icon, app_center_icon
 
@@ -25,10 +25,10 @@ class HomePage(DragDropMixin, BasePage):
 
         # 设置按钮 (齿轮)
         setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)
-        setting_btn.clicked.connect(lambda: page_signals.immediate_switch("setting"))
+        setting_btn.clicked.connect(lambda: page_router.immediate_switch("setting"))
 
         app_center_btn = SvgButton(size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True)
-        app_center_btn.clicked.connect(lambda: page_signals.immediate_switch("module_center"))
+        app_center_btn.clicked.connect(lambda: page_router.immediate_switch("module_center"))
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)

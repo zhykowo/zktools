@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QW
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QKeySequence, QPalette, QShortcut
 
-from core.page_controller import page_signals
+from core.page_router import page_router
 from core.window_manager import drag_bus
 
 from widgets.svg_button import SvgButton
@@ -20,7 +20,7 @@ class BasePage(QWidget):
 
         # 创建页面级 Esc 快捷键
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
-        self.esc_shortcut.activated.connect(page_signals.exit_self)
+        self.esc_shortcut.activated.connect(page_router.exit_self)
         # 全局关闭按钮
         self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color="#E81123", enable_rotation=True)
         self.close_btn.clicked.connect(QApplication.instance().quit)
@@ -64,7 +64,7 @@ class BasePage(QWidget):
         title_label.setPalette(title_palette)
 
         back_btn = SvgButton(self, icon_size=20, svg_data=arrow_left_icon)
-        back_btn.clicked.connect(lambda: page_signals.exit_self())
+        back_btn.clicked.connect(lambda: page_router.exit_self())
 
         drag_btn = SvgButton(self, icon_size=20, svg_data=drag_icon)
         drag_bus.register_drag_handle_requested.emit(drag_btn)

@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from widgets.text_editor import RoundedTextEdit
-from core.page_controller import page_signals
+from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon
@@ -189,6 +189,8 @@ class TranslatorPage(BasePage):
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
         footer_layout.addWidget(self.translation_server_btn)
 
+        footer_layout.addStretch()
+        
         # 布局组织
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
@@ -223,7 +225,7 @@ class TranslatorPage(BasePage):
             return
 
         # 1. 切换到翻译页并展示选中文本
-        page_signals.immediate_switch("translator")
+        page_router.immediate_switch("translator")
         self.input_text.setText(selected)
         self.input_text.setFocus()
 
@@ -363,7 +365,7 @@ class TranslatorPage(BasePage):
         if self._current_grid_mode != GridMode.NONE:
             self._collapse_grid()
         else:
-            page_signals.exit_self()
+            page_router.exit_self()
 
     def clear_data(self):
         self.input_text.setText('')

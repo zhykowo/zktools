@@ -8,7 +8,7 @@ from PySide6.QtGui import QPalette, QColor
 
 from widgets.svg_button import SvgButton
 
-from core.page_controller import page_signals
+from core.page_router import page_router
 
 from resources.svgs import square_icon
 
@@ -76,7 +76,7 @@ class ModuleCenterPage(BasePage):
 
     def _on_module_click(self, module_name: str):
         print(f"点击模块: {module_name}")
-        page_signals.immediate_switch(module_name)
+        page_router.immediate_switch(module_name)
 
     # def mousePressEvent(self, event):
     #     widget = self.childAt(event.pos())

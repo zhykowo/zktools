@@ -1,0 +1,151 @@
+"""页面路由（单例）：信号入口 + 全局状态 + 切换调度，三合一。
+
+合并自原 core/page_controller.py（page_signals 信号）、core/page_state.py
+（page_state 状态）与 core/page_router.py（page_router 调度）三个模块，
+子模块只需从一处导入：
+
+    from core.page_router import page_router
+
+    page_router.immediate_switch("setting")            # 发切换请求
+    page_router.exit_self("short_text")                # 精确退出指定页
+    page_router.gentle_switch("translator")            # 温和排队切换
+
+    if page_router.current_page_name == "setting":     # 读当前页
+        ...
+    page_router.page_queue.append("translator")        # 直接操作队列
+"""
+
+from enum import Enum, auto
+
+from PySide6.QtCore import QObject, Signal
+
+
+class SwitchMode(Enum):
+    GENTLE = auto()      # 温和切换：加入队列排队
+    IMMEDIATE = auto()   # 立即切换：插队并强制中断当前页面
+    EXIT_SELF = auto()   # 退出自己：当前页面结束，释放并展示队列下一页
+
+
+class PageRouter(QObject):
+    """页面路由单例（见文件底部 page_router 实例）。
+
+    一个对象同时承担三种职责：
+    - 信号入口：gentle_switch / immediate_switch / exit_self 发出切换请求；
+    - 全局状态：pages / page_queue / current_page_name 供任意子模块读写；
+    - 调度逻辑：dispatch / next_page 消费请求并驱动页面渲染。
+    """
+
+    page_action = Signal(object, str)  # 传递 切换模式 和 目标页面标识
+
+    def __init__(self):
+        super().__init__()
+
+        # 全局状态
+        self.pages = {}                # 页面注册池 { "page_name": widget_instance }
+        self.page_queue = []           # 页面切换等待队列 [page_name, ...]
+        self.current_page_name = None  # 当前正在显示的页面
+
+        # 协作对象（主窗口通过 bind() 注入，避免反向依赖窗口实例）
+        self.window_manager = None     # core.window_manager.WindowManager
+        self.animation_manager = None  # core.page_animation.PageAnimationManager
+
+        # 单例导入即接管全局路由请求，无需手动连接
+        self.page_action.connect(self.dispatch)
+
+    def bind(self, window_manager=None, animation_manager=None):
+        """主窗口在初始化完成后注入 UI 协作对象。"""
+        if window_manager is not None:
+            self.window_manager = window_manager
+        if animation_manager is not None:
+            self.animation_manager = animation_manager
+        return self
+
+    # ---------- 信号入口 ----------
+    def gentle_switch(self, page_name: str):
+        """温和切换：仅加入队列"""
+        self.page_action.emit(SwitchMode.GENTLE, page_name)
+
+    def immediate_switch(self, page_name: str):
+        """立即切换：立刻中断并显示目标页"""
+        self.page_action.emit(SwitchMode.IMMEDIATE, page_name)
+
+    def exit_self(self, page_name: str = ""):
+        """退出指定页面：通知调度器调度下一页
+
+        - 带 page_name：精确退出该页面（若它是当前页则调度下一页，
+          若它在队列中则直接移除），避免退错正在显示的页面。
+        - 不带参数：保持旧语义，退出当前正在显示的页面。
+        """
+        self.page_action.emit(SwitchMode.EXIT_SELF, page_name)
+
+    # ---------- 调度逻辑 ----------
+    def dispatch(self, mode: SwitchMode, page_name: str):
+        """核心路由控制阀：按模式调度页面。"""
+        if self.window_manager is None or self.animation_manager is None:
+            print("[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求:", mode, page_name)
+            return
+
+        self.window_manager.queue_state = True
+        self.window_manager.animate(True)
+
+        if mode == SwitchMode.GENTLE:
+            # 1. 温和切换：仅塞入队列
+            self.page_queue.append(page_name)
+            # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
+            if self.current_page_name is None or self.current_page_name == "home":
+                self.next_page()
+
+        elif mode == SwitchMode.IMMEDIATE:
+            # 2. 立即切换：插队逻辑
+            if page_name not in self.pages: return
+
+            if self.current_page_name is not None:
+                # 把当前未"退出自己"的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
+                self.page_queue.insert(0, self.current_page_name)
+
+            self.current_page_name = page_name
+
+            self.pages[page_name].on_show()
+            self.animation_manager.switch_to(self.pages[page_name])
+
+        elif mode == SwitchMode.EXIT_SELF:
+            # 精确退出：page_name 指定要退出的页面，而不是盲目退当前页
+            if page_name:
+                if self.current_page_name == page_name:
+                    # 目标页面正在显示：清数据并调度下一页
+                    current_page = self.pages.get(page_name)
+                    if current_page and hasattr(current_page, 'clear_data'):
+                        current_page.clear_data()
+                    self.next_page()
+                elif page_name in self.page_queue:
+                    # 目标页面被插队顶到队列中：直接从队列移除，无需切换
+                    self.page_queue.remove(page_name)
+                # 否则：目标页面既不在当前也不在队列，什么都不做
+            else:
+                # 兼容旧调用：无参数时退出当前正在显示的页面
+                if self.current_page_name:
+                    current_page = self.pages.get(self.current_page_name)
+                    if current_page and hasattr(current_page, 'clear_data'):
+                        current_page.clear_data()
+                self.next_page()
+
+    def next_page(self):
+        """从队列中提取并渲染下一个页面"""
+        if self.page_queue:
+            next_name = self.page_queue.pop(0)
+            self.current_page_name = next_name
+            self.pages[next_name].on_show()
+            self.animation_manager.switch_to(self.pages[next_name])
+            if next_name == "home":
+                self.window_manager.queue_state = False
+                # 归位居中显示
+                self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
+        else:
+            # 队列完全清空
+            self.current_page_name = "home"
+            self.window_manager.queue_state = False
+            # 归位居中显示
+            self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
+
+
+page_router = PageRouter()

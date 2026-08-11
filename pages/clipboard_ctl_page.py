@@ -2,7 +2,7 @@
 from PySide6.QtCore import QTimer, Qt, Slot
 from PySide6.QtWidgets import QLabel
 
-from core.page_controller import page_signals
+from core.page_router import page_router
 
 import utils.clipboard_monitor as clipboard_monitor
 
@@ -26,10 +26,10 @@ class ClipboardCtlPage(BasePage):
 
 
     def quit_msg(self):
-        page_signals.exit_self("short_text")
+        page_router.exit_self("short_text")
 
     @Slot()
     def update_ui(self, text):
-        page_signals.immediate_switch("short_text")
+        page_router.immediate_switch("short_text")
         self.label.setText("Copied!")
         QTimer.singleShot(1500, self.quit_msg)

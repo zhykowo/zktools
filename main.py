@@ -3,7 +3,7 @@ from PySide6.QtCore import QEvent, QVariantAnimation, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
 from PySide6.QtGui import QFont, QPalette
 
-from core.page_controller import SwitchMode, page_signals
+from core.page_router import page_router
 from core.window_manager import WindowManager, drag_bus
 from core.page_animation import PageAnimationManager
 
@@ -27,13 +27,10 @@ class MainShellWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        # 核心数据结构维护
-        self.pages = {}              # 页面注册池 { "page_name": widget_instance }
-        self.page_queue = []         # 页面切换等待队列 [page_name, ...]
-        self.current_page_name = None # 当前正在显示的页面
+        # 页面状态与切换逻辑统一托管在 page_router 单例中（见 core/page_router.py），
+        # 子模块可直接导入读取或发起切换，无需经由此窗口实例。
 
         # 绑定全新的中心调度器
-        page_signals.page_action.connect(self.handle_page_action)
         on_drag_bus.on_drag_event.connect(self.change_drag_state)
 
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
@@ -53,7 +50,7 @@ class MainShellWindow(QWidget):
 
     def register_page(self, name: str, widget: QWidget):
         """动态注册页面，方便未来无缝扩展更多页面"""
-        self.pages[name] = widget
+        page_router.pages[name] = widget
         self.stacked_widget.addWidget(widget)
 
     def change_drag_state(self, state):
@@ -90,12 +87,12 @@ class MainShellWindow(QWidget):
         self.register_page("module_center", ModuleCenterPage())
         self.register_page("translator", TranslatorPage())
 
-        self.current_page_name = "home"
-        self.stacked_widget.setCurrentWidget(self.pages["home"])
+        page_router.current_page_name = "home"
+        self.stacked_widget.setCurrentWidget(page_router.pages["home"])
 
         container_layout.addWidget(self.stacked_widget)
         
-        start_w, start_h = self.pages["home"].target_size
+        start_w, start_h = page_router.pages["home"].target_size
         self.main_container.setGeometry(
             (self.MAX_W - start_w) // 2, 
             40, 
@@ -116,6 +113,12 @@ class MainShellWindow(QWidget):
         self.animation_manager.on_radius_update = self.update_container_radius
         self.update_container_radius(25)
         self.create_anim()
+
+        # 将窗口/动画管理器注入路由单例，路由请求由 core.page_router 统一调度
+        page_router.bind(
+            window_manager=self.window_manager,
+            animation_manager=self.animation_manager,
+        )
 
     def update_container_radius(self, radius):
         """原生更新容器圆角"""
@@ -139,79 +142,13 @@ class MainShellWindow(QWidget):
 
     def trigger_flash_effect(self):
         """灵动岛高亮脉冲闪烁动画"""
-        if not self.current_page_name == 'home':
+        if not page_router.current_page_name == 'home':
             return
         # 防止动画重复叠加
         if hasattr(self, "_flash_anim") and self._flash_anim.state() == QVariantAnimation.State.Running:
             return
 
         self._flash_anim.start()
-
-    # 核心队列与路由调度逻辑
-    def handle_page_action(self, mode: SwitchMode, page_name: str):
-        """核心路由控制阀"""
-
-        self.window_manager.queue_state = True
-        self.window_manager.animate(True)
-
-        if mode == SwitchMode.GENTLE:
-            # 1. 温和切换：仅塞入队列
-            self.page_queue.append(page_name)
-            # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
-            if self.current_page_name is None or self.current_page_name == "home":
-                self.next_page()
-
-        elif mode == SwitchMode.IMMEDIATE:
-            # 2. 立即切换：插队逻辑
-            if page_name not in self.pages: return
-            
-            if self.current_page_name is not None:
-                # 把当前未"退出自己"的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
-                self.page_queue.insert(0, self.current_page_name)
-                
-            self.current_page_name = page_name
-
-            self.pages[page_name].on_show()
-            self.animation_manager.switch_to(self.pages[page_name])
-            
-        elif mode == SwitchMode.EXIT_SELF:
-            # 精确退出：page_name 指定要退出的页面，而不是盲目退当前页
-            if page_name:
-                if self.current_page_name == page_name:
-                    # 目标页面正在显示：清数据并调度下一页
-                    current_page = self.pages.get(page_name)
-                    if current_page and hasattr(current_page, 'clear_data'):
-                        current_page.clear_data()
-                    self.next_page()
-                elif page_name in self.page_queue:
-                    # 目标页面被插队顶到队列中：直接从队列移除，无需切换
-                    self.page_queue.remove(page_name)
-                # 否则：目标页面既不在当前也不在队列，什么都不做
-            else:
-                # 兼容旧调用：无参数时退出当前正在显示的页面
-                if self.current_page_name:
-                    current_page = self.pages.get(self.current_page_name)
-                    if current_page and hasattr(current_page, 'clear_data'):
-                        current_page.clear_data()
-                self.next_page()
-            
-    def next_page(self):
-        """从队列中提取并渲染下一个页面"""
-        if self.page_queue:
-            next_name = self.page_queue.pop(0)
-            self.current_page_name = next_name
-            self.pages[next_name].on_show()
-            self.animation_manager.switch_to(self.pages[next_name])
-            if next_name == "home":
-                self.window_manager.queue_state = False
-                # 归位居中显示
-                self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
-        else:
-            # 队列完全清空
-            self.current_page_name = "home"
-            self.window_manager.queue_state = False
-            # 归位居中显示
-            self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
 
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发

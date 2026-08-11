@@ -12,7 +12,7 @@ from enum import Enum
 from PySide6.QtCore import QObject, QTimer, Qt, Signal, Slot
 from PySide6.QtWidgets import QLabel
 
-from core.page_controller import page_signals
+from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from pages.base_page import BasePage
@@ -141,7 +141,7 @@ class TouchpadCtlPage(BasePage):
     def _on_state_changed(self, state: TouchpadState):
         if state.is_transitioning:
             # 开始切换:立即切到本页展示中间态(如 "Disabling")
-            page_signals.immediate_switch("switch_touchpad")
+            page_router.immediate_switch("switch_touchpad")
         self._render_state(state)
 
         if not state.is_transitioning:
@@ -152,4 +152,4 @@ class TouchpadCtlPage(BasePage):
         self.label.setText(f"TouchPad {state.value}")
 
     def _quit(self):
-        page_signals.exit_self()
+        page_router.exit_self()
