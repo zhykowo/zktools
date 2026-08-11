@@ -34,11 +34,14 @@ class MainContainerWidget(QWidget):
         painter.setBrush(self.background_color)
         painter.drawRoundedRect(self.rect(), self.current_radius, self.current_radius)
 
-        # 绘制外圈渐变边框（向内缩 0.5px，让 1px 线条落在像素中心，保持清晰）
-        border_rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        # 绘制外圈渐变边框。中心线矩形内缩 w/2、圆角半径取 R - w/2，
+        # 使边框外边缘与背景圆角同心同半径，粗边框时角部也能平滑贴合
+        half = self.border_width / 2.0
+        border_rect = QRectF(self.rect()).adjusted(half, half, -half, -half)
+        border_radius = self.current_radius - half
         gradient = QLinearGradient(border_rect.topLeft(), border_rect.bottomRight())
         gradient.setColorAt(0.0, self.border_color_start)   # 左上：白
         gradient.setColorAt(1.0, self.border_color_end)     # 右下：灰
         painter.setPen(QPen(QBrush(gradient), self.border_width))
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        painter.drawRoundedRect(border_rect, self.current_radius, self.current_radius)
+        painter.drawRoundedRect(border_rect, border_radius, border_radius)
