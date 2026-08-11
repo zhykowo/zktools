@@ -13,7 +13,7 @@ class RoundedTextEdit(QTextEdit):
     QTextEdit 的可视区域是 viewport，因此背景/边框/placeholder 全部绘制在
     viewport 上，且 Base 色必须保持透明，否则 super().paintEvent 会覆盖背景。
 
-    - 边框：聚焦 -> accent 色高亮；悬停 -> 亮灰；常态 -> 暗灰；窗口失焦时整体压暗
+    - 边框：聚焦 -> accent 色高亮；悬停 -> 亮灰；常态 -> 暗灰
     - 背景：圆角深色填充，聚焦时轻微提亮，与纯黑主界面形成层次
     - placeholder：文本为空且未聚焦时显示灰色提示文字
     """
@@ -77,8 +77,9 @@ class RoundedTextEdit(QTextEdit):
         else:
             border, width = self._idle_border, 1.0
 
-        if not self.window().isActiveWindow():
-            border = border.darker(135)
+        # 注意：不再按窗口激活状态压暗边框。本组件所在主窗口是 Qt.Tool 置顶悬浮窗，
+        # 点击应用外部时 isActiveWindow() 会变为 False；此时暗灰边框若再 darker(135)
+        # 会被压到与背景 #26262b 几乎同色，看起来像边框"消失"。失焦时保持常态灰色。
 
         # 边框矩形内缩 width/2、圆角半径同步减 width/2，使边框外边缘与背景
         # 圆角同心同半径，粗边框时角部也能平滑贴合（与 main_container.py 修复一致）
