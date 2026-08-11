@@ -7,7 +7,7 @@ from core.window_manager import drag_bus
 
 from widgets.svg_button import SvgButton
 
-from resources.svgs import arrow_left_icon, close_icon, square_icon, drag_icon
+from resources.svgs import arrow_left_icon, close_icon, drag_icon
 
 class BasePage(QWidget):
     """所有页面的基类"""
