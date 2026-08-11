@@ -92,9 +92,11 @@ class TranslationHotkey(QObject):
     def start(self):
         """注册全局热键并启动全局键盘监听（幂等）"""
         hotkey_manager.start()
-        hotkey_manager.register(self._hotkey, self._fire)
-        self._registered = True
-        print(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
+        if hotkey_manager.register(self._hotkey, self._fire):
+            self._registered = True
+            print(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
+        else:
+            print(f"[TranslationHotkey] 一键翻译快捷键 {self._hotkey} 注册失败！")
 
     def stop(self):
         """注销全局热键"""

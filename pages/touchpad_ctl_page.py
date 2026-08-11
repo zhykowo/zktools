@@ -124,13 +124,15 @@ class TouchpadCtlPage(BasePage):
         self._render_state(self.controller.state)
 
     def _register_hotkeys(self):
-        hotkey_manager.register(
+        hotkey_manager.start()
+        test_ok = hotkey_manager.register(
             CONFIG["touchpad_ctl"]["hotkeys"]["test"], self._on_test_hotkey
         )
-        hotkey_manager.register(
+        switch_ok = hotkey_manager.register(
             CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch
         )
-        hotkey_manager.start()
+        if not test_ok or not switch_ok:
+            print("[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用")
 
     def _on_test_hotkey(self):
         """测试热键回调(工作线程):仅打印,不触碰 UI"""
