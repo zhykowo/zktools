@@ -4,13 +4,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QVBoxLayout, QGridLayout, QLabel, QWidget
 )
-from PySide6.QtGui import QPalette, QColor
+from PySide6.QtGui import QPalette
 
 from widgets.svg_button import SvgButton
 
 from core.page_router import page_router
 
 from resources.svgs import square_icon
+from resources.colors import NEUTRAL_5
 
 
 class ModuleCard(QWidget):
@@ -35,7 +36,7 @@ class ModuleCard(QWidget):
         self.label.setFont(font)
 
         palette = self.label.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, QColor("#CCCCCC"))
+        palette.setColor(QPalette.ColorRole.WindowText, NEUTRAL_5)
         self.label.setPalette(palette)
 
         layout.addWidget(self.icon_btn, alignment=Qt.AlignmentFlag.AlignCenter)

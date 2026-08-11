@@ -8,6 +8,17 @@ from widgets.svg_button import SvgButton
 from core.page_router import page_router
 
 from resources.svgs import settings_icon, app_center_icon
+from resources.colors import WHITE, COLOR_TRANSPARENT, NEUTRAL_4, to_qss_color
+
+# 拖拽提示样式（颜色统一由 colors.py 管理）
+_DROP_HINT_IDLE_QSS = (
+    f"color: {to_qss_color(COLOR_TRANSPARENT)}; font-size: 18px; "
+    f"border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
+)
+_DROP_HINT_ACTIVE_QSS = (
+    f"color: {to_qss_color(WHITE)}; font-size: 18px; "
+    f"border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
+)
 
 class OnDragEvent(QObject):
     on_drag_event = Signal(bool)
@@ -32,7 +43,7 @@ class HomePage(DragDropMixin, BasePage):
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.drop_hint_label.setStyleSheet("color: rgba(0, 0, 0, 0); font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
+        self.drop_hint_label.setStyleSheet(_DROP_HINT_IDLE_QSS)
 
         self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.drop_hint_label.setMaximumWidth(0) 
@@ -46,7 +57,7 @@ class HomePage(DragDropMixin, BasePage):
         self.drop_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
 
     def on_drag_enter(self):
-        self.drop_hint_label.setStyleSheet("color: white; font-size: 18px; border: 2px dashed grey; border-radius: 5px; ")
+        self.drop_hint_label.setStyleSheet(_DROP_HINT_ACTIVE_QSS)
 
         on_drag_bus.on_drag_event.emit(True)
         self.drop_anim.stop()

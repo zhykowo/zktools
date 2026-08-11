@@ -3,7 +3,7 @@ import time
 from pages.base_page import BasePage
 from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QWidget, QGridLayout
-from PySide6.QtGui import QColor, QFont
+from PySide6.QtGui import QFont
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from widgets.text_editor import RoundedTextEdit
@@ -11,7 +11,7 @@ from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon
-from resources.colors import get_accent_color, get_purest_color
+from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2
 from resources.constants import CONFIG
 
 from utils.translator import Translator
@@ -141,11 +141,11 @@ class TranslatorPage(BasePage):
 
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
         self.accent_qcolor = get_purest_color(get_accent_color())
-        self.idle_btn_bg = QColor('#3a3a3d')
+        self.idle_btn_bg = NEUTRAL_2
 
         # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
-        self.input_text = RoundedTextEdit(placeholder='Enter or paste text here...', bg_color='#26262b', parent=self)
-        self.result_text = RoundedTextEdit(placeholder='Translation result', bg_color='#1f1f23', radius=10, parent=self)
+        self.input_text = RoundedTextEdit(placeholder='Enter or paste text here...', bg_color=NEUTRAL_1, parent=self)
+        self.result_text = RoundedTextEdit(placeholder='Translation result', bg_color=NEUTRAL_1, radius=10, parent=self)
 
         font = QFont()
         font.setPointSize(12)

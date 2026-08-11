@@ -2,15 +2,19 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtWidgets import QWidget
 from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 
+from resources.colors import (
+    NEUTRAL_0, NEUTRAL_3, NEUTRAL_4,
+)
+
 # 自定义主容器 (替代 QSS 绘制背景和圆角)
 class MainContainerWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.default_background_color = QColor("#1d1d1f")
+        self.default_background_color = NEUTRAL_0
         self.background_color = self.default_background_color
         # 外边框使用渐变描边：左上亮（白）→ 右下暗（灰），比单色更有层次
-        self.border_color_start = QColor("#8b8b8b")   # 渐变起点（左上，最亮）
-        self.border_color_end = QColor("#545454")     # 渐变终点（右下，偏灰）
+        self.border_color_start = NEUTRAL_3   # 渐变起点（左上，最亮）
+        self.border_color_end = NEUTRAL_4       # 渐变终点（右下，偏灰）
         self.border_width = 1                         # 边框粗细
         self.current_radius = 25
 

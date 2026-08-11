@@ -13,6 +13,8 @@ from utils.mouse_tracker import MouseHoverEventFilter
 
 from widgets.main_container import MainContainerWidget
 
+from resources.colors import WHITE
+
 from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
@@ -60,7 +62,7 @@ class MainShellWindow(QWidget):
     def init_ui(self):
 
         palette = self.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, Qt.GlobalColor.white)
+        palette.setColor(QPalette.ColorRole.WindowText, WHITE)
         self.setPalette(palette)
 
         font = QFont()

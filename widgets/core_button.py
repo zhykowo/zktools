@@ -1,7 +1,7 @@
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
-from resources.colors import get_accent_color, get_purest_color
+from resources.colors import get_accent_color, get_purest_color, WHITE, NEUTRAL_4
 
 class CoreButton(QPushButton):
 
@@ -11,7 +11,7 @@ class CoreButton(QPushButton):
     self.accent_qcolor = get_purest_color(get_accent_color())
 
     self.bg_color = QColor(bg_color) if bg_color else self.accent_qcolor
-    self.text_color = QColor(text_color) if text_color else QColor("white")
+    self.text_color = QColor(text_color) if text_color else WHITE
     self.radius = radius
 
   def paintEvent(self, event):
@@ -20,7 +20,7 @@ class CoreButton(QPushButton):
 
     # 1. 状态判断 (Disabled -> Pressed -> Hover -> Normal)
     if not self.isEnabled():
-      bg_color = QColor("gray")
+      bg_color = NEUTRAL_4
     elif self.isDown():  # 点击按下状态
       bg_color = self.bg_color.darker(120)
     elif self.underMouse():  # 悬停 Hover 状态

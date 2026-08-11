@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QKeySequence, QPalette, QShortcut
+from PySide6.QtGui import QKeySequence, QPalette, QShortcut
 
 from core.page_router import page_router
 from core.window_manager import drag_bus
@@ -8,6 +8,7 @@ from core.window_manager import drag_bus
 from widgets.svg_button import SvgButton
 
 from resources.svgs import arrow_left_icon, close_icon, drag_icon
+from resources.colors import WHITE, COLOR_DANGER
 
 class BasePage(QWidget):
     """所有页面的基类"""
@@ -22,7 +23,7 @@ class BasePage(QWidget):
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.esc_shortcut.activated.connect(page_router.exit_self)
         # 全局关闭按钮
-        self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color="#E81123", enable_rotation=True)
+        self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color=COLOR_DANGER, enable_rotation=True)
         self.close_btn.clicked.connect(QApplication.instance().quit)
 
     def set_main_layout(self, d: str, title: str='标题占位符'):
@@ -60,7 +61,7 @@ class BasePage(QWidget):
         title_label.setFont(title_font)
 
         title_palette = title_label.palette()
-        title_palette.setColor(QPalette.ColorRole.WindowText, QColor("#FFFFFF"))
+        title_palette.setColor(QPalette.ColorRole.WindowText, WHITE)
         title_label.setPalette(title_palette)
 
         back_btn = SvgButton(self, icon_size=20, svg_data=arrow_left_icon)

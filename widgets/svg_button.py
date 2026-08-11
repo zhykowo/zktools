@@ -4,11 +4,7 @@ from PySide6.QtSvg import QSvgRenderer
 
 from widgets.hover import HoverShape, HoverWidget
 
-try:
-    from resources.colors import get_accent_color
-except ImportError:
-    def get_accent_color():
-        return QColor(0, 120, 215)
+from resources.colors import get_accent_color, WHITE
 
 class SvgButton(HoverWidget):
     """继承 HoverWidget，天然具备圆形碰撞判定与物理 Hover 检测"""
@@ -19,7 +15,7 @@ class SvgButton(HoverWidget):
 
         self.setFixedSize(size, size)
         self.icon_size = icon_size
-        self.normal_color = QColor(255, 255, 255)
+        self.normal_color = WHITE
         self.target_color = QColor(hover_color) if hover_color else get_accent_color()
         self.enable_rotation = enable_rotation
 

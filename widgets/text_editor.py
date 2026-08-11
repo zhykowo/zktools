@@ -4,7 +4,11 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QFrame, QTextEdit
 
-from resources.colors import get_accent_color, get_purest_color
+from resources.colors import (
+    get_accent_color, get_purest_color,
+    NEUTRAL_1, NEUTRAL_2, NEUTRAL_3,
+    WHITE, NEUTRAL_4, COLOR_TRANSPARENT,
+)
 
 
 class RoundedTextEdit(QTextEdit):
@@ -18,27 +22,27 @@ class RoundedTextEdit(QTextEdit):
     - placeholder：文本为空且未聚焦时显示灰色提示文字
     """
 
-    def __init__(self, placeholder: str = '', bg_color: str = '#26262b',
+    def __init__(self, placeholder: str = '', bg_color=NEUTRAL_1,
                  radius: int = 12, parent=None):
         super().__init__(parent)
         self._placeholder = placeholder
         self._radius = radius
-        self._bg_color = QColor(bg_color)
+        self._bg_color = bg_color if isinstance(bg_color, QColor) else QColor(bg_color)
 
         self._accent = get_purest_color(get_accent_color())
-        self._idle_border = QColor('#3a3a3d')
-        self._hover_border = QColor('#5c5c62')
-        self._placeholder_color = QColor('#6f6f76')
+        self._idle_border = NEUTRAL_2
+        self._hover_border = NEUTRAL_3
+        self._placeholder_color = NEUTRAL_4
 
         # 去掉 QTextEdit 自带 frame / 边框，背景交由 paintEvent 统一绘制
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setStyleSheet('QTextEdit { background: transparent; border: none; }')
 
         palette = self.palette()
-        palette.setColor(QPalette.ColorRole.Base, QColor(0, 0, 0, 0))
-        palette.setColor(QPalette.ColorRole.Text, QColor('#ffffff'))
+        palette.setColor(QPalette.ColorRole.Base, COLOR_TRANSPARENT)
+        palette.setColor(QPalette.ColorRole.Text, WHITE)
         palette.setColor(QPalette.ColorRole.Highlight, self._accent)
-        palette.setColor(QPalette.ColorRole.HighlightedText, QColor('#ffffff'))
+        palette.setColor(QPalette.ColorRole.HighlightedText, WHITE)
         self.setPalette(palette)
 
         self.setViewportMargins(0, 0, 0, 0)
@@ -79,7 +83,7 @@ class RoundedTextEdit(QTextEdit):
 
         # 注意：不再按窗口激活状态压暗边框。本组件所在主窗口是 Qt.Tool 置顶悬浮窗，
         # 点击应用外部时 isActiveWindow() 会变为 False；此时暗灰边框若再 darker(135)
-        # 会被压到与背景 #26262b 几乎同色，看起来像边框"消失"。失焦时保持常态灰色。
+        # 会被压到与背景 NEUTRAL_1 几乎同色，看起来像边框"消失"。失焦时保持常态灰色。
 
         # 边框矩形内缩 width/2、圆角半径同步减 width/2，使边框外边缘与背景
         # 圆角同心同半径，粗边框时角部也能平滑贴合（与 main_container.py 修复一致）
