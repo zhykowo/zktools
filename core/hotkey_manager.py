@@ -1,9 +1,9 @@
 import ctypes
 import ctypes.wintypes
 import sys
-import threading
-import queue
 import traceback
+
+from PySide6.QtCore import QAbstractNativeEventFilter, QCoreApplication
 
 # Win32 常量定义
 MOD_ALT = 0x0001
@@ -13,7 +13,6 @@ MOD_WIN = 0x0008
 MOD_NOREPEAT = 0x4000  # 防止长按按键时触发大量重复回调
 
 WM_HOTKEY = 0x0312
-WM_NULL = 0x0000
 
 # 在常量定义区域补充 Win32 虚拟键码与 KEYUP 标志
 VK_SHIFT   = 0x10
@@ -24,32 +23,34 @@ VK_RWIN    = 0x5C  # Right Win
 
 KEYEVENTF_KEYUP = 0x0002
 
-# 注册/注销命令同步等待消息线程处理的默认超时（秒）
-_CMD_TIMEOUT = 3.0
 
-class HotkeyManager:
+class HotkeyManager(QAbstractNativeEventFilter):
     """
-    基于 Windows 原生 RegisterHotKey 的热键管理器
-    对齐原本 pynput 接口，实现零成本无痛迁移 + 原生独占拦截
+    基于 Windows 原生 RegisterHotKey 的热键管理器（Qt 事件循环版）。
+
+    通过 QAbstractNativeEventFilter 挂到 Qt 事件循环上拦截 WM_HOTKEY，
+    不再自建消息循环线程：注册/注销直接同步执行，回调在 Qt 事件循环
+    线程（主线程）内分发。
+
+    线程模型约束：
+    - register() 必须在 Qt 主线程调用（WM_HOTKEY 只投递到注册线程的消息队列）；
+    - 回调在 Qt 事件循环线程同步执行，只应做轻量状态裁决并发射信号，
+      不得阻塞 UI，也不得直接触碰 UI 控件。
     """
     def __init__(self):
         if sys.platform != 'win32':
             raise RuntimeError("HotkeyManager 仅支持 Windows（依赖 RegisterHotKey / 原生消息循环）")
+        super().__init__()
 
         self.user32 = ctypes.windll.user32
         self.kernel32 = ctypes.windll.kernel32
-        
-        self._hotkeys = {}       # { formatted_hotkey: (id, callback) }
-        self._id_map = {}        # { id: (formatted_hotkey, callback) }
+
+        self._hotkeys = {}       # { formatted_hotkey: hotkey_id }
+        self._id_map = {}        # { hotkey_id: (formatted_hotkey, callback) }
         self._counter = 1
         self._app_id = self.kernel32.GetCurrentProcessId()
         self._atom_ids = set()   # 记录由 GlobalAddAtom 分配的全局原子 ID（注销时需释放）
-        
-        self._cmd_queue = queue.Queue() # 线程间命令队列（用于动态注册/注销）
-        self._thread = None
-        self._thread_id = None
-        self._running = False
-        self._lock = threading.Lock()
+        self._installed = False
 
         # 常用特殊按键的虚拟键码 (VK Code) 映射
         self._vk_map = {
@@ -118,54 +119,6 @@ class HotkeyManager:
             self.kernel32.GlobalDeleteAtom(hotkey_id)
             self._atom_ids.discard(hotkey_id)
 
-    def _process_queue(self):
-        """在 Windows 消息循环线程中执行注册与注销操作"""
-        while not self._cmd_queue.empty():
-            try:
-                cmd, data = self._cmd_queue.get_nowait()
-                if cmd == 'REGISTER':
-                    hotkey_str, mods, vk, callback, result = data
-                    hotkey_id = self._alloc_hotkey_id()
-
-                    # 注册热键（系统级独占拦截）
-                    if self.user32.RegisterHotKey(None, hotkey_id, mods, vk):
-                        with self._lock:
-                            self._hotkeys[hotkey_str] = hotkey_id
-                            self._id_map[hotkey_id] = (hotkey_str, callback)
-                        ok = True
-                        print(f"[HotkeyManager] 已成功注册并独占拦截快捷键: {hotkey_str}")
-                    else:
-                        self._free_hotkey_id(hotkey_id)
-                        ok = False
-                        print(f"[HotkeyManager] 快捷键 {hotkey_str} 注册失败，可能已被系统或其他软件占用！")
-                    if result is not None:
-                        result.put(ok)
-
-                elif cmd == 'UNREGISTER':
-                    hotkey_str = data
-                    hotkey_id = None
-                    with self._lock:
-                        if hotkey_str in self._hotkeys:
-                            hotkey_id = self._hotkeys.pop(hotkey_str)
-                            self._id_map.pop(hotkey_id, None)
-                    if hotkey_id is not None:
-                        self.user32.UnregisterHotKey(None, hotkey_id)
-                        self._free_hotkey_id(hotkey_id)
-                        print(f"[HotkeyManager] 已注销快捷键: {hotkey_str}")
-            except queue.Empty:
-                break
-            except Exception:
-                # 防止单个命令的异常（如回调异常）弄死整个消息循环
-                traceback.print_exc()
-
-    def _wake_thread(self):
-        """向消息循环线程发送空消息唤醒 GetMessageW"""
-        with self._lock:
-            thread_id = self._thread_id
-        if thread_id:
-            # PostThreadMessageW 返回 0 表示失败（线程可能已退出），静默忽略
-            self.user32.PostThreadMessageW(thread_id, WM_NULL, 0, 0)
-
     def _release_all_modifiers(self):
         """
         [底层通用状态清理]
@@ -175,66 +128,42 @@ class HotkeyManager:
         for vk in (VK_CONTROL, VK_SHIFT, VK_MENU, VK_LWIN, VK_RWIN):
             self.user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
 
-    def _safe_dispatch(self, callback):
-        """在独立线程中安全执行回调，防止异常穿透影响消息循环"""
+    def nativeEventFilter(self, eventType, message) -> bool:
+        """Qt 事件循环回调：拦截 WM_HOTKEY 并分发回调（保持 False 不吞消息）"""
+        if eventType != b"windows_generic_MSG":
+            return False
+
         try:
-            callback()
+            ptr = message[0] if isinstance(message, tuple) else message
+            msg = ctypes.wintypes.MSG.from_address(int(ptr))
         except Exception:
-            traceback.print_exc()
+            return False
 
-    def _msg_loop(self):
-        """原生 Windows 消息循环线程"""
-        with self._lock:
-            self._thread_id = self.kernel32.GetCurrentThreadId()
-        msg = ctypes.wintypes.MSG()
+        if msg.message != WM_HOTKEY:
+            return False
 
-        try:
-            while self._running:
-                self._process_queue()
+        # 1. 通用处理：触发任何快捷键前，先自动重置/释放所有修饰键状态
+        self._release_all_modifiers()
 
-                res = self.user32.GetMessageW(ctypes.byref(msg), None, 0, 0)
-                if res == 0 or res == -1:
-                    break
-
-                self._process_queue()
-
-                # 匹配到任意热键响应
-                if msg.message == WM_HOTKEY:
-                    # 1. 通用处理：触发任何快捷键前，先自动重置/释放所有修饰键状态
-                    self._release_all_modifiers()
-
-                    # 2. 分发回调
-                    hotkey_id = int(msg.wParam)
-                    if hotkey_id in self._id_map:
-                        _, callback = self._id_map[hotkey_id]
-                        threading.Thread(
-                            target=self._safe_dispatch, args=(callback,), daemon=True
-                        ).start()
-
-                self.user32.TranslateMessage(ctypes.byref(msg))
-                self.user32.DispatchMessageW(ctypes.byref(msg))
-        finally:
-            # 无论正常退出还是异常，都注销所有已注册的热键
-            with self._lock:
-                hotkey_ids = list(self._id_map.keys())
-                self._id_map.clear()
-                self._hotkeys.clear()
-            for hotkey_id in hotkey_ids:
-                self.user32.UnregisterHotKey(None, hotkey_id)
-                self._free_hotkey_id(hotkey_id)
-            with self._lock:
-                self._thread_id = None
-
-
+        # 2. 分发回调（在主线程同步执行，回调内只做轻量裁决并发射信号）
+        hotkey_id = int(msg.wParam)
+        if hotkey_id in self._id_map:
+            _, callback = self._id_map[hotkey_id]
+            try:
+                callback()
+            except Exception:
+                traceback.print_exc()
+        return False
 
     # ================= 公开 API =================
 
     def register(self, hotkey_str: str, callback) -> bool:
         """
         动态注册快捷键（如 'ctrl+alt+a'），注册成功后将自动独占拦截。
-        同步返回注册结果：True 成功；False 失败（未启动 / 解析失败 / 已被占用）。
+        必须在 Qt 主线程调用；同步返回注册结果：
+        True 成功；False 失败（未启动 / 解析失败 / 已被占用）。
         """
-        if not self._running:
+        if not self._installed:
             print(f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）")
             return False
 
@@ -245,48 +174,58 @@ class HotkeyManager:
             print(f"[HotkeyManager] 解析快捷键 '{hotkey_str}' 失败: {e}")
             return False
 
-        with self._lock:
-            if formatted_hotkey in self._hotkeys:
-                print(f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册")
-                return False
+        if formatted_hotkey in self._hotkeys:
+            print(f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册")
+            return False
 
-        result = queue.Queue(maxsize=1)
-        self._cmd_queue.put(('REGISTER', (formatted_hotkey, mods, vk, callback, result)))
-        self._wake_thread()
-        try:
-            return bool(result.get(timeout=_CMD_TIMEOUT))
-        except queue.Empty:
-            print(f"[HotkeyManager] 注册快捷键 '{hotkey_str}' 超时，注册结果未知")
+        hotkey_id = self._alloc_hotkey_id()
+        # 注册热键（系统级独占拦截）
+        if self.user32.RegisterHotKey(None, hotkey_id, mods, vk):
+            self._hotkeys[formatted_hotkey] = hotkey_id
+            self._id_map[hotkey_id] = (formatted_hotkey, callback)
+            print(f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}")
+            return True
+        else:
+            self._free_hotkey_id(hotkey_id)
+            print(f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！")
             return False
 
     def unregister(self, hotkey_str: str):
         """动态删除快捷键"""
-        if not self._running:
-            return
         formatted_hotkey = hotkey_str.lower().replace(' ', '')
-        self._cmd_queue.put(('UNREGISTER', formatted_hotkey))
-        self._wake_thread()
+        hotkey_id = self._hotkeys.pop(formatted_hotkey, None)
+        if hotkey_id is not None:
+            self._id_map.pop(hotkey_id, None)
+            self.user32.UnregisterHotKey(None, hotkey_id)
+            self._free_hotkey_id(hotkey_id)
+            print(f"[HotkeyManager] 已注销快捷键: {formatted_hotkey}")
 
     def start(self):
-        """非阻塞启动监听"""
-        if self._running:
+        """将热键监听挂到 Qt 事件循环上（幂等）"""
+        if self._installed:
             return
-        self._running = True
-        self._thread = threading.Thread(target=self._msg_loop, daemon=True)
-        self._thread.start()
-        print("[HotkeyManager] 原生独占热键监听已启动...")
+        app = QCoreApplication.instance()
+        if app is None:
+            print("[HotkeyManager] start 失败：尚未创建 QCoreApplication/QApplication")
+            return
+        app.installNativeEventFilter(self)
+        self._installed = True
+        print("[HotkeyManager] 原生独占热键监听已挂载到 Qt 事件循环...")
 
     def stop(self):
         """停止监听并注销所有快捷键"""
-        if not self._running:
+        if not self._installed:
             return
-        self._running = False
-        self._wake_thread()
-        if self._thread:
-            self._thread.join(timeout=_CMD_TIMEOUT)
-            if self._thread.is_alive():
-                print("[HotkeyManager] 警告：消息线程未能在超时时间内退出，热键可能未被完全注销")
-            self._thread = None
+        app = QCoreApplication.instance()
+        if app is not None:
+            app.removeNativeEventFilter(self)
+        self._installed = False
+        # 注销所有已注册的热键并释放原子 ID
+        for hotkey_id in list(self._id_map.keys()):
+            self.user32.UnregisterHotKey(None, hotkey_id)
+            self._free_hotkey_id(hotkey_id)
+        self._id_map.clear()
+        self._hotkeys.clear()
         print("[HotkeyManager] 监听已安全停止。")
 
 
