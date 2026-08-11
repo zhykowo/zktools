@@ -24,6 +24,11 @@ class ClipboardCtlPage(BasePage):
 
         clipboard_monitor.get().cbChanged.connect(self.update_ui)
 
+        # 单一成员定时器：重复复制时重置计时而非堆积多个 singleShot
+        self._exit_timer = QTimer(self)
+        self._exit_timer.setSingleShot(True)
+        self._exit_timer.timeout.connect(self.quit_msg)
+
 
     def quit_msg(self):
         page_router.exit_self("short_text")
@@ -32,4 +37,4 @@ class ClipboardCtlPage(BasePage):
     def update_ui(self, text):
         page_router.immediate_switch("short_text")
         self.label.setText("Copied!")
-        QTimer.singleShot(1500, self.quit_msg)
+        self._exit_timer.start(1500)

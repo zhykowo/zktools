@@ -89,8 +89,9 @@ class PageRouter(QObject):
         self.window_manager.animate(True)
 
         if mode == SwitchMode.GENTLE:
-            # 1. 温和切换：仅塞入队列
-            self.page_queue.append(page_name)
+            # 1. 温和切换：仅塞入队列（已在队列中则跳过，保证队列有界、不重复排队）
+            if page_name not in self.page_queue:
+                self.page_queue.append(page_name)
             # 如果当前没有任何页面在渲染（处于空闲），则直接触发下一页
             if self.current_page_name is None or self.current_page_name == "home":
                 self.next_page()
@@ -101,7 +102,9 @@ class PageRouter(QObject):
 
             if self.current_page_name is not None:
                 # 把当前未"退出自己"的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
-                self.page_queue.insert(0, self.current_page_name)
+                # 去重：若该页已在队列中则跳过，避免高频触发下队列无限增长
+                if self.current_page_name not in self.page_queue:
+                    self.page_queue.insert(0, self.current_page_name)
 
             self.current_page_name = page_name
 

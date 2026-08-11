@@ -36,8 +36,11 @@ class _Animator(QObject):
         self._active_group = None
 
     def animate_heights(self, animations_data: list[tuple[QWidget, int, int]], duration=300, easing=QEasingCurve.Type.OutQuart, on_finished=None):
-        if self._active_group and self._active_group.state() == QParallelAnimationGroup.State.Running:
+        # 替换旧动画组：stop 后 deleteLater 释放 C++ 对象，
+        # 否则旧组因 parent 指向常驻页面而永不回收，每次交互累积泄漏
+        if self._active_group is not None:
             self._active_group.stop()
+            self._active_group.deleteLater()
 
         self._active_group = QParallelAnimationGroup(self)
 
