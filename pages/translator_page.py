@@ -163,7 +163,7 @@ class TranslatorPage(BasePage):
         # 3. 通用平铺网格选择面板
         self.selection_grid_widget = QWidget(self)
         self.grid_layout = QGridLayout(self.selection_grid_widget)
-        self.grid_layout.setContentsMargins(0, 0, 0, 0)
+        self.grid_layout.setContentsMargins(0, 0, 0, 10)
         self.grid_layout.setSpacing(self.GRID_SPACING)
 
         self.selection_grid_widget.setMinimumHeight(0)
@@ -365,12 +365,12 @@ class TranslatorPage(BasePage):
         self.origin_lang.setText(self.target_lang.text())
         self.target_lang.setText(temp)
 
-    def _on_back_clicked(self):
+    def on_back_clicked(self):
         """返回逻辑：如果网格开启则收起，否则退出页面"""
         if self._current_grid_mode != GridMode.NONE:
             self._collapse_grid()
         else:
-            page_router.exit_self()
+            page_router.exit_self(self.page_name)
 
     def clear_data(self):
         self.input_text.setText('')

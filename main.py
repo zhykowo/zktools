@@ -53,6 +53,7 @@ class MainShellWindow(QWidget):
     def register_page(self, name: str, widget: QWidget):
         """动态注册页面，方便未来无缝扩展更多页面"""
         page_router.pages[name] = widget
+        page_router.pages[name].page_name = name
         self.stacked_widget.addWidget(widget)
 
     def change_drag_state(self, state):

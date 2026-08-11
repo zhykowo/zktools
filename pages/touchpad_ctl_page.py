@@ -154,4 +154,4 @@ class TouchpadCtlPage(BasePage):
         self.label.setText(f"TouchPad {state.value}")
 
     def _quit(self):
-        page_router.exit_self()
+        page_router.exit_self(self.page_name)

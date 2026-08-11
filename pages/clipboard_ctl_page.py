@@ -31,10 +31,12 @@ class ClipboardCtlPage(BasePage):
 
 
     def quit_msg(self):
-        page_router.exit_self("short_text")
+        page_router.exit_self(self.page_name)
 
     @Slot()
     def update_ui(self, text):
+        if not page_router.current_page_name == 'home':
+            return
         page_router.immediate_switch("short_text")
         self.label.setText("Copied!")
         self._exit_timer.start(1500)

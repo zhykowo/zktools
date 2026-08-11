@@ -15,13 +15,14 @@ class BasePage(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.page_name = ''
         self.target_size = (300, 300)  # 默认大小，子类可以覆盖
 
         self.main_layout = None
 
         # 创建页面级 Esc 快捷键
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
-        self.esc_shortcut.activated.connect(page_router.exit_self)
+        self.esc_shortcut.activated.connect(self.on_back_clicked)
         # 全局关闭按钮
         self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color=COLOR_DANGER, enable_rotation=True)
         self.close_btn.clicked.connect(QApplication.instance().quit)
@@ -65,7 +66,7 @@ class BasePage(QWidget):
         title_label.setPalette(title_palette)
 
         back_btn = SvgButton(self, icon_size=20, svg_data=arrow_left_icon)
-        back_btn.clicked.connect(lambda: page_router.exit_self())
+        back_btn.clicked.connect(self.on_back_clicked)
 
         drag_btn = SvgButton(self, icon_size=20, svg_data=drag_icon)
         drag_bus.register_drag_handle_requested.emit(drag_btn)
@@ -83,6 +84,9 @@ class BasePage(QWidget):
     def on_show(self):
         """页面显示时调用，子类可以重写"""
         pass
+
+    def on_back_clicked(self):
+        page_router.exit_self(self.page_name)
 
     def clear_data(self):
         pass
