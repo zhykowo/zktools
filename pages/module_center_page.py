@@ -60,7 +60,7 @@ class ModuleCenterPage(BasePage):
 
         modules = [
             ("Translator", "translator"),
-            ("TchPd Off", "switch_touchpad"),  # 触摸板状态卡片（替换一个占位符）
+            ("TchPad Off", "switch_touchpad"),  # 触摸板状态卡片（替换一个占位符）
             ("占位符", ""),
             ("占位符", ""),
             ("占位符", ""),
@@ -73,7 +73,7 @@ class ModuleCenterPage(BasePage):
             card = ModuleCard(name=mod_name, icon_data=square_icon, parent=self)
             card.icon_btn.clicked.connect(lambda _, route=route_name: self._on_module_click(route))
             grid_layout.addWidget(card, row, col)
-            if mod_name.startswith("TchPd"):
+            if mod_name.startswith("TchPad"):
                 self.touchpad_card = card
 
         # 订阅触摸板状态变化，卡片文本实时跟随（初始按当前状态渲染）
@@ -89,10 +89,10 @@ class ModuleCenterPage(BasePage):
 
     @staticmethod
     def _touchpad_text(state: TouchpadState) -> str:
-        """触摸板状态 → 卡片文本：关闭显示 TchPd Off，开启显示 TchPd On"""
+        """触摸板状态 → 卡片文本：关闭显示 TchPad Off，开启显示 TchPad On"""
         if state in (TouchpadState.DISABLED, TouchpadState.DISABLING):
-            return "TchPd Off"
-        return "TchPd On"
+            return "TchPad Off"
+        return "TchPad On"
 
     @Slot(object)
     def _on_touchpad_state_changed(self, state: TouchpadState):
