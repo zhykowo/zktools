@@ -174,9 +174,8 @@ class TranslatorPage(BasePage):
         self.animator = _Animator(self)
         self.target_size = (400, 300)
 
-        # 后台翻译线程与取消按钮状态
+        # 后台翻译线程状态
         self._worker = None
-        self._cancel_btn = None
         self._translation_cancelled = False
 
         # 当前展开的网格类型状态
@@ -237,6 +236,14 @@ class TranslatorPage(BasePage):
         self.translation_server_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
         self.footer_layout.addWidget(self.translation_server_btn)
+
+        # 取消按钮：与翻译按钮共存于布局，翻译时通过 hide/show 切换显示，
+        # 隐藏的组件会自动空出布局位置，无需移除/插入操作
+        self.cancel_btn = CoreButton('Cancel', parent=self)
+        self.cancel_btn.setBgColor(self.CANCEL_COLOR)
+        self.cancel_btn.hide()
+        self.cancel_btn.clicked.connect(self._cancel_translation)
+        self.footer_layout.addWidget(self.cancel_btn)
 
         self.footer_layout.addStretch()
         
@@ -405,7 +412,7 @@ class TranslatorPage(BasePage):
         print(f"正在使用 [{server}] 将 '{text}' 从 {from_lang} 翻译为 {to_lang}...")
 
         self._translation_cancelled = False
-        self._swap_to_cancel_button()
+        self._set_translating(True)
 
         self._worker = TranslationWorker(
             translator=self.translator,
@@ -417,25 +424,14 @@ class TranslatorPage(BasePage):
         self._worker.finished.connect(self._on_worker_finished)
         self._worker.start()
 
-    def _swap_to_cancel_button(self):
-        """将翻译按钮直接替换为红色 Cancel 按钮（新组件，不改动原按钮状态）"""
-        self._cancel_btn = CoreButton('Cancel', parent=self)
-        self._cancel_btn.setBgColor(self.CANCEL_COLOR)
-        idx = self.footer_layout.indexOf(self.translation_server_btn)
-        self.footer_layout.removeWidget(self.translation_server_btn)
-        self.translation_server_btn.hide()
-        self.footer_layout.insertWidget(idx, self._cancel_btn)
-        self._cancel_btn.clicked.connect(self._cancel_translation)
+    def _set_translating(self, translating: bool):
+        """翻译中显示红色 Cancel 按钮、隐藏翻译按钮；结束时反向。
 
-    def _restore_server_button(self):
-        """移除 Cancel 按钮，并把翻译按钮插回原索引位置（removeWidget 后必须重新 insertWidget）"""
-        if self._cancel_btn is not None:
-            idx = self.footer_layout.indexOf(self._cancel_btn)
-            self.footer_layout.removeWidget(self._cancel_btn)
-            self._cancel_btn.deleteLater()
-            self._cancel_btn = None
-            self.footer_layout.insertWidget(idx, self.translation_server_btn)
-        self.translation_server_btn.show()
+        隐藏的组件会自动空出布局位置并触发重排，两个按钮在布局中
+        始终占据同一槽位，因此无需移除/插入即可完成切换。
+        """
+        self.translation_server_btn.setVisible(not translating)
+        self.cancel_btn.setVisible(translating)
 
     def _cancel_translation(self):
         """取消进行中的翻译：丢弃结果并立即恢复翻译按钮（同步请求无法中断网络传输）"""
@@ -446,7 +442,7 @@ class TranslatorPage(BasePage):
             worker.cancel()
             # 线程结束后自动释放，避免 QThread 对象泄漏
             worker.finished.connect(worker.deleteLater)
-        self._restore_server_button()
+        self._set_translating(False)
 
     def _on_translation_done(self, result):
         """翻译完成（主线程）：显示结果并展开结果框"""
@@ -466,7 +462,7 @@ class TranslatorPage(BasePage):
             (self.selection_grid_widget, grid_start_h, 0),
             (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT)
         ])
-        self._restore_server_button()
+        self._set_translating(False)
 
     def _on_worker_finished(self):
         """后台线程自然结束（未被取消）：释放 worker"""
