@@ -35,7 +35,7 @@ class ClipboardCtlPage(BasePage):
 
     @Slot()
     def update_ui(self, text):
-        if not page_router.current_page_name == 'home':
+        if page_router.page_queue and page_router.page_queue[0] != 'home':
             return
         page_router.immediate_switch("short_text")
         self.label.setText("Copied!")

@@ -90,7 +90,7 @@ class MainShellWindow(QWidget):
         self.register_page("module_center", ModuleCenterPage())
         self.register_page("translator", TranslatorPage())
 
-        page_router.current_page_name = "home"
+        page_router.page_queue = ["home"]   # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])
 
         container_layout.addWidget(self.stacked_widget)
@@ -145,7 +145,7 @@ class MainShellWindow(QWidget):
 
     def trigger_flash_effect(self):
         """灵动岛高亮脉冲闪烁动画"""
-        if not page_router.current_page_name == 'home':
+        if page_router.page_queue and page_router.page_queue[0] != 'home':
             return
         # 防止动画重复叠加
         if hasattr(self, "_flash_anim") and self._flash_anim.state() == QVariantAnimation.State.Running:
