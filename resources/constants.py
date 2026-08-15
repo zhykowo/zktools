@@ -24,6 +24,30 @@ DEFAULT_CONFIG = {
             "baidu": {
                 "appid": "your_appid",
                 "secret_key": "your_secret_key"
+            },
+            "deepl": {
+                "api_key": "your_deepl_api_key"
+            },
+            "google": {
+                "api_key": "your_google_api_key"
+            },
+            "bing": {
+                "api_key": "your_bing_api_key",
+                "region": ""
+            },
+            "ai": {
+                "AI1": {
+                    "name": "AI1",
+                    "base_url": "https://api.openai.com/v1",
+                    "api_key": "your_api_key",
+                    "model": "gpt-4o-mini"
+                },
+                "AI2": {
+                    "name": "AI2",
+                    "base_url": "https://api.deepseek.com/v1",
+                    "api_key": "your_api_key",
+                    "model": "deepseek-chat"
+                }
             }
         }
     }

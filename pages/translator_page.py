@@ -124,8 +124,8 @@ class TranslatorPage(BasePage):
         "German", "Spanish", "Russian"
     ]
     SUPPORTED_SERVERS = [
-        "Google", "DeepL", "Baidu", 
-        "Bing", "OpenAI", "Youdao"
+        "Google", "DeepL", "Baidu",
+        "Bing", "AI1", "AI2"
     ]
 
     GRID_ITEM_HEIGHT = 36
@@ -188,7 +188,11 @@ class TranslatorPage(BasePage):
 
         footer_layout.addStretch()
 
-        self.translation_server_btn = CoreButton(CONFIG['translator']['default_server'], parent=self)
+        # 默认服务：config 指定内部标识符，按钮文本显示 config 中配置的名称
+        default_server = CONFIG['translator'].get('default_server', 'Baidu')
+        self._current_server = default_server if default_server in self.SUPPORTED_SERVERS else self.SUPPORTED_SERVERS[0]
+
+        self.translation_server_btn = CoreButton(self._server_display_name(self._current_server), parent=self)
         self.translation_server_btn.clicked.connect(self._start_translation)
         self.translation_server_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
@@ -238,7 +242,9 @@ class TranslatorPage(BasePage):
         self.target_lang.setText(CONFIG['translator']['default_to_lang'])
 
         # 2. 使用默认服务与默认语言执行翻译
-        self.translation_server_btn.setText(CONFIG['translator']['default_server'])
+        default_server = CONFIG['translator'].get('default_server', 'Baidu')
+        self._current_server = default_server if default_server in self.SUPPORTED_SERVERS else self.SUPPORTED_SERVERS[0]
+        self.translation_server_btn.setText(self._server_display_name(self._current_server))
         self._start_translation()
 
 
@@ -322,19 +328,34 @@ class TranslatorPage(BasePage):
 
         self._request_grid_switch(mode, self.SUPPORTED_LANGUAGES, current_lang, set_language)
 
+    def _server_display_name(self, server_id):
+        """服务按钮显示名：AI1/AI2 使用 config 中指定的名称，其余显示自身标识符"""
+        if server_id in ('AI1', 'AI2'):
+            name = CONFIG['translator'].get('apis', {}).get('ai', {}).get(server_id, {}).get('name')
+            return name or server_id
+        return server_id
+
     def display_server_list(self):
-        """显示翻译服务选择网格"""
-        current_server = self.translation_server_btn.text()
+        """显示翻译服务选择网格（AI1/AI2 显示 config 指定的名称，其余显示自身名称）"""
+        items = []
+        self._server_display_to_id = {}
+        for server_id in self.SUPPORTED_SERVERS:
+            display_name = self._server_display_name(server_id)
+            self._server_display_to_id[display_name] = server_id
+            items.append(display_name)
 
-        def set_server(selected_server):
-            self.translation_server_btn.setText(selected_server)
+        current_display = self._server_display_name(self._current_server)
 
-        self._request_grid_switch(GridMode.SERVER, self.SUPPORTED_SERVERS, current_server, set_server)
+        def set_server(selected_display):
+            self._current_server = self._server_display_to_id[selected_display]
+            self.translation_server_btn.setText(selected_display)
+
+        self._request_grid_switch(GridMode.SERVER, items, current_display, set_server)
 
     def _start_translation(self):
         """执行翻译并在网格收起后展开结果框"""
         text = self.input_text.toPlainText()
-        server = self.translation_server_btn.text()
+        server = self._current_server
         from_lang = self.origin_lang.text()
         to_lang = self.target_lang.text()
 
