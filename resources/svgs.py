@@ -51,3 +51,21 @@ drag_icon = """
     <line x1="12" y1="2" x2="12" y2="22"></line>
 </svg>
 """
+
+translate_icon = """
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m5 8 6 6"></path>
+    <path d="m4 14 6-6 2-3"></path>
+    <path d="M2 5h12"></path>
+    <path d="M7 2v3"></path>
+    <path d="m22 22-5-10-5 10"></path>
+    <path d="M14 18h6"></path>
+</svg>
+"""
+
+touchpad_icon = """
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+    <line x1="12" y1="15" x2="12" y2="19"></line>
+</svg>
+"""

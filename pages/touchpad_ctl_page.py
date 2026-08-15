@@ -24,7 +24,7 @@ from pages.base_page import BasePage
 
 from utils.switch_touchpad.switch_touchpad import run_switch_touchpad, get_touchpad_status
 
-from resources.svgs import square_icon
+from resources.svgs import touchpad_icon
 from resources.constants import CONFIG
 
 
@@ -124,7 +124,7 @@ class TouchpadCtlPage(BasePage):
     PAGE_NAME = "switch_touchpad"
     TITLE = "TouchPad"
     MODULE_CENTER_NAME = "TchPad Off"  # 兜底；实际通过 module_center_name 属性动态返回
-    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
+    MODULE_CENTER_ICON = touchpad_icon  # 占位图标，待绘制后替换
 
     def __init__(self, parent=None):
         super().__init__(parent)

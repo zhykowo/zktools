@@ -10,7 +10,7 @@ from widgets.text_editor import RoundedTextEdit
 from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
-from resources.svgs import arrow_right_icon, square_icon
+from resources.svgs import arrow_right_icon, translate_icon
 from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2
 from resources.constants import CONFIG
 
@@ -154,7 +154,7 @@ class TranslatorPage(BasePage):
     PAGE_NAME = "translator"
     TITLE = "Translator"
     MODULE_CENTER_NAME = "Translator"
-    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
+    MODULE_CENTER_ICON = translate_icon
 
     SUPPORTED_LANGUAGES = [
         "Auto", "English", "Chinese",
