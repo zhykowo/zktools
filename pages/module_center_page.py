@@ -1,6 +1,7 @@
 from pages.base_page import BasePage
+from pages.touchpad_ctl_page import touchpad_controller, TouchpadState
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
     QVBoxLayout, QGridLayout, QLabel, QWidget
 )
@@ -58,22 +59,45 @@ class ModuleCenterPage(BasePage):
         grid_layout.setVerticalSpacing(12)
 
         modules = [
-            ("translator", self._on_module_click),
-            ("占位符", self._on_module_click),
-            ("占位符", self._on_module_click),
-            ("占位符", self._on_module_click),
-            ("占位符",   self._on_module_click),
-            ("占位符", self._on_module_click),
+            ("Translator", "translator"),
+            ("TchPd Off", "switch_touchpad"),  # 触摸板状态卡片（替换一个占位符）
+            ("占位符", ""),
+            ("占位符", ""),
+            ("占位符", ""),
+            ("占位符", ""),
         ]
 
-        for index, (mod_name, callback) in enumerate(modules):
+        self.touchpad_card = None
+        for index, (mod_name, route_name) in enumerate(modules):
             row, col = divmod(index, 3)
             card = ModuleCard(name=mod_name, icon_data=square_icon, parent=self)
-            card.icon_btn.clicked.connect(lambda _, name=mod_name: callback(name))
+            card.icon_btn.clicked.connect(lambda _, route=route_name: self._on_module_click(route))
             grid_layout.addWidget(card, row, col)
+            if mod_name.startswith("TchPd"):
+                self.touchpad_card = card
+
+        # 订阅触摸板状态变化，卡片文本实时跟随（初始按当前状态渲染）
+        touchpad_controller.state_changed.connect(self._on_touchpad_state_changed)
+        self._on_touchpad_state_changed(touchpad_controller.state)
 
         main_layout.addWidget(grid_widget)
         main_layout.addStretch()
+
+    def on_show(self):
+        """进入页面时按当前触摸板状态刷新卡片文本"""
+        self._on_touchpad_state_changed(touchpad_controller.state)
+
+    @staticmethod
+    def _touchpad_text(state: TouchpadState) -> str:
+        """触摸板状态 → 卡片文本：关闭显示 TchPd Off，开启显示 TchPd On"""
+        if state in (TouchpadState.DISABLED, TouchpadState.DISABLING):
+            return "TchPd Off"
+        return "TchPd On"
+
+    @Slot(object)
+    def _on_touchpad_state_changed(self, state: TouchpadState):
+        if self.touchpad_card is not None:
+            self.touchpad_card.label.setText(self._touchpad_text(state))
 
     def _on_module_click(self, module_name: str):
         print(f"点击模块: {module_name}")

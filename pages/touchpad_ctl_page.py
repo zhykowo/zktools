@@ -109,7 +109,8 @@ class TouchpadCtlPage(BasePage):
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label)
 
-        self.controller = TouchpadController(self)
+        # 使用模块级共享控制器:module_center_page 也订阅它的状态变化
+        self.controller = touchpad_controller
         self.controller.state_changed.connect(self._on_state_changed)
 
         # 切换完成后短暂停留再自动退出(可重置,避免定时器堆叠)
@@ -155,3 +156,8 @@ class TouchpadCtlPage(BasePage):
 
     def _quit(self):
         page_router.exit_self(self.page_name)
+
+
+# 模块级共享控制器单例：触摸板状态由本实例统一裁决与广播，
+# touchpad_ctl_page 展示详情，module_center_page 据此更新状态卡片。
+touchpad_controller = TouchpadController()
