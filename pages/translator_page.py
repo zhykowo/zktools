@@ -1,9 +1,9 @@
 import time
 
 from pages.base_page import BasePage
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, Signal, Slot
+from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, QThread, Signal, Slot
 from PySide6.QtWidgets import QHBoxLayout, QWidget, QGridLayout
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor
 from widgets.svg_button import SvgButton
 from widgets.core_button import CoreButton
 from widgets.text_editor import RoundedTextEdit
@@ -117,6 +117,39 @@ class TranslationHotkey(QObject):
         if self._callback:
             self._callback()
 
+class TranslationWorker(QThread):
+    """后台翻译线程
+
+    translate_text 是同步阻塞调用（含网络请求），直接在主线程执行会卡死 UI。
+    放入 QThread 执行，完成后通过信号把结果回传主线程；
+    调用 cancel() 后结果将被丢弃，不再更新界面。
+    """
+
+    translation_done = Signal(object)
+
+    def __init__(self, translator, text, server, from_lang, to_lang, parent=None):
+        super().__init__(parent)
+        self._translator = translator
+        self._text = text
+        self._server = server
+        self._from_lang = from_lang
+        self._to_lang = to_lang
+        self._cancelled = False
+
+    def cancel(self):
+        """请求取消：置标志，翻译结果将被丢弃（同步请求无法中断网络传输）"""
+        self._cancelled = True
+
+    def run(self):
+        if self._cancelled:
+            return
+        result = self._translator.translate_text(
+            text=self._text, server=self._server,
+            from_lang=self._from_lang, to_lang=self._to_lang,
+        )
+        if not self._cancelled:
+            self.translation_done.emit(result)
+
 class TranslatorPage(BasePage):
     SUPPORTED_LANGUAGES = [
         "Auto", "English", "Chinese",
@@ -131,6 +164,8 @@ class TranslatorPage(BasePage):
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8
     RESULT_TEXT_HEIGHT = 120
+    # 取消按钮配色（红色）
+    CANCEL_COLOR = QColor(214, 69, 65)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -138,6 +173,11 @@ class TranslatorPage(BasePage):
         self.translator = Translator()
         self.animator = _Animator(self)
         self.target_size = (400, 300)
+
+        # 后台翻译线程与取消按钮状态
+        self._worker = None
+        self._cancel_btn = None
+        self._translation_cancelled = False
 
         # 当前展开的网格类型状态
         self._current_grid_mode = GridMode.NONE
@@ -170,23 +210,23 @@ class TranslatorPage(BasePage):
         self.selection_grid_widget.setMaximumHeight(0)
 
         # 4. 底部控制栏
-        footer_layout = QHBoxLayout()
+        self.footer_layout = QHBoxLayout()
 
-        footer_layout.addStretch()
+        self.footer_layout.addStretch()
 
         self.origin_lang = CoreButton(text=CONFIG['translator']['default_from_lang'])
         self.origin_lang.clicked.connect(lambda: self.display_lang_list("origin"))
-        footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.swap_btn = SvgButton(self, icon_size=24, svg_data=arrow_right_icon)
         self.swap_btn.clicked.connect(self._swap_languages)
-        footer_layout.addWidget(self.swap_btn)
+        self.footer_layout.addWidget(self.swap_btn)
 
         self.target_lang = CoreButton(CONFIG['translator']['default_to_lang'])
         self.target_lang.clicked.connect(lambda: self.display_lang_list("target"))
-        footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
-        footer_layout.addStretch()
+        self.footer_layout.addStretch()
 
         # 默认服务：config 指定内部标识符，按钮文本显示 config 中配置的名称
         default_server = CONFIG['translator'].get('default_server', 'Baidu')
@@ -196,14 +236,14 @@ class TranslatorPage(BasePage):
         self.translation_server_btn.clicked.connect(self._start_translation)
         self.translation_server_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
-        footer_layout.addWidget(self.translation_server_btn)
+        self.footer_layout.addWidget(self.translation_server_btn)
 
-        footer_layout.addStretch()
+        self.footer_layout.addStretch()
         
         # 布局组织
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
-        layout.addLayout(footer_layout)
+        layout.addLayout(self.footer_layout)
         layout.addWidget(self.selection_grid_widget)
         layout.addStretch()
 
@@ -353,7 +393,10 @@ class TranslatorPage(BasePage):
         self._request_grid_switch(GridMode.SERVER, items, current_display, set_server)
 
     def _start_translation(self):
-        """执行翻译并在网格收起后展开结果框"""
+        """后台线程执行翻译，避免阻塞 UI；翻译期间按钮替换为红色 Cancel 按钮"""
+        if self._worker is not None:
+            return  # 已有翻译进行中（此时按钮已变为 Cancel，点击即取消）
+
         text = self.input_text.toPlainText()
         server = self._current_server
         from_lang = self.origin_lang.text()
@@ -361,12 +404,59 @@ class TranslatorPage(BasePage):
 
         print(f"正在使用 [{server}] 将 '{text}' 从 {from_lang} 翻译为 {to_lang}...")
 
-        result = self.translator.translate_text(text=text, server=server, from_lang=from_lang, to_lang=to_lang)
+        self._translation_cancelled = False
+        self._swap_to_cancel_button()
+
+        self._worker = TranslationWorker(
+            translator=self.translator,
+            text=text, server=server,
+            from_lang=from_lang, to_lang=to_lang,
+            parent=self,
+        )
+        self._worker.translation_done.connect(self._on_translation_done)
+        self._worker.finished.connect(self._on_worker_finished)
+        self._worker.start()
+
+    def _swap_to_cancel_button(self):
+        """将翻译按钮直接替换为红色 Cancel 按钮（新组件，不改动原按钮状态）"""
+        self._cancel_btn = CoreButton('Cancel', parent=self)
+        self._cancel_btn.setBgColor(self.CANCEL_COLOR)
+        idx = self.footer_layout.indexOf(self.translation_server_btn)
+        self.footer_layout.removeWidget(self.translation_server_btn)
+        self.translation_server_btn.hide()
+        self.footer_layout.insertWidget(idx, self._cancel_btn)
+        self._cancel_btn.clicked.connect(self._cancel_translation)
+
+    def _restore_server_button(self):
+        """移除 Cancel 按钮，恢复翻译按钮"""
+        if self._cancel_btn is not None:
+            self.footer_layout.removeWidget(self._cancel_btn)
+            self._cancel_btn.deleteLater()
+            self._cancel_btn = None
+        self.translation_server_btn.show()
+
+    def _cancel_translation(self):
+        """取消进行中的翻译：丢弃结果并立即恢复翻译按钮（同步请求无法中断网络传输）"""
+        self._translation_cancelled = True
+        worker = self._worker
+        self._worker = None
+        if worker is not None:
+            worker.cancel()
+            # 线程结束后自动释放，避免 QThread 对象泄漏
+            worker.finished.connect(worker.deleteLater)
+        self._restore_server_button()
+
+    def _on_translation_done(self, result):
+        """翻译完成（主线程）：显示结果并展开结果框"""
+        if self._translation_cancelled:
+            self._translation_cancelled = False
+            return
+
         self.result_text.setText(result)
 
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
-        
+
         grid_start_h = self.selection_grid_widget.height()
         result_start_h = self.result_text.height()
 
@@ -374,6 +464,14 @@ class TranslatorPage(BasePage):
             (self.selection_grid_widget, grid_start_h, 0),
             (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT)
         ])
+        self._restore_server_button()
+
+    def _on_worker_finished(self):
+        """后台线程自然结束（未被取消）：释放 worker"""
+        worker = self._worker
+        self._worker = None
+        if worker is not None:
+            worker.deleteLater()
 
     def _set_lang_buttons_active(self, mode: GridMode):
         """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
@@ -394,6 +492,7 @@ class TranslatorPage(BasePage):
             page_router.exit_self(self.page_name)
 
     def clear_data(self):
+        self._cancel_translation()
         self.input_text.setText('')
         self.result_text.setText('')
 
