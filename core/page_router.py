@@ -58,7 +58,15 @@ class PageRouter(QObject):
             self.window_manager = window_manager
         if animation_manager is not None:
             self.animation_manager = animation_manager
+            # 透明度完全暗下（页面切换完成）的瞬间才触发目标页 on_show
+            self.animation_manager.page_switched.connect(self._on_page_switched)
         return self
+
+    def _on_page_switched(self, page_name: str):
+        """动画透明度暗下、页面索引切换完成时，调用目标页的 on_show"""
+        page = self.pages.get(page_name)
+        if page is not None:
+            page.on_show()
 
     # ---------- 信号入口 ----------
     def gentle_switch(self, page_name: str):
@@ -103,13 +111,13 @@ class PageRouter(QObject):
             if self.current_page_name is not None:
                 # 把当前未"退出自己"的页面重新塞回队列的最前端，等新页面退出后能无缝恢复
                 # 去重：若该页已在队列中则跳过，避免高频触发下队列无限增长
-                if self.current_page_name not in self.page_queue:
+                if page_name != self.current_page_name and self.current_page_name not in self.page_queue:
                     self.page_queue.insert(0, self.current_page_name)
 
             self.current_page_name = page_name
 
-            self.pages[page_name].on_show()
-            self.animation_manager.switch_to(self.pages[page_name])
+            # on_show 由动画透明度暗下瞬间的 page_switched 信号触发
+            self.animation_manager.switch_to(self.pages[page_name], page_name)
 
         elif mode == SwitchMode.EXIT_SELF:
             # 精确退出：page_name 指定要退出的页面，而不是盲目退当前页
@@ -137,8 +145,8 @@ class PageRouter(QObject):
         if self.page_queue:
             next_name = self.page_queue.pop(0)
             self.current_page_name = next_name
-            self.pages[next_name].on_show()
-            self.animation_manager.switch_to(self.pages[next_name])
+            # on_show 由动画透明度暗下瞬间的 page_switched 信号触发
+            self.animation_manager.switch_to(self.pages[next_name], next_name)
             if next_name == "home":
                 self.window_manager.queue_state = False
                 # 归位居中显示

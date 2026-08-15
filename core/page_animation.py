@@ -1,8 +1,13 @@
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QParallelAnimationGroup, QSequentialAnimationGroup, QRect
+from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QParallelAnimationGroup, QSequentialAnimationGroup, QRect, Signal
 from PySide6.QtWidgets import QWidget
 
-class PageAnimationManager:
+class PageAnimationManager(QObject):
+    """页面切换动画管理器（QObject 以支持信号：页面暗下瞬间通知路由层执行 on_show）"""
+
+    page_switched = Signal(str)  # 透明度完全暗下、已切到目标页索引时发出，携带页面名
+
     def __init__(self, container_widget, stacked_widget, opacity_effect, max_width=450, max_height=400):
+        super().__init__()
         self.container = container_widget
         self.stacked_widget = stacked_widget
         self.opacity_effect = opacity_effect
@@ -21,7 +26,7 @@ class PageAnimationManager:
         anim.setEndValue(end_geom)
         return anim
 
-    def _create_opacity_switch_animation(self, target_index):
+    def _create_opacity_switch_animation(self, target_index, page_name):
         """返回透明度切换串行动画组（淡出→切换索引→淡入）"""
         current_opacity = self.opacity_effect.opacity()
         fade_out = QPropertyAnimation(self.opacity_effect, b"opacity")
@@ -29,7 +34,7 @@ class PageAnimationManager:
         fade_out.setEasingCurve(QEasingCurve.Type.OutCubic)
         fade_out.setStartValue(current_opacity)
         fade_out.setEndValue(0.0)
-        fade_out.finished.connect(lambda: self.stacked_widget.setCurrentIndex(target_index))
+        fade_out.finished.connect(lambda: self._apply_page_switch(target_index, page_name))
 
         fade_in = QPropertyAnimation(self.opacity_effect, b"opacity")
         fade_in.setDuration(200)
@@ -61,8 +66,8 @@ class PageAnimationManager:
         self.master_timeline.finished.connect(self._clear_animation)
         self.master_timeline.start()
 
-    def switch_to(self, target_page: QWidget):
-        """组合动画：尺寸变化 + 透明度切换"""
+    def switch_to(self, target_page: QWidget, page_name: str):
+        """组合动画：尺寸变化 + 透明度切换（透明度暗下瞬间发 page_switched 信号）"""
         self._clear_animation()
         index = self.stacked_widget.indexOf(target_page)
         target_w, target_h = target_page.target_size
@@ -75,7 +80,7 @@ class PageAnimationManager:
         if self.on_radius_update:
             size_anim.valueChanged.connect(self._on_size_changed)
 
-        opacity_switch = self._create_opacity_switch_animation(index)
+        opacity_switch = self._create_opacity_switch_animation(index, page_name)
 
         # 并行执行尺寸动画和透明度切换
         parallel = QParallelAnimationGroup(self.container)
@@ -87,6 +92,11 @@ class PageAnimationManager:
         self.master_timeline.start()
 
     # ---------- 内部辅助 ----------
+    def _apply_page_switch(self, target_index, page_name):
+        """透明度完全暗下的瞬间：切换堆叠索引，并通知路由层执行目标页 on_show"""
+        self.stacked_widget.setCurrentIndex(target_index)
+        self.page_switched.emit(page_name)
+
     def _on_size_changed(self, current_rect):
         if self.on_radius_update:
             radius = min(25, current_rect.height() // 2 - 1)
