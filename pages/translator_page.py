@@ -428,11 +428,13 @@ class TranslatorPage(BasePage):
         self._cancel_btn.clicked.connect(self._cancel_translation)
 
     def _restore_server_button(self):
-        """移除 Cancel 按钮，恢复翻译按钮"""
+        """移除 Cancel 按钮，并把翻译按钮插回原索引位置（removeWidget 后必须重新 insertWidget）"""
         if self._cancel_btn is not None:
+            idx = self.footer_layout.indexOf(self._cancel_btn)
             self.footer_layout.removeWidget(self._cancel_btn)
             self._cancel_btn.deleteLater()
             self._cancel_btn = None
+            self.footer_layout.insertWidget(idx, self.translation_server_btn)
         self.translation_server_btn.show()
 
     def _cancel_translation(self):
