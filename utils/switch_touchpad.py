@@ -138,8 +138,8 @@ def run_ps_as_admin(script_path, arguments=""):
 
 def run_switch_touchpad(enable=True):
 
-    current_dir = root_dir / 'utils' / 'switch_touchpad'
-    target_script = current_dir / "switch.ps1"
+    current_dir = root_dir / 'tools'
+    target_script = current_dir / "Set-PnpDeviceState.ps1"
     # 将 Path 对象显式转换为字符串
     script_path_str = str(target_script)
     action_value = "Enable" if enable else "Disable"

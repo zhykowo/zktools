@@ -46,16 +46,14 @@ class ModuleCard(QWidget):
 class ModuleCenterPage(BasePage):
     """模块中心：纯展示页。
 
-    卡片内容不在此硬编码，只读取各页面的 module_center_name：
+    卡片内容不在此硬编码，只读取各页面的 module_name：
     - 进入页面时（on_show）全量刷新卡片；
-    - 页面自身名称变化时（module_center_name_changed 信号）实时更新对应卡片。
+    - 页面自身名称变化时（module_name_changed 信号）实时更新对应卡片。
     点击卡片统一跳转到对应页面，无任何模块特殊逻辑。
     """
 
     PAGE_NAME = "module_center"
     TITLE = "Module Center"
-    MODULE_CENTER_NAME = ""  # 模块中心不显示自身
-    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
 
     GRID_COLS = 3
 
@@ -66,7 +64,7 @@ class ModuleCenterPage(BasePage):
 
         main_layout = self.set_main_layout('v')
 
-        # 2. 模块网格（按注册页面的 module_center_name 动态生成）
+        # 2. 模块网格（按注册页面的 module_name 动态生成）
         grid_widget = QWidget(self)
         self.grid_layout = QGridLayout(grid_widget)
         self.grid_layout.setContentsMargins(4, 4, 4, 4)
@@ -85,15 +83,15 @@ class ModuleCenterPage(BasePage):
         self.refresh()
 
     def _connect_name_signals(self):
-        """订阅所有已注册页面的 module_center_name_changed（仅一次）"""
+        """订阅所有已注册页面的 module_name_changed（仅一次）"""
         if self._signals_connected:
             return
         self._signals_connected = True
         for page in page_router.pages.values():
-            page.module_center_name_changed.connect(self._on_module_name_changed)
+            page.module_name_changed.connect(self._on_module_name_changed)
 
     def refresh(self):
-        """重建卡片网格：只读取各页面的 module_center_name / module_center_icon，空名页面不显示"""
+        """重建卡片网格：只读取各页面的 module_name / module_icon，空名页面不显示"""
         # 清空旧卡片
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
@@ -102,7 +100,7 @@ class ModuleCenterPage(BasePage):
         self._cards.clear()
 
         for index, (page_name, page) in enumerate(page_router.pages.items()):
-            if not page.module_center_name:
+            if not page.module_name:
                 continue
             card = ModuleCard(parent=self)
             # 点击行为由页面自身决定（BasePage.on_module_center_clicked），
@@ -131,7 +129,7 @@ class ModuleCenterPage(BasePage):
     @staticmethod
     def _apply_module_center_info(card: ModuleCard, page: BasePage):
         """把页面的 module_center 名称与图标应用到卡片（构建与信号刷新共用同一逻辑）"""
-        card.label.setText(page.module_center_name)
-        icon = page.module_center_icon
+        card.label.setText(page.module_name)
+        icon = page.module_icon
         if icon:
             card.icon_btn.set_svg(icon)

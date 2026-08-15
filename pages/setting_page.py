@@ -8,8 +8,7 @@ from PySide6.QtWidgets import QLabel
 class SettingPage(BasePage):
     PAGE_NAME = "setting"
     TITLE = "Setting"
-    MODULE_CENTER_NAME = ""  # 设置页不显示在模块中心
-    MODULE_CENTER_ICON = settings_icon
+    MODULE_ICON = settings_icon
 
     def __init__(self, parent=None):
         super().__init__(parent)

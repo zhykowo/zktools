@@ -153,8 +153,8 @@ class TranslationWorker(QThread):
 class TranslatorPage(BasePage):
     PAGE_NAME = "translator"
     TITLE = "Translator"
-    MODULE_CENTER_NAME = "Translator"
-    MODULE_CENTER_ICON = translate_icon
+    MODULE_NAME = "Translator"
+    MODULE_ICON = translate_icon
 
     SUPPORTED_LANGUAGES = [
         "Auto", "English", "Chinese",

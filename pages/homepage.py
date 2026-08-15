@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QSizePolicy, QLabel
 from widgets.svg_button import SvgButton
 from core.page_router import page_router
 
-from resources.svgs import settings_icon, app_center_icon, square_icon
+from resources.svgs import settings_icon, app_center_icon
 from resources.colors import WHITE, COLOR_TRANSPARENT, NEUTRAL_4, to_qss_color
 
 # 拖拽提示样式（颜色统一由 colors.py 管理）
@@ -28,8 +28,6 @@ on_drag_bus = OnDragEvent()
 class HomePage(DragDropMixin, BasePage):
     PAGE_NAME = "home"
     TITLE = "Home"
-    MODULE_CENTER_NAME = ""  # 主界面不显示在模块中心
-    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
 
     def __init__(self, parent=None):
         super().__init__(parent)

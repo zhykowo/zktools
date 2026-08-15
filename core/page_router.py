@@ -134,13 +134,6 @@ class PageRouter(QObject):
                     # 目标页面被插队顶到队列中：直接从队列移除，无需切换
                     self.page_queue.remove(page_name)
                 # 否则：目标页面既不在当前也不在队列，什么都不做
-            else:
-                # 兼容旧调用：无参数时退出当前正在显示的页面（队首）
-                if self.page_queue:
-                    current_page = self.pages.get(self.page_queue[0])
-                    if current_page and hasattr(current_page, 'clear_data'):
-                        current_page.clear_data()
-                self.next_page()
 
     def next_page(self):
         """队首即当前页：弹出旧当前页，新队首成为当前页并渲染；队列清空则回到 home"""

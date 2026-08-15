@@ -4,17 +4,13 @@ from PySide6.QtWidgets import QLabel
 
 from core.page_router import page_router
 
-from resources.svgs import square_icon
-
 import utils.clipboard_monitor as clipboard_monitor
 
 from pages.base_page import BasePage
 
 class ClipboardCtlPage(BasePage):
-    PAGE_NAME = "short_text"
+    PAGE_NAME = "clipboard"
     TITLE = "Clipboard"
-    MODULE_CENTER_NAME = ""  # 快捷短文本页不显示在模块中心
-    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -41,9 +37,9 @@ class ClipboardCtlPage(BasePage):
         page_router.exit_self(self.page_name)
 
     @Slot()
-    def update_ui(self, text):
+    def update_ui(self, _):
         if page_router.page_queue and page_router.page_queue[0] != 'home':
             return
-        page_router.immediate_switch("short_text")
+        page_router.immediate_switch("clipboard")
         self.label.setText("Copied!")
         self._exit_timer.start(1500)
