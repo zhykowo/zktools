@@ -12,3 +12,4 @@ config_dev.json
 .vscode/
 changes.patch
 .reasonix
+reasonix.toml
