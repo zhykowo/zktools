@@ -163,6 +163,17 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
+    # 通过 QFont 修正字体渲染
+    font = app.font()
+    # PreferQuality：匹配字体时，选择最接近的标准点大小
+    # PreferAntialias：渲染时，尽可能开启抗锯齿
+    font.setStyleStrategy(QFont.StyleStrategy.PreferQuality | QFont.StyleStrategy.PreferAntialias)  # 开启高质量抗锯齿
+    font.setHintingPreference(
+        QFont.HintingPreference.PreferNoHinting
+    )  # 禁用硬网格对齐，消除发锯齿/粗细不均
+
+    app.setFont(font)
+
     clipboard_monitor.init()
     text_manager.init()
     
