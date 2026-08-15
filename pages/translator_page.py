@@ -307,6 +307,11 @@ class TranslatorPage(BasePage):
             self._collapse_grid()
             return
 
+        current_height = self._prepare_grid_switch(mode, items, current_value, on_select_callback)
+        self._animate_grid_switch(current_height, self._calculate_grid_height(len(items)))
+
+    def _prepare_grid_switch(self, mode: GridMode, items: list[str], current_value: str, on_select_callback) -> int:
+        """切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变，返回切换前高度"""
         current_height = self.selection_grid_widget.height() if self._current_grid_mode != GridMode.NONE else 0
         self._current_grid_mode = mode
 
@@ -315,9 +320,10 @@ class TranslatorPage(BasePage):
         self._set_lang_buttons_active(mode)
         self.selection_grid_widget.setMaximumHeight(current_height)
 
-        target_height = self._calculate_grid_height(len(items))
+        return current_height
 
-        # 准备动画
+    def _animate_grid_switch(self, current_height: int, target_height: int):
+        """网格展开动画：网格平滑展开，同时收起结果框（若有内容）"""
         animations = [(self.selection_grid_widget, current_height, target_height)]
         if self.result_text.height() > 0:
             animations.append((self.result_text, self.result_text.height(), 0))
