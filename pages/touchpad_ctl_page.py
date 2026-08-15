@@ -17,7 +17,7 @@ from core.hotkey_manager import hotkey_manager
 
 from pages.base_page import BasePage
 
-from utils.switch_touchpad.switch_touchpad import run_switch_touchpad
+from utils.switch_touchpad.switch_touchpad import run_switch_touchpad, get_touchpad_status
 
 from resources.constants import CONFIG
 
@@ -44,8 +44,19 @@ class TouchpadController(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._state = TouchpadState.DISABLED
         self._lock = threading.Lock()  # 保护 _state 的跨线程访问
+        # 启动时读取系统真实状态,避免初始显示与实际情况不一致
+        # (touchpad_ctl_page 与 module_center_page 均以 controller.state 初始化显示)
+        self._state = self._read_initial_state()
+
+    @staticmethod
+    def _read_initial_state() -> TouchpadState:
+        """启动时查询触摸板真实状态;查询失败时回退为禁用(与旧默认行为一致)"""
+        enabled = get_touchpad_status()
+        if enabled is None:
+            print("[TouchpadController] 读取触摸板状态失败,按禁用状态初始化")
+            return TouchpadState.DISABLED
+        return TouchpadState.ENABLED if enabled else TouchpadState.DISABLED
 
     @property
     def state(self) -> TouchpadState:

@@ -47,6 +47,59 @@ def get_touchpad_devices():
         print(f"JSON 解析失败: {e}")
         return []
 
+def get_touchpad_status():
+    """
+    读取当前触摸板启用状态。
+
+    判断依据为设备的 ConfigManagerErrorCode:
+    0  = 设备正常工作(已启用)
+    22 = 设备已被禁用 (CM_PROB_DISABLED)
+
+    :return: True=触摸板已启用, False=已禁用, None=无法确定(未找到设备或查询失败)
+    """
+    powershell_script = """
+    Get-PnpDevice | Where-Object {
+        $_.FriendlyName -match "Touchpad|Touch Pad|触摸板"
+    } | Select-Object FriendlyName, InstanceId, Status, ConfigManagerErrorCode | ConvertTo-Json
+    """
+
+    command = ["pwsh.exe", "-NoProfile", "-Command", powershell_script]
+
+    try:
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"PowerShell 脚本执行失败: {e.stderr}")
+        return None
+    except OSError as e:
+        print(f"无法启动 PowerShell(pwsh.exe): {e}")
+        return None
+
+    if not result.stdout.strip():
+        print("未找到匹配的触摸板设备。")
+        return None
+
+    try:
+        devices = json.loads(result.stdout)
+    except json.JSONDecodeError as e:
+        print(f"JSON 解析失败: {e}")
+        return None
+
+    if isinstance(devices, dict):
+        devices = [devices]
+
+    # 只要还有任一设备处于启用状态,就认为触摸板整体可用
+    for device in devices:
+        if device.get("ConfigManagerErrorCode") == 0:
+            return True
+    return False
+
+
 def run_ps_as_admin(script_path, arguments=""):
     """
     以管理员权限运行指定的 PowerShell 脚本

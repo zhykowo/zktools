@@ -101,6 +101,11 @@ class ModuleCenterPage(BasePage):
 
     def _on_module_click(self, module_name: str):
         print(f"点击模块: {module_name}")
+        if module_name == "switch_touchpad":
+            # 与全局热键行为一致:触发一次切换,由 controller 统一驱动
+            # 页面跳转(中间态/完成态)与 3 秒后自动退出
+            touchpad_controller.request_switch()
+            return
         page_router.immediate_switch(module_name)
 
     # def mousePressEvent(self, event):
