@@ -10,7 +10,7 @@ from widgets.text_editor import RoundedTextEdit
 from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
-from resources.svgs import arrow_right_icon
+from resources.svgs import arrow_right_icon, square_icon
 from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2
 from resources.constants import CONFIG
 
@@ -151,6 +151,11 @@ class TranslationWorker(QThread):
             self.translation_done.emit(result)
 
 class TranslatorPage(BasePage):
+    PAGE_NAME = "translator"
+    TITLE = "Translator"
+    MODULE_CENTER_NAME = "Translator"
+    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
+
     SUPPORTED_LANGUAGES = [
         "Auto", "English", "Chinese",
         "Japanese", "Korean", "French",
@@ -181,7 +186,7 @@ class TranslatorPage(BasePage):
         # 当前展开的网格类型状态
         self._current_grid_mode = GridMode.NONE
 
-        layout = self.set_main_layout(d='v', title='Translator')
+        layout = self.set_main_layout('v')
 
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
         self.accent_qcolor = get_purest_color(get_accent_color())

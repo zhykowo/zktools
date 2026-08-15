@@ -83,12 +83,13 @@ class MainShellWindow(QWidget):
         self.opacity_effect = QGraphicsOpacityEffect(self.stacked_widget)
         self.stacked_widget.setGraphicsEffect(self.opacity_effect)
 
-        self.register_page("home", HomePage())
-        self.register_page("setting", SettingPage())
-        self.register_page("short_text", ClipboardCtlPage())
-        self.register_page("switch_touchpad", TouchpadCtlPage())
-        self.register_page("module_center", ModuleCenterPage())
-        self.register_page("translator", TranslatorPage())
+        # 注册名统一取自各页面的 PAGE_NAME 类属性（页面三名称之一，见 pages/base_page.py）
+        self.register_page(HomePage.PAGE_NAME, HomePage())
+        self.register_page(SettingPage.PAGE_NAME, SettingPage())
+        self.register_page(ClipboardCtlPage.PAGE_NAME, ClipboardCtlPage())
+        self.register_page(TouchpadCtlPage.PAGE_NAME, TouchpadCtlPage())
+        self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
+        self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
 
         page_router.page_queue = ["home"]   # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])

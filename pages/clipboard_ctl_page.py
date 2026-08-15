@@ -4,11 +4,18 @@ from PySide6.QtWidgets import QLabel
 
 from core.page_router import page_router
 
+from resources.svgs import square_icon
+
 import utils.clipboard_monitor as clipboard_monitor
 
 from pages.base_page import BasePage
 
 class ClipboardCtlPage(BasePage):
+    PAGE_NAME = "short_text"
+    TITLE = "Clipboard"
+    MODULE_CENTER_NAME = ""  # 快捷短文本页不显示在模块中心
+    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
+
     def __init__(self, parent=None):
         super().__init__(parent)
 

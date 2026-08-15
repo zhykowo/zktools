@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPalette, QShortcut
 
 from core.page_router import page_router
@@ -12,7 +12,21 @@ from resources.colors import WHITE, COLOR_DANGER
 
 class BasePage(QWidget):
     """所有页面的基类"""
-    
+
+    # ---------- 页面元信息（子类覆盖） ----------
+    # 页面三名称约定：
+    # PAGE_NAME          代码内注册名，main.py 的 register_page 用它注册（page_router 路由标识）
+    # TITLE              页面标题栏显示文本（set_main_layout('v') 自动取用）
+    # MODULE_CENTER_NAME 模块中心显示名；空字符串表示不显示在模块中心
+    # MODULE_CENTER_ICON 模块中心卡片图标（SVG 数据）；与名称配对，由 module_center 统一显示
+    PAGE_NAME = ""
+    TITLE = "标题占位符"
+    MODULE_CENTER_NAME = ""
+    MODULE_CENTER_ICON = ""
+
+    # 模块中心名称变化信号（如触摸板状态变化）：module_center_page 订阅后实时刷新卡片
+    module_center_name_changed = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.page_name = ''
@@ -27,7 +41,23 @@ class BasePage(QWidget):
         self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color=COLOR_DANGER, enable_rotation=True)
         self.close_btn.clicked.connect(QApplication.instance().quit)
 
-    def set_main_layout(self, d: str, title: str='标题占位符'):
+    @property
+    def module_center_name(self) -> str:
+        """模块中心显示名；默认取类属性，子类可重写为动态值（如触摸板状态文本）"""
+        return self.MODULE_CENTER_NAME
+
+    @property
+    def module_center_icon(self) -> str:
+        """模块中心卡片图标（SVG 数据）；默认取类属性，子类可重写为动态值"""
+        return self.MODULE_CENTER_ICON
+
+    def on_module_center_clicked(self):
+        """模块中心卡片点击行为：默认跳转到本页；子类可重写（如触摸板页直接触发切换）"""
+        page_router.immediate_switch(self.page_name)
+
+    def set_main_layout(self, d: str, title: str=None):
+        if title is None:
+            title = self.TITLE
         if d == 'v':
             self.main_layout = QVBoxLayout(self)
             self.main_layout.setContentsMargins(0, 8, 0, 0)

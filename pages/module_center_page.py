@@ -1,5 +1,4 @@
 from pages.base_page import BasePage
-from pages.touchpad_ctl_page import touchpad_controller, TouchpadState
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
@@ -17,7 +16,7 @@ from resources.colors import NEUTRAL_5
 
 class ModuleCard(QWidget):
     """单个模块卡片：上图下字组件"""
-    def __init__(self, name: str, icon_data=square_icon, parent=None):
+    def __init__(self, name: str = "", icon_data=square_icon, parent=None):
         super().__init__(parent)
 
         layout = QVBoxLayout(self)
@@ -27,11 +26,11 @@ class ModuleCard(QWidget):
 
         # 小图标 (22x22 黄金比例大小)
         self.icon_btn = SvgButton(self, icon_size=22, svg_data=icon_data)
-        
+
         # 模块名称
         self.label = QLabel(name, self)
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        
+
         font = self.label.font()
         font.setPixelSize(11)
         self.label.setFont(font)
@@ -43,72 +42,96 @@ class ModuleCard(QWidget):
         layout.addWidget(self.icon_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.label, alignment=Qt.AlignmentFlag.AlignCenter)
 
+
 class ModuleCenterPage(BasePage):
+    """模块中心：纯展示页。
+
+    卡片内容不在此硬编码，只读取各页面的 module_center_name：
+    - 进入页面时（on_show）全量刷新卡片；
+    - 页面自身名称变化时（module_center_name_changed 信号）实时更新对应卡片。
+    点击卡片统一跳转到对应页面，无任何模块特殊逻辑。
+    """
+
+    PAGE_NAME = "module_center"
+    TITLE = "Module Center"
+    MODULE_CENTER_NAME = ""  # 模块中心不显示自身
+    MODULE_CENTER_ICON = square_icon  # 占位图标，待绘制后替换
+
+    GRID_COLS = 3
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.target_size = (300, 300)
 
-        main_layout = self.set_main_layout(d='v', title='Module Center')
+        main_layout = self.set_main_layout('v')
 
-        # 2. 模块网格 (3列 x 2行，共6个核心模块)
+        # 2. 模块网格（按注册页面的 module_center_name 动态生成）
         grid_widget = QWidget(self)
-        grid_layout = QGridLayout(grid_widget)
-        grid_layout.setContentsMargins(4, 4, 4, 4)
-        grid_layout.setHorizontalSpacing(12)
-        grid_layout.setVerticalSpacing(12)
+        self.grid_layout = QGridLayout(grid_widget)
+        self.grid_layout.setContentsMargins(4, 4, 4, 4)
+        self.grid_layout.setHorizontalSpacing(12)
+        self.grid_layout.setVerticalSpacing(12)
 
-        modules = [
-            ("Translator", "translator"),
-            ("TchPad Off", "switch_touchpad"),  # 触摸板状态卡片（替换一个占位符）
-            ("占位符", ""),
-            ("占位符", ""),
-            ("占位符", ""),
-            ("占位符", ""),
-        ]
-
-        self.touchpad_card = None
-        for index, (mod_name, route_name) in enumerate(modules):
-            row, col = divmod(index, 3)
-            card = ModuleCard(name=mod_name, icon_data=square_icon, parent=self)
-            card.icon_btn.clicked.connect(lambda _, route=route_name: self._on_module_click(route))
-            grid_layout.addWidget(card, row, col)
-            if mod_name.startswith("TchPad"):
-                self.touchpad_card = card
-
-        # 订阅触摸板状态变化，卡片文本实时跟随（初始按当前状态渲染）
-        touchpad_controller.state_changed.connect(self._on_touchpad_state_changed)
-        self._on_touchpad_state_changed(touchpad_controller.state)
+        self._cards = {}               # page_name -> ModuleCard
+        self._signals_connected = False
 
         main_layout.addWidget(grid_widget)
         main_layout.addStretch()
 
     def on_show(self):
-        """进入页面时按当前触摸板状态刷新卡片文本"""
-        self._on_touchpad_state_changed(touchpad_controller.state)
+        """进入页面时：幂等连接各页面的名称变化信号，并按最新名称全量刷新"""
+        self._connect_name_signals()
+        self.refresh()
+
+    def _connect_name_signals(self):
+        """订阅所有已注册页面的 module_center_name_changed（仅一次）"""
+        if self._signals_connected:
+            return
+        self._signals_connected = True
+        for page in page_router.pages.values():
+            page.module_center_name_changed.connect(self._on_module_name_changed)
+
+    def refresh(self):
+        """重建卡片网格：只读取各页面的 module_center_name / module_center_icon，空名页面不显示"""
+        # 清空旧卡片
+        while self.grid_layout.count():
+            item = self.grid_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self._cards.clear()
+
+        for index, (page_name, page) in enumerate(page_router.pages.items()):
+            if not page.module_center_name:
+                continue
+            card = ModuleCard(parent=self)
+            # 点击行为由页面自身决定（BasePage.on_module_center_clicked），
+            # 本页不感知任何模块特殊性
+            card.icon_btn.clicked.connect(
+                lambda _=None, p=page: p.on_module_center_clicked()
+            )
+            row, col = divmod(index, self.GRID_COLS)
+            self.grid_layout.addWidget(card, row, col)
+            self._cards[page_name] = card
+            self._apply_module_center_info(card, page)
+
+    @Slot()
+    def _on_module_name_changed(self):
+        """某页面模块中心信息（名称/图标）变化：实时更新对应卡片"""
+        page = self.sender()
+        if page is None:
+            return
+        card = self._cards.get(page.page_name)
+        if card is None:
+            # 变化来自尚未展示的页面（如首次出现）：整体重建一次
+            self.refresh()
+            return
+        self._apply_module_center_info(card, page)
 
     @staticmethod
-    def _touchpad_text(state: TouchpadState) -> str:
-        """触摸板状态 → 卡片文本：关闭显示 TchPad Off，开启显示 TchPad On"""
-        if state in (TouchpadState.DISABLED, TouchpadState.DISABLING):
-            return "TchPad Off"
-        return "TchPad On"
-
-    @Slot(object)
-    def _on_touchpad_state_changed(self, state: TouchpadState):
-        if self.touchpad_card is not None:
-            self.touchpad_card.label.setText(self._touchpad_text(state))
-
-    def _on_module_click(self, module_name: str):
-        print(f"点击模块: {module_name}")
-        if module_name == "switch_touchpad":
-            # 与全局热键行为一致:触发一次切换,由 controller 统一驱动
-            # 页面跳转(中间态/完成态)与 3 秒后自动退出
-            touchpad_controller.request_switch()
-            return
-        page_router.immediate_switch(module_name)
-
-    # def mousePressEvent(self, event):
-    #     widget = self.childAt(event.pos())
-    #     print(f"当前点击位置的实际顶层组件为: {widget}")
-    #     super().mousePressEvent(event)
+    def _apply_module_center_info(card: ModuleCard, page: BasePage):
+        """把页面的 module_center 名称与图标应用到卡片（构建与信号刷新共用同一逻辑）"""
+        card.label.setText(page.module_center_name)
+        icon = page.module_center_icon
+        if icon:
+            card.icon_btn.set_svg(icon)
