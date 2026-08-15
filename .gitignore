@@ -13,3 +13,4 @@ config_dev.json
 changes.patch
 .reasonix
 reasonix.toml
+uv.lock
