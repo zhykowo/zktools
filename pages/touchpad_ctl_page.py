@@ -6,10 +6,10 @@
 - 阻塞的开关操作(run_switch_touchpad)放在独立工作线程执行,避免卡住事件循环;
 - 所有 UI 更新都通过信号回到主线程完成。
 
-页面职责:
-- 本页不再有独立展示界面,状态展示(切换中/最终结果)统一由
-  pages.notify_page.notify() 弹出通知完成;
-- 仍作为模块入口注册在 main.py,承担热键注册与模块中心卡片:
+模块职责:
+- 本模块无独立界面(继承 notify_page.VirtualPage"假页面"),状态展示
+  (切换中/最终结果)统一由 pages.notify_page.notify() 弹出通知完成;
+- 以 PAGE_NAME 注册进页面池,承担热键注册与模块中心卡片:
   module_name 属性按状态动态提供卡片文本("TchPad Off"/"TchPad On"),
   状态变化时发出 module_name_changed 信号,由 module_center_page 订阅刷新。
 """
@@ -20,8 +20,7 @@ from PySide6.QtCore import QObject, Signal, Slot
 
 from core.hotkey_manager import hotkey_manager
 
-from pages.base_page import BasePage
-from pages.notify_page import notify
+from pages.notify_page import VirtualPage, notify
 
 from utils.switch_touchpad import run_switch_touchpad, get_touchpad_status
 
@@ -114,8 +113,8 @@ class TouchpadController(QObject):
         self.state_changed.emit(final)
 
 
-class TouchpadCtlPage(BasePage):
-    """触摸板控制模块入口:无独立展示界面,仅承担热键注册与模块中心卡片。
+class TouchpadCtlPage(VirtualPage):
+    """触摸板控制模块入口：无界面"假页面"，仅承担热键注册与模块中心卡片。
 
     状态展示统一由全局通知页完成:切换中常驻展示(duration=0),
     完成态覆盖它并在 3 秒后自动退出。模块中心显示名由 module_name
@@ -124,7 +123,6 @@ class TouchpadCtlPage(BasePage):
     """
 
     PAGE_NAME = "switch_touchpad"
-    TITLE = "TouchPad"
     MODULE_NAME = "TchPad Off"  # 兜底；实际通过 module_name 属性动态返回
     MODULE_ICON = touchpad_icon
 

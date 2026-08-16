@@ -64,6 +64,16 @@ class PageRouter(QObject):
             self.animation_manager.page_switched.connect(self._on_page_switched)
         return self
 
+    def register_virtual(self, page):
+        """注册无界面模块（pages.notify_page.VirtualPage 实例，"假页面"）。
+
+        只进入页面池供模块中心枚举卡片，不加入堆叠窗口；
+        dispatch 会拒绝把虚拟页面作为切换目标。
+        """
+        self.pages[page.PAGE_NAME] = page
+        page.page_name = page.PAGE_NAME
+        return page
+
     def _on_page_switched(self, page_name: str):
         """动画透明度暗下、页面索引切换完成时，调用目标页的 on_show"""
         page = self.pages.get(page_name)
@@ -95,6 +105,14 @@ class PageRouter(QObject):
             print("[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求:", mode, page_name)
             return
 
+        # 温和/立即切换的目标必须是可显示的实体页面：
+        # 未注册或虚拟页面（无界面模块）直接忽略，避免无界面对象进入队列/动画
+        if mode != SwitchMode.EXIT_SELF:
+            page = self.pages.get(page_name)
+            if page is None or getattr(page, "virtual", False):
+                print("[page_router] 忽略对不可显示页面的切换请求:", page_name)
+                return
+
         self.window_manager.queue_state = True
         self.window_manager.animate(True)
 
@@ -109,8 +127,6 @@ class PageRouter(QObject):
 
         elif mode == SwitchMode.IMMEDIATE:
             # 2. 立即切换：插队逻辑
-            if page_name not in self.pages: return
-
             if not self.page_queue or self.page_queue[0] != page_name:
                 # 目标页成为新的当前页（队首）；原当前页留在队列中等待其退出后无缝恢复。
                 # 去重：若目标页已在队列中排队，先移除旧位置，避免高频触发下队列无限增长。

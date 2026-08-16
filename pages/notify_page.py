@@ -1,5 +1,9 @@
 """全局通知页：所有瞬时消息提醒的统一出口，由 main.py 注册一次（全局单例）。
 
+本模块同时提供 VirtualPage——无界面模块的 BasePage 兼容替代（"假页面"），
+触摸板开关、剪贴板变化等纯后台模块继承它注册进页面池，状态展示统一走
+本模块的 notify()。
+
 其他页面/模块通过模块级 notify() 发送通知：
 
     from pages.notify_page import notify
@@ -18,7 +22,7 @@
   换行行数增高；
 - duration <= 0 表示常驻，直到被下一条消息覆盖（触摸板"切换中"状态用）。
 """
-from PySide6.QtCore import QRect, Qt, QTimer
+from PySide6.QtCore import QObject, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QFontMetrics
 from PySide6.QtWidgets import QLabel
 
@@ -28,6 +32,45 @@ from pages.base_page import BasePage
 from widgets.svg_button import SvgButton
 
 from resources.svgs import square_icon
+
+
+class VirtualPage(QObject):
+    """无界面模块的 BasePage 兼容替代（"假页面"）。
+
+    BasePage 对无界面模块太重（QWidget / Esc 快捷键 / 关闭按钮 / 布局）。
+    只有后台逻辑、经全局通知页展示状态的模块（触摸板开关、剪贴板变化
+    等）改继承本类：仍以 PAGE_NAME 经 page_router.register_virtual() 注册
+    进页面池，享受模块中心卡片（module_name / module_icon /
+    on_module_center_clicked / module_name_changed 信号），但没有任何
+    界面——dispatch 会拒绝把虚拟页面作为切换目标。
+    """
+
+    PAGE_NAME = None
+    MODULE_NAME = None    # None/空：不显示在模块中心
+    MODULE_ICON = square_icon
+
+    # 模块中心名称变化信号：module_center_page 订阅后实时刷新卡片
+    module_name_changed = Signal()
+
+    virtual = True  # 路由层标记：无界面，不可切换显示
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.page_name = ''
+
+    @property
+    def module_name(self) -> str:
+        """模块中心显示名；默认取类属性，子类可重写为动态值"""
+        return self.MODULE_NAME
+
+    @property
+    def module_icon(self) -> str:
+        """模块中心卡片图标（SVG 数据）；默认取类属性，子类可重写为动态值"""
+        return self.MODULE_ICON
+
+    def on_module_center_clicked(self):
+        """模块中心卡片点击行为：默认无操作，子类按需重写"""
+        pass
 
 
 class NotifyPage(BasePage):
