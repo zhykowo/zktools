@@ -69,3 +69,10 @@ touchpad_icon = """
     <line x1="12" y1="15" x2="12" y2="19"></line>
 </svg>
 """
+
+note_icon = """
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z"></path>
+    <path d="M15 3v6h6"></path>
+</svg>
+"""

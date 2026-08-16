@@ -60,7 +60,7 @@ class BasePage(QWidget):
             title = self.TITLE
         if d == 'v':
             self.main_layout = QVBoxLayout(self)
-            self.main_layout.setContentsMargins(0, 8, 0, 0)
+            self.main_layout.setContentsMargins(0, 8, 0, 8)
             self.main_layout.setSpacing(8)
             self.set_header(self.main_layout, title)
             self.content_layout = QVBoxLayout()

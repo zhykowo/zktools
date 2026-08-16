@@ -62,6 +62,19 @@ def _appdata_dir() -> Path:
     return Path.home() / '.config'
 
 
+def get_data_file_path(filename: str) -> Path:
+    """返回用户数据文件路径，与配置文件的查找优先级保持一致：
+    开发目录（存在 config_dev.json / config.json）放在项目根目录，
+    打包环境放在 %APPDATA%\\zHyko\\PYDi\\ 下（目录不存在时自动创建）。
+    """
+    if (root_dir / 'config_dev.json').exists() or (root_dir / 'config.json').exists():
+        return root_dir / filename
+
+    data_dir = _appdata_dir() / 'zHyko' / 'PYDi'
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir / filename
+
+
 def load_config() -> dict:
     # 按优先级依次尝试：config_dev.json -> config.json -> %APPDATA%\zHyko\PYDi\config.json
     candidates = [

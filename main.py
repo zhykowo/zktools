@@ -21,6 +21,7 @@ from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
 from pages.module_center_page import ModuleCenterPage
 from pages.translator_page import TranslatorPage
+from pages.note_page import NotePage
 
 
 
@@ -90,6 +91,7 @@ class MainShellWindow(QWidget):
         self.register_page(TouchpadCtlPage.PAGE_NAME, TouchpadCtlPage())
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
+        self.register_page(NotePage.PAGE_NAME, NotePage())
 
         page_router.page_queue = ["home"]   # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])
