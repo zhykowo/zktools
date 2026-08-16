@@ -36,6 +36,7 @@ class RoundedTextEdit(QTextEdit):
 
         # 去掉 QTextEdit 自带 frame / 边框，背景交由 paintEvent 统一绘制
         self.setFrameShape(QFrame.Shape.NoFrame)
+        self.setAcceptRichText(False)
         self.setStyleSheet('QTextEdit { background: transparent; border: none; }')
 
         palette = self.palette()
