@@ -14,10 +14,11 @@ from utils.mouse_tracker import MouseHoverEventFilter
 from widgets.main_container import MainContainerWidget
 
 from resources.colors import WHITE
+from resources.svgs import clipboard_icon
 
 from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
-from pages.clipboard_ctl_page import ClipboardCtlPage
+from pages.notify_page import NotifyPage, notify
 from pages.touchpad_ctl_page import TouchpadCtlPage
 from pages.module_center_page import ModuleCenterPage
 from pages.translator_page import TranslatorPage
@@ -87,7 +88,7 @@ class MainShellWindow(QWidget):
         # 注册名统一取自各页面的 PAGE_NAME 类属性（页面三名称之一，见 pages/base_page.py）
         self.register_page(HomePage.PAGE_NAME, HomePage())
         self.register_page(SettingPage.PAGE_NAME, SettingPage())
-        self.register_page(ClipboardCtlPage.PAGE_NAME, ClipboardCtlPage())
+        self.register_page(NotifyPage.PAGE_NAME, NotifyPage())
         self.register_page(TouchpadCtlPage.PAGE_NAME, TouchpadCtlPage())
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
@@ -187,4 +188,11 @@ if __name__ == "__main__":
     
     window = MainShellWindow()
     window.show()
+
+    # 剪贴板提醒：原 ClipboardCtlPage 的职责收敛到全局通知页
+    # （only_when_idle：正在使用其他页面时不打断，仅在 home/通知页时提醒）
+    clipboard_monitor.get().cbChanged.connect(
+        lambda _text: notify("Copied!", icon=clipboard_icon, duration=1500, only_when_idle=True)
+    )
+
     sys.exit(app.exec())

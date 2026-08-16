@@ -1,26 +1,27 @@
 """
-触摸板控制页:展示触摸板开关状态,并通过全局热键在后台切换触摸板设备。
+触摸板控制模块:全局热键在后台切换触摸板设备,状态提醒统一走全局通知页。
 
 线程模型:
-- 热键回调运行在 hotkey_manager 的工作线程,只做状态裁决并发射信号,绝不触碰 UI;
-- 阻塞的开关操作(run_switch_touchpad)放在独立工作线程执行,避免卡住热键监听线程;
+- 热键回调运行在 hotkey_manager 的 Qt 主线程分发中,只做状态裁决并发射信号;
+- 阻塞的开关操作(run_switch_touchpad)放在独立工作线程执行,避免卡住事件循环;
 - 所有 UI 更新都通过信号回到主线程完成。
 
-模块中心联动:
-- 本页的 module_name 属性按状态动态提供模块中心卡片文本
-  ("TchPad Off"/"TchPad On"),状态变化时发出 module_name_changed 信号,
-  由 module_center_page 订阅并实时刷新卡片。
+页面职责:
+- 本页不再有独立展示界面,状态展示(切换中/最终结果)统一由
+  pages.notify_page.notify() 弹出通知完成;
+- 仍作为模块入口注册在 main.py,承担热键注册与模块中心卡片:
+  module_name 属性按状态动态提供卡片文本("TchPad Off"/"TchPad On"),
+  状态变化时发出 module_name_changed 信号,由 module_center_page 订阅刷新。
 """
 import threading
 from enum import Enum
 
-from PySide6.QtCore import QObject, QTimer, Qt, Signal, Slot
-from PySide6.QtWidgets import QLabel
+from PySide6.QtCore import QObject, Signal, Slot
 
-from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from pages.base_page import BasePage
+from pages.notify_page import notify
 
 from utils.switch_touchpad import run_switch_touchpad, get_touchpad_status
 
@@ -70,7 +71,7 @@ class TouchpadController(QObject):
             return self._state
 
     def request_switch(self):
-        """热键回调入口(工作线程)。非过渡态时发起一次切换。"""
+        """热键回调入口(主线程分发)。非过渡态时发起一次切换。"""
         with self._lock:
             if self._state.is_transitioning:
                 return
@@ -89,10 +90,10 @@ class TouchpadController(QObject):
                 )
             self._state = intermediate
 
-        # 通知主线程:展示中间态并切到本页
+        # 通知主线程:弹出"切换中"常驻通知
         self.state_changed.emit(intermediate)
 
-        # 阻塞操作放入工作线程,热键监听线程立即返回
+        # 阻塞操作放入工作线程,热键分发立即返回
         threading.Thread(
             target=self._perform_switch,
             args=(enable, final, previous),
@@ -114,10 +115,11 @@ class TouchpadController(QObject):
 
 
 class TouchpadCtlPage(BasePage):
-    """触摸板控制页:展示开关状态,热键在后台驱动开关
+    """触摸板控制模块入口:无独立展示界面,仅承担热键注册与模块中心卡片。
 
-    模块中心显示名由 module_name 属性按状态动态提供
-    （"TchPad Off"/"TchPad On"），状态变化时发出
+    状态展示统一由全局通知页完成:切换中常驻展示(duration=0),
+    完成态覆盖它并在 3 秒后自动退出。模块中心显示名由 module_name
+    属性按状态动态提供（"TchPad Off"/"TchPad On"），状态变化时发出
     module_name_changed 信号，module_center_page 据此实时刷新。
     """
 
@@ -129,27 +131,11 @@ class TouchpadCtlPage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.target_size = (250, 50)
-        layout = self.set_main_layout("h")
-
-        self.label = QLabel("", self)
-        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self.label)
-
         # 使用模块级共享控制器:module_center_page 也订阅它的状态变化
         self.controller = touchpad_controller
         self.controller.state_changed.connect(self._on_state_changed)
 
-        # 切换完成后短暂停留再自动退出(可重置,避免定时器堆叠)
-        self._exit_timer = QTimer(self)
-        self._exit_timer.setSingleShot(True)
-        self._exit_timer.timeout.connect(self._quit)
-
         self._register_hotkeys()
-
-    def on_show(self):
-        """进入页面时刷新当前状态(仅展示,不安排自动退出)"""
-        self._render_state(self.controller.state)
 
     def _register_hotkeys(self):
         hotkey_manager.start()
@@ -163,7 +149,7 @@ class TouchpadCtlPage(BasePage):
             print("[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用")
 
     def _on_test_hotkey(self):
-        """测试热键回调(工作线程):仅打印,不触碰 UI"""
+        """测试热键回调:仅打印,不触碰 UI"""
         print("\n💥 触发了测试动作 (Ctrl + Alt + A)")
 
     @property
@@ -173,7 +159,7 @@ class TouchpadCtlPage(BasePage):
 
     def on_module_center_clicked(self):
         """模块中心卡片点击：直接触发一次触摸板切换（与全局热键行为一致），
-        中间态/完成态的页面跳转与 3 秒后自动退出由 controller 统一驱动"""
+        中间态/完成态的通知弹出与自动退出由 controller 统一驱动"""
         self.controller.request_switch()
 
     @staticmethod
@@ -185,27 +171,20 @@ class TouchpadCtlPage(BasePage):
             return "TchPad On"
         return "TchPad Off"  # 未知状态兜底
 
-    # 主线程槽:热键切换流程的 UI 驱动
+    # 主线程槽:热键切换流程的通知驱动
     @Slot(object)
     def _on_state_changed(self, state: TouchpadState):
-        if state.is_transitioning:
-            # 开始切换:立即切到本页展示中间态(如 "Disabling")
-            page_router.immediate_switch("switch_touchpad")
-        self._render_state(state)
+        # 切换中:常驻通知(不会被自动退出,只会被完成态覆盖)
+        # 切换完成:覆盖"切换中"通知并展示最终状态,3 秒后自动退出
+        notify(
+            f"TouchPad {state.value}",
+            icon=touchpad_icon,
+            duration=0 if state.is_transitioning else 3000,
+        )
         # 名称随状态变化,通知 module_center_page 实时刷新卡片
         self.module_name_changed.emit()
 
-        if not state.is_transitioning:
-            # 切换完成:展示最终状态,停留 3 秒后自动退出
-            self._exit_timer.start(3000)
-
-    def _render_state(self, state: TouchpadState):
-        self.label.setText(f"TouchPad {state.value}")
-
-    def _quit(self):
-        page_router.exit_self(self.page_name)
-
 
 # 模块级共享控制器单例：触摸板状态由本实例统一裁决与广播，
-# touchpad_ctl_page 展示详情并驱动模块中心的动态名称更新。
+# touchpad_ctl_page 驱动通知弹出与模块中心的动态名称更新。
 touchpad_controller = TouchpadController()
