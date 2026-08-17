@@ -39,6 +39,7 @@ class MainShellWindow(QWidget):
 
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
         self.setWindowFlags(flags)
+        self.setWindowTitle("zktools")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         
         self.MAX_W, self.MAX_H = 450, 400
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     
     # 安装全局鼠标追踪事件过滤器 
     # 创建过滤器实例，debug_enabled=True 表示启用调试输出
-    mouse_tracker = MouseHoverEventFilter(debug_enabled=False)
+    mouse_tracker = MouseHoverEventFilter(debug_enabled=True)
     app.installEventFilter(mouse_tracker)
     
     window = MainShellWindow()

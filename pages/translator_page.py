@@ -207,7 +207,7 @@ class TranslatorPage(BasePage):
         # 3. 通用平铺网格选择面板
         self.selection_grid_widget = QWidget(self)
         self.grid_layout = QGridLayout(self.selection_grid_widget)
-        self.grid_layout.setContentsMargins(0, 0, 0, 10)
+        self.grid_layout.setContentsMargins(0, 0, 0, 0)
         self.grid_layout.setSpacing(self.GRID_SPACING)
 
         self.selection_grid_widget.setMinimumHeight(0)
@@ -250,6 +250,7 @@ class TranslatorPage(BasePage):
         self.cancel_btn.clicked.connect(self._cancel_translation)
         self.footer_layout.addWidget(self.cancel_btn)
 
+        self.footer_layout.setContentsMargins(0, 0, 0, 0)
         self.footer_layout.addStretch()
         
         # 布局组织
@@ -257,7 +258,6 @@ class TranslatorPage(BasePage):
         layout.addWidget(self.result_text)
         layout.addLayout(self.footer_layout)
         layout.addWidget(self.selection_grid_widget)
-        layout.addStretch()
 
         # 初始状态：网格未展开，from/to 语言按钮均置为灰色（否则默认 accent 高亮）
         self._set_lang_buttons_active(GridMode.NONE)
