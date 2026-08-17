@@ -1,0 +1,37 @@
+# Qt / qmake build artifacts
+.qmake.stash
+.qmake.cache
+Makefile
+Makefile.*
+*.o
+*.obj
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+object_script.*
+*.qm
+
+# Logs / temp files
+*.log
+*.tmp
+
+# Build directories
+debug/
+release/
+build/
+dist/
+
+# Executables
+*.exe
+*.dll
+
+# IDE / editor
+.vscode/
+.idea/
+*.user
+
+# Local config with real secrets (keep template config.json)
+config_dev.json
+notes.txt
