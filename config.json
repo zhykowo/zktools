@@ -5,6 +5,13 @@
             "test": "ctrl+alt+a"
         }
     },
+    "theme_switcher": {
+        "enabled": false,
+        "schedule": {
+            "7:00": "C:\\xxx.theme",
+            "19:00": "C:\\xxx.theme"
+        }
+    },
     "translator": {
         "hotkey": "ctrl+shift+s",
         "default_server": "Baidu",

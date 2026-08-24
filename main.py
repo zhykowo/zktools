@@ -20,6 +20,7 @@ from pages.setting_page import SettingPage
 from pages.notify_page import NotifyPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
+from pages.theme_switcher_page import ThemeSwitcherPage
 from pages.module_center_page import ModuleCenterPage
 from pages.translator_page import TranslatorPage
 from pages.note_page import NotePage
@@ -94,6 +95,7 @@ class MainShellWindow(QWidget):
         # 只进页面池供模块中心枚举，不加入堆叠窗口、不可切换显示
         page_router.register_virtual(ClipboardCtlPage())
         page_router.register_virtual(TouchpadCtlPage())
+        page_router.register_virtual(ThemeSwitcherPage())
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
         self.register_page(NotePage.PAGE_NAME, NotePage())
@@ -187,7 +189,7 @@ if __name__ == "__main__":
     
     # 安装全局鼠标追踪事件过滤器 
     # 创建过滤器实例，debug_enabled=True 表示启用调试输出
-    mouse_tracker = MouseHoverEventFilter(debug_enabled=True)
+    mouse_tracker = MouseHoverEventFilter(debug_enabled=False)
     app.installEventFilter(mouse_tracker)
     
     window = MainShellWindow()
