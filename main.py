@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from PySide6.QtCore import QEvent, QVariantAnimation, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
 from PySide6.QtGui import QFont, QPalette
@@ -6,6 +7,7 @@ from PySide6.QtGui import QFont, QPalette
 from core.page_router import page_router
 from core.window_manager import WindowManager, drag_bus
 from core.page_animation import PageAnimationManager
+from core.system_tray import SystemTrayManager
 
 import utils.text_manager as text_manager
 import utils.clipboard_monitor as clipboard_monitor
@@ -194,4 +196,10 @@ if __name__ == "__main__":
     
     window = MainShellWindow()
     window.show()
+
+    # 初始化系统托盘（安全退出通道）
+    tray_icon = Path(__file__).resolve().parent / "resources" / "icon.png"
+    tray_manager = SystemTrayManager(window, tray_icon)
+    tray_manager.show()
+
     sys.exit(app.exec())
