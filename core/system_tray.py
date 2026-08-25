@@ -33,22 +33,14 @@ class SystemTrayManager:
 
         self._tray_icon.setToolTip("zktools")
 
-        # 构建右键菜单
+        # 构建右键菜单（仅保留退出功能）
         self._menu = QMenu(window)
-
-        self._show_action = QAction("显示窗口", window)
-        self._show_action.triggered.connect(self._show_window)
-        self._menu.addAction(self._show_action)
-
-        self._menu.addSeparator()
-
         self._quit_action = QAction("退出", window)
         self._quit_action.triggered.connect(self._quit_app)
         self._menu.addAction(self._quit_action)
-
         self._tray_icon.setContextMenu(self._menu)
 
-        # 左键双击显示窗口
+        # 左键单击显示窗口
         self._tray_icon.activated.connect(self._on_activated)
 
     def show(self):
@@ -72,6 +64,6 @@ class SystemTrayManager:
         QApplication.quit()
 
     def _on_activated(self, reason: QSystemTrayIcon.ActivationReason):
-        """处理托盘图标激活事件"""
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+        """处理托盘图标激活事件：左键单击显示窗口"""
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self._show_window()

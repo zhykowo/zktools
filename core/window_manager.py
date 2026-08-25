@@ -34,7 +34,7 @@ class WindowManager:
         self.queue_state = False
         
         # 计算位置参数 (锚点位置)
-        self.visible_height = 320
+        self.visible_height = 300
         screen = QApplication.primaryScreen().geometry()
         self.island_width = window.width()
         self.island_height = window.height()
