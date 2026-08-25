@@ -4,7 +4,7 @@ from PySide6.QtSvg import QSvgRenderer
 
 from widgets.hover import HoverShape, HoverWidget
 
-from resources.colors import get_accent_color, WHITE, color_manager
+from core.colors import get_accent_color, WHITE, color_manager
 
 class SvgButton(HoverWidget):
     """继承 HoverWidget，天然具备圆形碰撞判定与物理 Hover 检测"""

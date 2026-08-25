@@ -1,7 +1,7 @@
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
-from resources.colors import get_accent_color, get_purest_color, WHITE, NEUTRAL_4, color_manager
+from core.colors import get_accent_color, get_purest_color, WHITE, NEUTRAL_4, color_manager
 
 class CoreButton(QPushButton):
 

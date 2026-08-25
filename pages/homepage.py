@@ -8,7 +8,7 @@ from widgets.svg_button import SvgButton
 from core.page_router import page_router
 
 from resources.svgs import settings_icon, app_center_icon
-from resources.colors import WHITE, COLOR_TRANSPARENT, NEUTRAL_4, to_qss_color
+from core.colors import WHITE, COLOR_TRANSPARENT, NEUTRAL_4, to_qss_color
 
 # 拖拽提示样式（颜色统一由 colors.py 管理）
 _DROP_HINT_IDLE_QSS = (

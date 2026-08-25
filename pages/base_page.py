@@ -8,7 +8,7 @@ from core.window_manager import drag_bus
 from widgets.svg_button import SvgButton
 
 from resources.svgs import arrow_left_icon, close_icon, drag_icon, square_icon
-from resources.colors import WHITE, COLOR_DANGER
+from core.colors import WHITE, COLOR_DANGER
 
 class BasePage(QWidget):
     """所有页面的基类

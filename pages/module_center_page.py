@@ -11,7 +11,7 @@ from widgets.svg_button import SvgButton
 from core.page_router import page_router
 
 from resources.svgs import square_icon
-from resources.colors import NEUTRAL_5
+from core.colors import NEUTRAL_5
 
 
 class ModuleCard(QWidget):

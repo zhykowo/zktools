@@ -11,7 +11,7 @@ from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon, translate_icon
-from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2, color_manager
+from core.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2, color_manager
 from resources.constants import CONFIG
 
 from utils.translator import Translator

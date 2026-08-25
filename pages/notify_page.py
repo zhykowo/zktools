@@ -36,7 +36,7 @@ from core.page_router import page_router
 from pages.base_page import BasePage
 from widgets.svg_button import SvgButton
 
-from resources.colors import WHITE, get_accent_color, color_manager
+from core.colors import WHITE, get_accent_color, color_manager
 from resources.svgs import square_icon
 
 
