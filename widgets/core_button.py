@@ -1,7 +1,7 @@
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
-from resources.colors import get_accent_color, get_purest_color, WHITE, NEUTRAL_4
+from resources.colors import get_accent_color, get_purest_color, WHITE, NEUTRAL_4, color_manager
 
 class CoreButton(QPushButton):
 
@@ -9,10 +9,12 @@ class CoreButton(QPushButton):
     super().__init__(text, parent)
 
     self.accent_qcolor = get_purest_color(get_accent_color())
-
-    self.bg_color = QColor(bg_color) if bg_color else self.accent_qcolor
+    self._custom_bg_color = QColor(bg_color) if bg_color else None
+    self.bg_color = self._custom_bg_color or self.accent_qcolor
     self.text_color = QColor(text_color) if text_color else WHITE
     self.radius = radius
+
+    color_manager.accent_color_changed.connect(self._on_accent_changed)
 
   def paintEvent(self, event):
     painter = QPainter(self)
@@ -58,3 +60,9 @@ class CoreButton(QPushButton):
   def resetBgColor(self):
     self.bg_color = self.accent_qcolor
     self.update()
+
+  def _on_accent_changed(self, new_color: QColor):
+    """系统强调色变化时更新 accent 底色（仅当未自定义 bg_color 时）"""
+    if self._custom_bg_color is None:
+      self.accent_qcolor = get_purest_color(new_color)
+      self.resetBgColor()

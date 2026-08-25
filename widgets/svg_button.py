@@ -4,7 +4,7 @@ from PySide6.QtSvg import QSvgRenderer
 
 from widgets.hover import HoverShape, HoverWidget
 
-from resources.colors import get_accent_color, WHITE
+from resources.colors import get_accent_color, WHITE, color_manager
 
 class SvgButton(HoverWidget):
     """继承 HoverWidget，天然具备圆形碰撞判定与物理 Hover 检测"""
@@ -16,7 +16,8 @@ class SvgButton(HoverWidget):
         self.setFixedSize(size, size)
         self.icon_size = icon_size
         self.normal_color = WHITE
-        self.target_color = QColor(hover_color) if hover_color else get_accent_color()
+        self._custom_hover_color = QColor(hover_color) if hover_color else None
+        self.target_color = self._custom_hover_color or get_accent_color()
         self.enable_rotation = enable_rotation
 
         self.setCursor(Qt.PointingHandCursor)
@@ -38,6 +39,9 @@ class SvgButton(HoverWidget):
         self.animation.setEasingCurve(QEasingCurve.InOutCubic)
         self.animation.setStartValue(0.0)
         self.animation.setEndValue(1.0)
+
+        # 监听系统强调色变化，自动更新 hover 目标色
+        color_manager.accent_color_changed.connect(self._on_accent_changed)
 
     # 重写基类的 进入/离开 钩子函数
     def on_hover_enter(self):
@@ -67,6 +71,12 @@ class SvgButton(HoverWidget):
             self.svg_renderer.load(svg_data.encode('utf-8'))
         self._icon_cache = None  # 使光栅化缓存失效，下次绘制时重建
         self.update()
+
+    def _on_accent_changed(self, new_color: QColor):
+        """系统强调色变化时更新 hover 目标色（仅当未自定义 hover_color 时）"""
+        if self._custom_hover_color is None:
+            self.target_color = QColor(new_color)
+            self.update()
 
     # ---------- 光栅化缓存 ----------
     def _ensure_icon_cache(self):

@@ -36,7 +36,7 @@ from core.page_router import page_router
 from pages.base_page import BasePage
 from widgets.svg_button import SvgButton
 
-from resources.colors import WHITE, get_accent_color
+from resources.colors import WHITE, get_accent_color, color_manager
 from resources.svgs import square_icon
 
 
@@ -123,6 +123,7 @@ class NotifyLabel(QWidget):
         self._timer.setInterval(16)
         self._timer.timeout.connect(self.update)
         self._wave_color = get_accent_color()
+        color_manager.accent_color_changed.connect(self._on_accent_changed)
 
     # ---------- 公开接口 ----------
     def text(self) -> str:
@@ -146,6 +147,11 @@ class NotifyLabel(QWidget):
     def hideEvent(self, event):
         self._timer.stop()
         super().hideEvent(event)
+
+    def _on_accent_changed(self, new_color: QColor):
+        """系统强调色变化时更新波浪动画颜色"""
+        self._wave_color = new_color
+        self.update()
 
     # ---------- 布局 ----------
     @staticmethod

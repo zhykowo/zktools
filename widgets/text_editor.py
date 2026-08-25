@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QFrame, QTextEdit
 from resources.colors import (
     get_accent_color, get_purest_color,
     NEUTRAL_1, NEUTRAL_2, NEUTRAL_3,
-    WHITE, NEUTRAL_4, COLOR_TRANSPARENT,
+    WHITE, NEUTRAL_4, COLOR_TRANSPARENT, color_manager,
 )
 
 
@@ -52,6 +52,9 @@ class RoundedTextEdit(QTextEdit):
         # 文本变化时刷新 placeholder 的显示状态
         self.textChanged.connect(lambda: self.viewport().update())
 
+        # 监听系统强调色变化，自动更新选区高亮与聚焦边框色
+        color_manager.accent_color_changed.connect(self._on_accent_changed)
+
     # ---------------- placeholder ----------------
     def set_placeholder(self, text: str):
         self._placeholder = text
@@ -59,6 +62,14 @@ class RoundedTextEdit(QTextEdit):
 
     def get_placeholder(self) -> str:
         return self._placeholder
+
+    def _on_accent_changed(self, new_color: QColor):
+        """系统强调色变化时更新选区高亮色与聚焦边框色"""
+        self._accent = get_purest_color(new_color)
+        palette = self.palette()
+        palette.setColor(QPalette.ColorRole.Highlight, self._accent)
+        self.setPalette(palette)
+        self.viewport().update()
 
     # ---------------- 绘制 ----------------
     def paintEvent(self, event):

@@ -11,7 +11,7 @@ from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon, translate_icon
-from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2
+from resources.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2, color_manager
 from resources.constants import CONFIG
 
 from utils.translator import Translator
@@ -191,6 +191,7 @@ class TranslatorPage(BasePage):
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
         self.accent_qcolor = get_purest_color(get_accent_color())
         self.idle_btn_bg = NEUTRAL_2
+        color_manager.accent_color_changed.connect(self._on_accent_changed)
 
         # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
         self.input_text = RoundedTextEdit(placeholder='Enter or paste text here...', bg_color=NEUTRAL_1, parent=self)
@@ -486,6 +487,14 @@ class TranslatorPage(BasePage):
         """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
         self.origin_lang.setBgColor(self.accent_qcolor if mode == GridMode.ORIGIN_LANG else self.idle_btn_bg)
         self.target_lang.setBgColor(self.accent_qcolor if mode == GridMode.TARGET_LANG else self.idle_btn_bg)
+
+    def _on_accent_changed(self, new_color: QColor):
+        """系统强调色变化时更新 accent 色，并立即刷新当前高亮的按钮"""
+        self.accent_qcolor = get_purest_color(new_color)
+        if self._current_grid_mode == GridMode.ORIGIN_LANG:
+            self.origin_lang.setBgColor(self.accent_qcolor)
+        elif self._current_grid_mode == GridMode.TARGET_LANG:
+            self.target_lang.setBgColor(self.accent_qcolor)
 
     def _swap_languages(self):
         """互换源语言与目标语言"""

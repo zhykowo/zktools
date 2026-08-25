@@ -15,7 +15,7 @@ from utils.mouse_tracker import MouseHoverEventFilter
 
 from widgets.main_container import MainContainerWidget
 
-from resources.colors import WHITE
+from resources.colors import WHITE, color_manager
 
 from pages.homepage import HomePage, on_drag_bus
 from pages.setting_page import SettingPage
@@ -187,6 +187,7 @@ if __name__ == "__main__":
     app.setFont(font)
 
     clipboard_monitor.init()
+    color_manager.init()
     text_manager.init()
     
     # 安装全局鼠标追踪事件过滤器 

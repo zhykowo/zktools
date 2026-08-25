@@ -7,6 +7,7 @@
   当系统未提供有效 Accent 色时，自动回退到默认配色 DEFAULT_ACCENT。
 """
 
+from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QPalette
 
@@ -68,3 +69,54 @@ def get_accent_color() -> QColor:
         accent = QColor(DEFAULT_ACCENT)
 
     return get_purest_color(accent)
+
+
+class ColorManager(QObject):
+    """系统强调色变更管理器（单例）
+
+    监听系统调色板变化，当强调色改变时发出信号，
+    所有关联组件连接此信号实现自动刷新。
+
+    使用方式（在 QApplication 创建后调用）：
+        from resources.colors import color_manager
+        color_manager.init()
+    """
+    accent_color_changed = Signal(QColor)  # 携带新强调色
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._connected = False
+        self._cached_accent = self._read_accent()
+
+    def _read_accent(self) -> QColor:
+        return get_accent_color()
+
+    def init(self):
+        """在 QApplication 创建后调用，连接系统调色板变化信号。
+
+        与 clipboard_monitor.init() 采用相同的显式初始化模式，
+        确保初始化时机明确，无需依赖 QTimer 延迟猜测。
+        """
+        if self._connected:
+            return
+        app = QApplication.instance()
+        if app is None:
+            raise RuntimeError(
+                "ColorManager.init() 必须在 QApplication 创建后调用"
+            )
+        try:
+            app.paletteChanged.connect(self._on_palette_changed)
+            self._connected = True
+        except AttributeError:
+            # 低版本 PySide6 可能没有此信号 —— 安全忽略
+            pass
+
+    def _on_palette_changed(self, palette: QPalette):
+        new_color = self._read_accent()
+        if new_color.rgb() != self._cached_accent.rgb():
+            self._cached_accent = new_color
+            self.accent_color_changed.emit(new_color)
+
+
+# 模块级单例（导入即用，但须在 QApplication 创建后调用 .init() 才能连接信号）
+color_manager = ColorManager()
