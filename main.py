@@ -21,7 +21,7 @@ from pages.setting_page import SettingPage
 from pages.notify_page import NotifyPage
 from pages.clipboard_ctl_page import ClipboardCtlPage
 from pages.touchpad_ctl_page import TouchpadCtlPage
-from pages.theme_switcher_page import ThemeSwitcherPage
+from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
 from pages.module_center_page import ModuleCenterPage
 from pages.translator_page import TranslatorPage
 from pages.note_page import NotePage
@@ -188,6 +188,7 @@ if __name__ == "__main__":
     clipboard_monitor.init()
     color_manager.init()
     text_manager.init()
+    theme_controller.init() # 延迟初始化（WinUnlockListener + 启动触发）
     
     # 安装全局鼠标追踪事件过滤器 
     # 创建过滤器实例，debug_enabled=True 表示启用调试输出

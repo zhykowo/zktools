@@ -16,3 +16,4 @@ reasonix.toml
 uv.lock
 notes.txt
 .python-version
+data/
