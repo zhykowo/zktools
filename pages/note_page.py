@@ -2,13 +2,12 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QPalette, QTextCursor
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
+from core.colors import COLOR_DANGER, NEUTRAL_1, NEUTRAL_4
 from pages.base_page import BasePage
+from resources.constants import get_data_file_path
+from resources.svgs import note_icon
 from widgets.core_button import CoreButton
 from widgets.text_editor import RoundedTextEdit
-
-from resources.svgs import note_icon
-from core.colors import NEUTRAL_1, NEUTRAL_4, COLOR_DANGER
-from resources.constants import get_data_file_path
 
 
 class NotePage(BasePage):

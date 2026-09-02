@@ -1,39 +1,37 @@
 import time
+from enum import Enum, auto
+from functools import partial
 
-from pages.base_page import BasePage
 from PySide6.QtCore import (
     QEasingCurve,
+    QObject,
     QParallelAnimationGroup,
     QPropertyAnimation,
     Qt,
-    QObject,
     QThread,
     Signal,
     Slot,
 )
-from PySide6.QtWidgets import QHBoxLayout, QWidget, QGridLayout
-from PySide6.QtGui import QFont, QColor
-from widgets.svg_button import SvgButton
-from widgets.core_button import CoreButton
-from widgets.text_editor import RoundedTextEdit
-from core.page_router import page_router
-from core.hotkey_manager import hotkey_manager
+from PySide6.QtGui import QColor, QFont
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QWidget
 
-from resources.svgs import arrow_right_icon, translate_icon
 from core.colors import (
-    get_accent_color,
-    get_purest_color,
     NEUTRAL_1,
     NEUTRAL_2,
     color_manager,
+    get_accent_color,
+    get_purest_color,
 )
+from core.hotkey_manager import hotkey_manager
+from core.page_router import page_router
+from pages.base_page import BasePage
 from resources.constants import CONFIG
-
+from resources.svgs import arrow_right_icon, translate_icon
+from utils import text_manager
 from utils.translator import Translator
-import utils.text_manager as text_manager
-
-from enum import Enum, auto
-from functools import partial
+from widgets.core_button import CoreButton
+from widgets.svg_button import SvgButton
+from widgets.text_editor import RoundedTextEdit
 
 
 class GridMode(Enum):
@@ -185,7 +183,7 @@ class TranslatorPage(BasePage):
     MODULE_NAME = "Translator"
     MODULE_ICON = translate_icon
 
-    SUPPORTED_LANGUAGES = [
+    SUPPORTED_LANGUAGES: list[str] = [
         "Auto",
         "English",
         "Chinese",
@@ -196,7 +194,7 @@ class TranslatorPage(BasePage):
         "Spanish",
         "Russian",
     ]
-    SUPPORTED_SERVERS = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
+    SUPPORTED_SERVERS: list[str] = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
 
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8

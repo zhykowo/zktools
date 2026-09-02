@@ -1,12 +1,13 @@
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
+
 from core.colors import (
+    NEUTRAL_4,
+    WHITE,
+    color_manager,
     get_accent_color,
     get_purest_color,
-    WHITE,
-    NEUTRAL_4,
-    color_manager,
 )
 
 

@@ -7,12 +7,11 @@
   当系统未提供有效 Accent 色时，自动回退到默认配色 DEFAULT_ACCENT。
 """
 
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QColor, QPalette
-
 from typing import cast
 
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QApplication
 
 # ============ 保底默认强调色 ============
 # 系统未提供有效 Accent 色时使用的默认强调色（Windows 经典强调蓝 #0078D7）

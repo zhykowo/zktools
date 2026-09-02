@@ -86,7 +86,6 @@ def init(*args, **kwargs) -> None:
 
 def get() -> _textManager:
     """获取单例"""
-    global _instance
     if _instance is None:
         raise RuntimeError("textManager 未初始化")
     return _instance

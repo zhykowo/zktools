@@ -20,13 +20,10 @@ from enum import Enum
 from PySide6.QtCore import QObject, Signal, Slot
 
 from core.hotkey_manager import hotkey_manager
-
 from pages.notify_page import VirtualPage, notify
-
-from utils.switch_touchpad import run_switch_touchpad, get_touchpad_status
-
-from resources.svgs import touchpad_icon
 from resources.constants import CONFIG
+from resources.svgs import touchpad_icon
+from utils.switch_touchpad import get_touchpad_status, run_switch_touchpad
 
 
 class TouchpadState(Enum):

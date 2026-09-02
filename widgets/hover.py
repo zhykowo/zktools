@@ -1,7 +1,8 @@
 from enum import Enum
-from PySide6.QtCore import QPointF, Signal, QEvent, Qt, QRectF
-from PySide6.QtGui import QPainterPath, QMouseEvent, QSinglePointEvent
 from typing import cast
+
+from PySide6.QtCore import QEvent, QPointF, QRectF, Qt, Signal
+from PySide6.QtGui import QMouseEvent, QPainterPath, QSinglePointEvent
 from PySide6.QtWidgets import QWidget
 
 

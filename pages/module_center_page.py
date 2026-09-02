@@ -1,16 +1,13 @@
+from PySide6.QtCore import Qt, Slot
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QGridLayout, QLabel, QVBoxLayout, QWidget
+
+from core.colors import NEUTRAL_5
+from core.page_router import page_router
 from pages.base_page import BasePage
 from pages.notify_page import VirtualPage
-
-from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QLabel, QWidget
-from PySide6.QtGui import QPalette
-
-from widgets.svg_button import SvgButton
-
-from core.page_router import page_router
-
 from resources.svgs import square_icon
-from core.colors import NEUTRAL_5
+from widgets.svg_button import SvgButton
 
 
 class ModuleCard(QWidget):

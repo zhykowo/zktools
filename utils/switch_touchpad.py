@@ -1,6 +1,7 @@
 import ctypes
 import json
 import subprocess
+
 from resources.constants import root_dir
 
 
@@ -21,8 +22,7 @@ def get_touchpad_devices():
         # 3. 运行命令并捕获输出
         result = subprocess.run(
             command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,  # 将输出作为字符串处理（自动解码）
             check=True,  # 如果脚本报错则抛出异常
         )
@@ -70,8 +70,7 @@ def get_touchpad_status():
     try:
         result = subprocess.run(
             command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             text=True,
             check=True,
         )

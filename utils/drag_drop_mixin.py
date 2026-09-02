@@ -44,16 +44,12 @@ class DragDropMixin:
     # --- 以下是留给子类实现具体的“业务逻辑”的钩子函数 ---
     def on_drag_enter(self):
         """当文件拖入时要做什么（子类重写）"""
-        pass
 
     def on_drag_leave(self):
         """当文件离开或放下时要做什么（子类重写）"""
-        pass
 
     def on_files_dropped(self, file_paths: list[str]):
         """当文件真正放下时，如何处理这些路径（子类重写）"""
-        pass
 
     def on_text_dropped(self, text: str):
         """当纯文本真正放下时，如何处理这段文字（子类重写）"""
-        pass

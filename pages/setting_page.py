@@ -1,9 +1,8 @@
-from pages.base_page import BasePage
-
-from resources.svgs import settings_icon
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
+
+from pages.base_page import BasePage
+from resources.svgs import settings_icon
 
 
 class SettingPage(BasePage):

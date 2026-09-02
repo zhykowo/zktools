@@ -1,6 +1,6 @@
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QColor, QPainter, QPen, QBrush, QLinearGradient
 
 from core.colors import (
     NEUTRAL_0,

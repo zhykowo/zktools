@@ -1,14 +1,12 @@
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPalette, QShortcut
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
+from core.colors import COLOR_DANGER, WHITE
 from core.page_router import page_router
 from core.window_manager import drag_bus
-
-from widgets.svg_button import SvgButton
-
 from resources.svgs import arrow_left_icon, close_icon, drag_icon, square_icon
-from core.colors import WHITE, COLOR_DANGER
+from widgets.svg_button import SvgButton
 
 
 class BasePage(QWidget):
@@ -52,7 +50,9 @@ class BasePage(QWidget):
         if app is not None:
             self.close_btn.clicked.connect(app.quit)
         else:
-            raise
+            raise RuntimeError(
+                "QApplication must be instantiated before creating BasePage"
+            )
 
     @property
     def module_name(self) -> str | None:
@@ -126,7 +126,6 @@ class BasePage(QWidget):
 
     def on_show(self):
         """页面显示时调用，子类可以重写"""
-        pass
 
     def on_back_clicked(self):
         page_router.exit_self(self.page_name)

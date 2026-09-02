@@ -22,7 +22,6 @@ from PySide6.QtWidgets import QWidget
 
 # Windows 消息监听依赖
 # ctypes 已在文件顶部统一导入
-
 from pages.notify_page import VirtualPage, notify
 from resources.constants import CONFIG, root_dir
 from resources.svgs import theme_icon
@@ -43,6 +42,7 @@ def _apply_theme(theme_file: str) -> bool:
             capture_output=True,
             text=True,
             timeout=15,
+            check=False,
         )
         if result.returncode == 0:
             print(f"[ThemeSwitcher] 主题已切换: {theme_file}")
@@ -83,9 +83,8 @@ class WinUnlockListener(QWidget):
     def nativeEvent(self, eventType, message):
         if eventType == b"windows_generic_MSG":
             msg = ctypes.wintypes.MSG.from_address(int(message))
-            if msg.message == WM_WTSSESSION_CHANGE:
-                if msg.wParam == WTS_SESSION_UNLOCK:
-                    self.unlocked.emit()
+            if msg.message == WM_WTSSESSION_CHANGE and msg.wParam == WTS_SESSION_UNLOCK:
+                self.unlocked.emit()
         return super().nativeEvent(eventType, message)
 
     def closeEvent(self, event):
@@ -94,7 +93,7 @@ class WinUnlockListener(QWidget):
                 hwnd = int(self.winId())
                 ctypes.windll.wtsapi32.WTSUnRegisterSessionNotification(hwnd)
             except Exception:
-                pass
+                raise
         super().closeEvent(event)
 
 

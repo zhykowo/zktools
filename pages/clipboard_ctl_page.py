@@ -5,11 +5,9 @@
 连接依赖 clipboard_monitor 已 init()（main.py 启动顺序已保证）。
 """
 
-import utils.clipboard_monitor as clipboard_monitor
-
 from pages.notify_page import VirtualPage, notify
-
 from resources.svgs import clipboard_icon
+from utils import clipboard_monitor
 
 
 class ClipboardCtlPage(VirtualPage):

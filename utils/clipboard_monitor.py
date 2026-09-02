@@ -27,7 +27,6 @@ def init(*args, **kwargs) -> None:
 
 def get() -> _ClipboardMonitor:
     """获取剪贴板监听器单例"""
-    global _instance
     if _instance is None:
         raise RuntimeError("ClipboardMonitor 未初始化")
     return _instance

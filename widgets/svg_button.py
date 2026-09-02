@@ -1,10 +1,9 @@
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Property, Qt, QRectF
+from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
+from core.colors import WHITE, color_manager, get_accent_color
 from widgets.hover import HoverShape, HoverWidget
-
-from core.colors import get_accent_color, WHITE, color_manager
 
 
 class SvgButton(HoverWidget):
@@ -63,15 +62,15 @@ class SvgButton(HoverWidget):
         if self.animation.state() == QPropertyAnimation.State.Stopped:
             self.animation.start()
 
-    # 属性与绘图保持不变
-    @Property(float)
-    def hoverProgress(self):
+    # 属性与绘图
+    def get_hover_progress(self) -> float:
         return self._hover_progress
 
-    @hoverProgress.setter
-    def hoverProgress(self, value):
+    def set_hover_progress(self, value: float) -> None:
         self._hover_progress = value
         self.update()
+
+    hoverProgress = Property(float, get_hover_progress, set_hover_progress)
 
     def set_svg(self, svg_data: str):
         if svg_data.endswith(".svg"):

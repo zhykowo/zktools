@@ -1,14 +1,16 @@
+from collections.abc import Callable
+from typing import cast
+
 from PySide6.QtCore import (
     QEasingCurve,
     QObject,
-    QPropertyAnimation,
     QParallelAnimationGroup,
-    QSequentialAnimationGroup,
+    QPropertyAnimation,
     QRect,
+    QSequentialAnimationGroup,
     Signal,
 )
 from PySide6.QtWidgets import QWidget
-from typing import Callable, Optional, cast
 
 from pages.base_page import BasePage
 
@@ -33,7 +35,7 @@ class PageAnimationManager(QObject):
         self.max_width = max_width
         self.max_height = max_height
         self.master_timeline = None
-        self.on_radius_update: Optional[Callable[[int], None]] = None  # 圆角更新回调
+        self.on_radius_update: Callable[[int], None] | None = None  # 圆角更新回调
 
     # ---------- 基础动画创建 ----------
     def _create_size_animation(self, start_geom, end_geom):

@@ -1,36 +1,33 @@
 import sys
-from PySide6.QtCore import QEvent, QVariantAnimation, Qt
+
+from PySide6.QtCore import QEvent, Qt, QVariantAnimation
+from PySide6.QtGui import QFont, QPalette
 from PySide6.QtWidgets import (
     QApplication,
-    QWidget,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QStackedWidget,
-    QGraphicsOpacityEffect,
+    QWidget,
 )
-from PySide6.QtGui import QFont, QPalette
 
-from core.page_router import page_router
-from core.window_manager import WindowManager, drag_bus
-from core.page_animation import PageAnimationManager
-from core.system_tray import SystemTrayManager
 from core.colors import WHITE, color_manager
-
-import utils.text_manager as text_manager
-import utils.clipboard_monitor as clipboard_monitor
-from utils.mouse_tracker import MouseHoverEventFilter
-
-from resources.constants import root_dir
-from widgets.main_container import MainContainerWidget
-
-from pages.homepage import HomePage, on_drag_bus
-from pages.setting_page import SettingPage
-from pages.notify_page import NotifyPage
+from core.page_animation import PageAnimationManager
+from core.page_router import page_router
+from core.system_tray import SystemTrayManager
+from core.window_manager import WindowManager, drag_bus
 from pages.clipboard_ctl_page import ClipboardCtlPage
-from pages.touchpad_ctl_page import TouchpadCtlPage
-from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
+from pages.homepage import HomePage, on_drag_bus
 from pages.module_center_page import ModuleCenterPage
-from pages.translator_page import TranslatorPage
 from pages.note_page import NotePage
+from pages.notify_page import NotifyPage
+from pages.setting_page import SettingPage
+from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
+from pages.touchpad_ctl_page import TouchpadCtlPage
+from pages.translator_page import TranslatorPage
+from resources.constants import root_dir
+from utils import clipboard_monitor, text_manager
+from utils.mouse_tracker import MouseHoverEventFilter
+from widgets.main_container import MainContainerWidget
 
 
 # 主窗口类

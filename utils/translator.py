@@ -18,13 +18,14 @@ import random
 from functools import partial
 
 import httpx
+from uiautomation import Dict
 
 from resources.constants import CONFIG
 
 
 class Translator:
     # 通用语言代码（ISO 639-1），多数服务直接使用
-    LANGUAGES = {
+    LANGUAGES: Dict = {
         "Auto": "auto",
         "English": "en",
         "Chinese": "zh",
@@ -37,7 +38,7 @@ class Translator:
     }
 
     # 百度专用语言代码
-    BAIDU_LANG_CODES = {
+    BAIDU_LANG_CODES: Dict = {
         "Japanese": "jp",
         "Korean": "kor",
         "French": "fra",
@@ -45,25 +46,15 @@ class Translator:
     }
 
     # Google 专用语言代码（仅覆盖与通用代码不同的项）
-    GOOGLE_LANG_CODES = {
+    GOOGLE_LANG_CODES: Dict = {
         "Chinese": "zh-CN",
     }
 
     # DeepL 专用语言代码（目标语言必填大写；源语言缺省时由服务端自动检测）
-    DEEPL_LANG_CODES = {
-        "Auto": None,
-        "English": "EN",
-        "Chinese": "ZH",
-        "Japanese": "JA",
-        "Korean": "KO",
-        "French": "FR",
-        "German": "DE",
-        "Spanish": "ES",
-        "Russian": "RU",
-    }
+    DEEPL_LANG_CODES: Dict = {"Auto": None}
 
     # Bing 专用语言代码（仅覆盖与通用代码不同的项）
-    BING_LANG_CODES = {
+    BING_LANG_CODES: Dict = {
         "Chinese": "zh-Hans",
     }
 
@@ -179,7 +170,7 @@ class Translator:
         data = {"auth_key": self.deepl_api_key, "text": text, "target_lang": to_code}
         from_code = self.DEEPL_LANG_CODES.get(from_lang)
         if from_code:
-            data["source_lang"] = from_code
+            data["source_lang"] = from_code.upper()
 
         response = httpx.post(url, data=data, timeout=self.TIMEOUT)
         if response.status_code != 200:

@@ -41,13 +41,11 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from core.colors import WHITE, color_manager, get_accent_color
 from core.page_router import page_router
-
 from pages.base_page import BasePage
-from widgets.svg_button import SvgButton
-
-from core.colors import WHITE, get_accent_color, color_manager
 from resources.svgs import square_icon
+from widgets.svg_button import SvgButton
 
 
 class VirtualPage(QObject):
@@ -86,7 +84,6 @@ class VirtualPage(QObject):
 
     def on_module_center_clicked(self):
         """模块中心卡片点击行为：默认无操作，子类按需重写"""
-        pass
 
 
 class NotifyLabel(QWidget):

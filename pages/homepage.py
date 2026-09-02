@@ -1,14 +1,12 @@
-from utils.drag_drop_mixin import DragDropMixin
-from pages.base_page import BasePage
-
 from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt, Signal
-from PySide6.QtWidgets import QSizePolicy, QLabel
+from PySide6.QtWidgets import QLabel, QSizePolicy
 
-from widgets.svg_button import SvgButton
+from core.colors import COLOR_TRANSPARENT, NEUTRAL_4, WHITE, to_qss_color
 from core.page_router import page_router
-
-from resources.svgs import settings_icon, app_center_icon
-from core.colors import WHITE, COLOR_TRANSPARENT, NEUTRAL_4, to_qss_color
+from pages.base_page import BasePage
+from resources.svgs import app_center_icon, settings_icon
+from utils.drag_drop_mixin import DragDropMixin
+from widgets.svg_button import SvgButton
 
 # 拖拽提示样式（颜色统一由 colors.py 管理）
 _DROP_HINT_IDLE_QSS = (

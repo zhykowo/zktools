@@ -5,15 +5,15 @@ from PySide6.QtGui import QColor, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QFrame, QTextEdit
 
 from core.colors import (
-    get_accent_color,
-    get_purest_color,
+    COLOR_TRANSPARENT,
     NEUTRAL_1,
     NEUTRAL_2,
     NEUTRAL_3,
-    WHITE,
     NEUTRAL_4,
-    COLOR_TRANSPARENT,
+    WHITE,
     color_manager,
+    get_accent_color,
+    get_purest_color,
 )
 
 
