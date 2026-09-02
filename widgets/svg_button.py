@@ -20,7 +20,7 @@ class SvgButton(HoverWidget):
         self.target_color = self._custom_hover_color or get_accent_color()
         self.enable_rotation = enable_rotation
 
-        self.setCursor(Qt.PointingHandCursor)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         self.svg_renderer = QSvgRenderer()
         # 光栅化缓存：SVG 只渲染一次，之后 hover 动画每帧复用
@@ -36,7 +36,7 @@ class SvgButton(HoverWidget):
         self._hover_progress = 0.0
         self.animation = QPropertyAnimation(self, b"hoverProgress")
         self.animation.setDuration(250)
-        self.animation.setEasingCurve(QEasingCurve.InOutCubic)
+        self.animation.setEasingCurve(QEasingCurve.Type.InOutCubic)
         self.animation.setStartValue(0.0)
         self.animation.setEndValue(1.0)
 
@@ -45,13 +45,13 @@ class SvgButton(HoverWidget):
 
     # 重写基类的 进入/离开 钩子函数
     def on_hover_enter(self):
-        self.animation.setDirection(QPropertyAnimation.Forward)
-        if self.animation.state() == QPropertyAnimation.Stopped:
+        self.animation.setDirection(QPropertyAnimation.Direction.Forward)
+        if self.animation.state() == QPropertyAnimation.State.Stopped:
             self.animation.start()
 
     def on_hover_leave(self):
-        self.animation.setDirection(QPropertyAnimation.Backward)
-        if self.animation.state() == QPropertyAnimation.Stopped:
+        self.animation.setDirection(QPropertyAnimation.Direction.Backward)
+        if self.animation.state() == QPropertyAnimation.State.Stopped:
             self.animation.start()
 
     # 属性与绘图保持不变
@@ -95,7 +95,7 @@ class SvgButton(HoverWidget):
         pix_size = int(self.icon_size * dpr)
         icon = QPixmap(pix_size, pix_size)
         icon.setDevicePixelRatio(dpr)
-        icon.fill(Qt.transparent)
+        icon.fill(Qt.GlobalColor.transparent)
         painter = QPainter(icon)
         self.svg_renderer.render(painter, QRectF(0, 0, self.icon_size, self.icon_size))
         painter.end()
@@ -107,6 +107,8 @@ class SvgButton(HoverWidget):
     def _build_tinted_pixmap(self, p: float) -> QPixmap:
         """把缓存图标染成 (normal -> target) 的插值色；复用成员 pixmap，避免每帧分配"""
         cache = self._icon_cache
+        if cache is None:
+            return QPixmap()
         if self._tint_pixmap is None or self._tint_pixmap.size() != cache.size():
             self._tint_pixmap = QPixmap(cache.size())
             self._tint_pixmap.setDevicePixelRatio(cache.devicePixelRatio())
@@ -116,23 +118,23 @@ class SvgButton(HoverWidget):
         b = int(self.normal_color.blue() + (self.target_color.blue() - self.normal_color.blue()) * p)
 
         tinted = self._tint_pixmap
-        tinted.fill(Qt.transparent)
+        tinted.fill(Qt.GlobalColor.transparent)
         painter = QPainter(tinted)
         painter.drawPixmap(0, 0, cache)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
         painter.fillRect(QRectF(0, 0, self.icon_size, self.icon_size), QColor(r, g, b))
         painter.end()
         return tinted
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing, True)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         p = self._hover_progress
 
         # 绘制背景
         bg_alpha = int(p * 40)
         bg_color = QColor(self.target_color.red(), self.target_color.green(), self.target_color.blue(), bg_alpha)
-        painter.setPen(Qt.NoPen)
+        painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(bg_color)
         painter.drawEllipse(self.rect())
 
@@ -149,8 +151,8 @@ class SvgButton(HoverWidget):
 
         # 绘制
         painter.save()
-        painter.translate(self.width() / 2, self.height() / 2)
+        painter.translate(self.width() // 2, self.height() // 2)
         if self.enable_rotation:
             painter.rotate(-p * 90.0)
-        painter.drawPixmap(-self.icon_size / 2, -self.icon_size / 2, tinted)
+        painter.drawPixmap(-self.icon_size // 2, -self.icon_size // 2, tinted)
         painter.restore()

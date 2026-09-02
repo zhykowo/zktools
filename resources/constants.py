@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 import sys
 from pathlib import Path
 
@@ -32,7 +33,7 @@ def get_data_file_path(filename: str) -> Path:
     return data_dir / filename
 
 
-def load_config() -> dict:
+def load_config() -> dict[str, Any]:
     # 1. 检查 config_dev.json —— 开发/调试用，优先级最高
     dev_config = root_dir / 'config_dev.json'
     if dev_config.exists():

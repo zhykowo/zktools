@@ -8,6 +8,8 @@
 - 切换消息统一走全局通知页 notify() 弹出。
 """
 import bisect
+import ctypes
+import ctypes.wintypes
 import json
 import subprocess
 import sys
@@ -18,9 +20,7 @@ from PySide6.QtCore import QObject, QTimer, Signal, Slot
 from PySide6.QtWidgets import QWidget
 
 # Windows 消息监听依赖
-if sys.platform == "win32":
-    import ctypes
-    import ctypes.wintypes
+# ctypes 已在文件顶部统一导入
 
 from pages.notify_page import VirtualPage, notify
 from resources.constants import CONFIG, root_dir

@@ -1,5 +1,8 @@
 from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QParallelAnimationGroup, QSequentialAnimationGroup, QRect, Signal
 from PySide6.QtWidgets import QWidget
+from typing import Callable, Optional, cast
+
+from pages.base_page import BasePage
 
 class PageAnimationManager(QObject):
     """页面切换动画管理器（QObject 以支持信号：页面暗下瞬间通知路由层执行 on_show）"""
@@ -14,7 +17,7 @@ class PageAnimationManager(QObject):
         self.max_width = max_width
         self.max_height = max_height
         self.master_timeline = None
-        self.on_radius_update = None   # 圆角更新回调
+        self.on_radius_update: Optional[Callable[[int], None]] = None   # 圆角更新回调
 
     # ---------- 基础动画创建 ----------
     def _create_size_animation(self, start_geom, end_geom):
@@ -70,7 +73,7 @@ class PageAnimationManager(QObject):
         """组合动画：尺寸变化 + 透明度切换（透明度暗下瞬间发 page_switched 信号）"""
         self._clear_animation()
         index = self.stacked_widget.indexOf(target_page)
-        target_w, target_h = target_page.target_size
+        target_w, target_h = cast(BasePage, target_page).target_size
         end_x = (self.max_width - target_w) // 2
         end_y = 40
         end_geom = QRect(end_x, end_y, target_w, target_h)

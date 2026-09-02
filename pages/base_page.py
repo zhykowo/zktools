@@ -33,16 +33,21 @@ class BasePage(QWidget):
         self.target_size = (300, 300)  # 默认大小，子类可以覆盖
 
         self.main_layout = None
+        self.content_layout = None
 
         # 创建页面级 Esc 快捷键
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.esc_shortcut.activated.connect(self.on_back_clicked)
         # 全局关闭按钮
         self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color=COLOR_DANGER, enable_rotation=True)
-        self.close_btn.clicked.connect(QApplication.instance().quit)
+        app = QApplication.instance()
+        if app is not None:
+            self.close_btn.clicked.connect(app.quit)
+        else:
+            raise
 
     @property
-    def module_name(self) -> str:
+    def module_name(self) -> str | None:
         """模块中心显示名；默认取类属性，子类可重写为动态值（如触摸板状态文本）"""
         return self.MODULE_NAME
 
@@ -55,7 +60,7 @@ class BasePage(QWidget):
         """模块中心卡片点击行为：默认跳转到本页；子类可重写（如触摸板页直接触发切换）"""
         page_router.immediate_switch(self.page_name)
 
-    def set_main_layout(self, d: str, title: str=None):
+    def set_main_layout(self, d: str, title: str | None = None):
         if title is None:
             title = self.TITLE
         if d == 'v':

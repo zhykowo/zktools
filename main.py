@@ -39,7 +39,7 @@ class MainShellWindow(QWidget):
         # 绑定全新的中心调度器
         on_drag_bus.on_drag_event.connect(self.change_drag_state)
 
-        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
         self.setWindowFlags(flags)
         self.setWindowTitle("zktools")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -53,6 +53,7 @@ class MainShellWindow(QWidget):
             self.window_manager.register_drag_handle
         ) # 监听全局拖拽注册请求
         
+        self._flash_anim = None  # 延迟初始化，见 create_anim()
         self.init_ui()
 
     def register_page(self, name: str, widget: QWidget):
@@ -159,10 +160,11 @@ class MainShellWindow(QWidget):
         if page_router.page_queue and page_router.page_queue[0] != 'home':
             return
         # 防止动画重复叠加
-        if hasattr(self, "_flash_anim") and self._flash_anim.state() == QVariantAnimation.State.Running:
+        if self._flash_anim is not None and self._flash_anim.state() == QVariantAnimation.State.Running:
             return
 
-        self._flash_anim.start()
+        if self._flash_anim is not None:
+            self._flash_anim.start()
 
     def changeEvent(self, event):
         # 当窗口的激活状态发生改变时触发

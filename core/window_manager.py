@@ -1,5 +1,6 @@
 from PySide6.QtCore import QEasingCurve, QEvent, QPoint, QPropertyAnimation, Qt, QObject, Signal
 from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtGui import QSinglePointEvent
 
 class WindowDragFilter(QObject):
     """拖拽事件过滤器：可安装到任何 Widget 或 Button 上实现拖拽窗口"""
@@ -10,12 +11,12 @@ class WindowDragFilter(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.MouseButtonPress:
-            if event.button() == Qt.MouseButton.LeftButton:
+            if isinstance(event, QSinglePointEvent) and event.button() == Qt.MouseButton.LeftButton:
                 # 记录点击时鼠标相对窗口左上角的偏移量
                 self._drag_pos = event.globalPosition().toPoint() - self.window.pos()
                 return True
         elif event.type() == QEvent.Type.MouseMove:
-            if event.buttons() & Qt.MouseButton.LeftButton:
+            if isinstance(event, QSinglePointEvent) and event.buttons() & Qt.MouseButton.LeftButton:
                 # 随鼠标移动更新窗口位置
                 self.window.move(event.globalPosition().toPoint() - self._drag_pos)
                 return True

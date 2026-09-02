@@ -28,7 +28,7 @@ class SystemTrayManager:
         else:
             # 保底：使用应用图标
             self._tray_icon.setIcon(QApplication.style().standardIcon(
-                self._tray_icon.style().StandardPixmap.SP_ComputerIcon
+                QApplication.style().StandardPixmap.SP_ComputerIcon
             ))
 
         self._tray_icon.setToolTip("zktools")

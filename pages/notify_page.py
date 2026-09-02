@@ -65,7 +65,7 @@ class VirtualPage(QObject):
         self.page_name = ''
 
     @property
-    def module_name(self) -> str:
+    def module_name(self) -> str | None:
         """模块中心显示名；默认取类属性，子类可重写为动态值"""
         return self.MODULE_NAME
 
@@ -300,6 +300,8 @@ class NotifyPage(BasePage):
         self.target_size = (self.MIN_WIDTH, self.BASE_HEIGHT)
 
         layout = self.set_main_layout('h')
+        assert self.main_layout is not None
+        assert layout is not None
         self.main_layout.setSpacing(6)
         layout.setSpacing(6)
 
@@ -352,6 +354,7 @@ class NotifyPage(BasePage):
     def _measure(self, message: str, icon: str | None) -> tuple[int, int]:
         """按消息长度计算 target_size：单行按内容定宽，超宽封顶（不换行，超长部分裁掉）"""
         fm = QFontMetrics(self.label.font())
+        assert self.main_layout is not None
         icon_w = (self.icon_btn.width() + self.main_layout.spacing()) if icon else 0
         # 固定开销：容器左右边距 20 + 关闭按钮 36 + 与内容区的间距 6 + 度量余量 12
         chrome = 20 + 36 + 6 + 15

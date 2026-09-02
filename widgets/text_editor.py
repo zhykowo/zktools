@@ -118,7 +118,7 @@ class RoundedTextEdit(QTextEdit):
             p.setPen(self._placeholder_color)
             p.setFont(self.font())
 
-            margin = self.document().documentMargin()
+            margin = int(self.document().documentMargin())
             fm = p.fontMetrics()
             text = fm.elidedText(
                 self._placeholder, Qt.TextElideMode.ElideRight,

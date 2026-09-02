@@ -11,6 +11,8 @@ from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QColor, QPalette
 
+from typing import cast
+
 
 # ============ 保底默认强调色 ============
 # 系统未提供有效 Accent 色时使用的默认强调色（Windows 经典强调蓝 #0078D7）
@@ -45,7 +47,7 @@ def to_qss_color(color: QColor) -> str:
 
 def get_purest_color(color: QColor) -> QColor:
   """获取输入颜色对应的最纯净版本（最高饱和度 & 明度）"""
-  h, s, v, a = color.getHsv()
+  h, s, v, a = cast("tuple[int, int, int, int]", color.getHsv())
 
   if h == -1:
     return QColor(color)
@@ -104,6 +106,7 @@ class ColorManager(QObject):
             raise RuntimeError(
                 "ColorManager.init() 必须在 QApplication 创建后调用"
             )
+        app = cast("QApplication", app)
         try:
             app.paletteChanged.connect(self._on_palette_changed)
             self._connected = True

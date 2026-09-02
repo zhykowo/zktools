@@ -81,7 +81,7 @@ class TranslationHotkey(QObject):
 
     _triggered = Signal()
 
-    def __init__(self, callback, hotkey: str = None, parent=None):
+    def __init__(self, callback, hotkey: str | None = None, parent=None):
         super().__init__(parent)
         self._callback = callback
         self._hotkey = hotkey or CONFIG['translator'].get('hotkey', 'ctrl+shift+t')
@@ -185,8 +185,10 @@ class TranslatorPage(BasePage):
 
         # 当前展开的网格类型状态
         self._current_grid_mode = GridMode.NONE
+        self._server_display_to_id: dict[str, str] = {}
 
         layout = self.set_main_layout('v')
+        assert layout is not None
 
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
         self.accent_qcolor = get_purest_color(get_accent_color())
@@ -346,14 +348,16 @@ class TranslatorPage(BasePage):
         # 清空旧按钮
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
 
         # 创建新按钮
         cols = 3
         for idx, text in enumerate(items):
             btn = CoreButton(text)
-            btn.setCursor(Qt.PointingHandCursor)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
             # 仅当前选中项（激活）以 accent 高亮，其余显示灰色
             if text != current_value:
                 btn.setBgColor(self.idle_btn_bg)

@@ -1,5 +1,6 @@
 from PySide6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
 
+
 class DragDropMixin:
     """
     拖放功能混入类。
@@ -8,7 +9,7 @@ class DragDropMixin:
 
     def init_drag_drop(self):
         # 开启拖放接受
-        self.setAcceptDrops(True)
+        self.setAcceptDrops(True)  # pyright: ignore[reportAttributeAccessIssue]
 
     def dragEnterEvent(self, event: QDragEnterEvent):
         # 同时允许 带有文件链接(Urls) 或 纯文本(Text) 的内容拖入

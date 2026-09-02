@@ -1,6 +1,7 @@
 from enum import Enum
-from PySide6.QtCore import Signal, QEvent, Qt, QRectF
-from PySide6.QtGui import QPainterPath
+from PySide6.QtCore import QPointF, Signal, QEvent, Qt, QRectF
+from PySide6.QtGui import QPainterPath, QMouseEvent, QSinglePointEvent
+from typing import cast
 from PySide6.QtWidgets import QWidget
 
 
@@ -30,8 +31,8 @@ class HoverWidget(QWidget):
         self._is_pressed = False
 
         # 强制开启悬停属性与追踪
-        self.setAttribute(Qt.WA_Hover, True)
-        self.setAttribute(Qt.WA_TranslucentBackground, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setMouseTracking(True)
 
     # ---------------- 核心碰撞几何判定 ----------------
@@ -73,11 +74,14 @@ class HoverWidget(QWidget):
 
     # ---------------- 事件拦截与驱动 ----------------
     def event(self, event: QEvent) -> bool:
-        if event.type() in (QEvent.HoverMove, QEvent.MouseMove):
-            pos = event.position() if hasattr(event, "position") else event.pos()
+        if event.type() in (QEvent.Type.HoverMove, QEvent.Type.MouseMove):
+            if isinstance(event, QSinglePointEvent):
+                pos = event.position()
+            else:
+                return super().event(event)
             self._update_hover_state(self.contains_point(pos))
 
-        elif event.type() in (QEvent.HoverLeave, QEvent.Leave):
+        elif event.type() in (QEvent.Type.HoverLeave, QEvent.Type.Leave):
             self._update_hover_state(False)
 
         return super().event(event)
@@ -103,16 +107,22 @@ class HoverWidget(QWidget):
 
     # ---------------- 统一点击模拟 ----------------
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
-            pos = event.position() if hasattr(event, "position") else event.pos()
+        if event.button() == Qt.MouseButton.LeftButton:
+            if isinstance(event, QSinglePointEvent):
+                pos = event.position()
+            else:
+                pos = QPointF()
             if self.contains_point(pos):
                 self._is_pressed = True
-        super().mousePressEvent(event)
+        super().mousePressEvent(cast(QMouseEvent, event))
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self._is_pressed:
+        if event.button() == Qt.MouseButton.LeftButton and self._is_pressed:
             self._is_pressed = False
-            pos = event.position() if hasattr(event, "position") else event.pos()
+            if isinstance(event, QSinglePointEvent):
+                pos = event.position()
+            else:
+                pos = QPointF()
             if self.contains_point(pos):
                 self.clicked.emit(False)
-        super().mouseReleaseEvent(event)
+        super().mouseReleaseEvent(cast(QMouseEvent, event))

@@ -36,6 +36,7 @@ class HomePage(DragDropMixin, BasePage):
         self.target_size = (140, 50)
 
         layout = self.set_main_layout('h')
+        assert layout is not None
 
         # 设置按钮 (齿轮)
         setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)

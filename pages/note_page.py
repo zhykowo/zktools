@@ -43,6 +43,7 @@ class NotePage(BasePage):
         self._loading = False
 
         layout = self.set_main_layout('v')
+        assert layout is not None
 
         # 便笺编辑区（圆角深色背景，与翻译页输入框同款）
         self.note_editor = RoundedTextEdit(placeholder='Write something here...', bg_color=NEUTRAL_1, parent=self)
@@ -57,7 +58,7 @@ class NotePage(BasePage):
 
         self.clear_btn = CoreButton('Clear', parent=self)
         self.clear_btn.setBgColor(COLOR_DANGER)
-        self.clear_btn.setCursor(Qt.PointingHandCursor)
+        self.clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_note)
 
         self.footer_layout = QHBoxLayout()

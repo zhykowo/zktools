@@ -1,4 +1,5 @@
 from pages.base_page import BasePage
+from pages.notify_page import VirtualPage
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
@@ -63,6 +64,7 @@ class ModuleCenterPage(BasePage):
         self.target_size = (300, 300)
 
         main_layout = self.set_main_layout('v')
+        assert main_layout is not None
 
         # 2. 模块网格（按注册页面的 module_name 动态生成）
         grid_widget = QWidget(self)
@@ -95,8 +97,10 @@ class ModuleCenterPage(BasePage):
         # 清空旧卡片
         while self.grid_layout.count():
             item = self.grid_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
         self._cards.clear()
 
         for index, (page_name, page) in enumerate(page_router.pages.items()):
@@ -119,17 +123,21 @@ class ModuleCenterPage(BasePage):
         page = self.sender()
         if page is None:
             return
-        card = self._cards.get(page.page_name)
+        page_name = getattr(page, "page_name", None)
+        if page_name is None:
+            return
+        card = self._cards.get(page_name)
         if card is None:
             # 变化来自尚未展示的页面（如首次出现）：整体重建一次
             self.refresh()
             return
-        self._apply_module_center_info(card, page)
+        if isinstance(page, (BasePage, VirtualPage)):
+            self._apply_module_center_info(card, page)
 
     @staticmethod
-    def _apply_module_center_info(card: ModuleCard, page: BasePage):
+    def _apply_module_center_info(card: ModuleCard, page: BasePage | VirtualPage) -> None:
         """把页面的 module_center 名称与图标应用到卡片（构建与信号刷新共用同一逻辑）"""
-        card.label.setText(page.module_name)
+        card.label.setText(page.module_name or "")
         icon = page.module_icon
         if icon:
             card.icon_btn.set_svg(icon)

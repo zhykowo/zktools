@@ -16,6 +16,7 @@ class SettingPage(BasePage):
         self.target_size = (300, 300)
 
         layout = self.set_main_layout('v')
+        assert layout is not None
 
         title = QLabel("⚙️ 这是设置页面", self)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)

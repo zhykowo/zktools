@@ -160,9 +160,11 @@ class PageRouter(QObject):
             # 队列清空（退出最后一页/异常兜底）：补回 home，保持"队首即当前页"且队列至少含 home
             self.page_queue.append("home")
         next_name = self.page_queue[0]
+        if self.animation_manager is None:
+            return
         # on_show 由动画透明度暗下瞬间的 page_switched 信号触发
         self.animation_manager.switch_to(self.pages[next_name], next_name)
-        if next_name == "home":
+        if next_name == "home" and self.window_manager is not None:
             # 显示/回到 home：归位居中显示
             self.window_manager.queue_state = False
             self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)

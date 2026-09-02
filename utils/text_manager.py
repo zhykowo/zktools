@@ -1,4 +1,6 @@
 import time
+from typing import Any, cast
+
 import utils.clipboard_monitor as clipboard_monitor
 
 class _textManager:
@@ -23,7 +25,7 @@ class _textManager:
                 return ""
 
             # 获取控件的文本模式
-            pattern = control.GetTextPattern()
+            pattern = cast("Any", control).GetTextPattern()
             if pattern:
                 selection = pattern.GetSelection()
                 if selection:
