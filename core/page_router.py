@@ -15,6 +15,9 @@
     page_router.page_queue.append("translator")        # 直接操作队列
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 from enum import Enum, auto
 
 from PySide6.QtCore import QObject, Signal
@@ -102,8 +105,8 @@ class PageRouter(QObject):
     def dispatch(self, mode: SwitchMode, page_name: str):
         """核心路由控制阀：按模式调度页面。"""
         if self.window_manager is None or self.animation_manager is None:
-            print(
-                "[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求:",
+            logger.info(
+                "[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求: mode=%s, page_name=%s",
                 mode,
                 page_name,
             )
@@ -114,7 +117,10 @@ class PageRouter(QObject):
         if mode != SwitchMode.EXIT_SELF:
             page = self.pages.get(page_name)
             if page is None or getattr(page, "virtual", False):
-                print("[page_router] 忽略对不可显示页面的切换请求:", page_name)
+                logger.info(
+                    "[page_router] 忽略对不可显示页面的切换请求: page_name=%s",
+                    page_name,
+                )
                 return
 
         self.window_manager.queue_state = True

@@ -7,6 +7,10 @@
   当系统未提供有效 Accent 色时，自动回退到默认配色 DEFAULT_ACCENT。
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 from typing import cast
 
 from PySide6.QtCore import QObject, Signal
@@ -62,7 +66,8 @@ def get_accent_color() -> QColor:
     """
     try:
         accent = QApplication.palette().color(QPalette.ColorRole.Accent)
-    except Exception:
+    except AttributeError, TypeError:
+        logger.error("未能获取系统配色，使用默认颜色")
         accent = QColor()
 
     if not accent.isValid() or accent.value() < 40:

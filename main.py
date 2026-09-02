@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 import sys
 
 from PySide6.QtCore import QEvent, Qt, QVariantAnimation
@@ -182,6 +185,14 @@ class MainShellWindow(QWidget):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="[%(levelname)s] %(asctime)s - %(message)s",
+        datefmt="%m-%d %H:%M:%S",
+    )
+
+    logger.debug("app start")
+
     app = QApplication(sys.argv)
 
     # 通过 QFont 修正字体渲染

@@ -1,13 +1,8 @@
+import logging
+
 from PySide6.QtCore import QEvent, QObject
 
-
-def _safe_print(*args):
-    """控制台编码不安全时降级为纯文本，避免 GBK/ASCII 环境下打印崩溃"""
-    try:
-        print(*args)
-    except UnicodeEncodeError:
-        text = " ".join(str(a) for a in args)
-        print(text.encode("utf-8", "replace").decode("ascii", "replace"))
+logger = logging.getLogger(__name__)
 
 
 # 全局鼠标追踪事件过滤器
@@ -19,7 +14,7 @@ class MouseHoverEventFilter(QObject):
         self.debug_enabled = debug_enabled
         # 用于去重，避免重复打印同一个控件的进入事件
         self.last_hovered_widget = None
-        # 过滤掉一些频繁触发但无用的控件（可选）
+        # 过滤掉一些频繁触发但无用的控件
         # 比如 QWidget, QGraphicsOpacityEffect 等内部控件
         self.ignore_classes = [
             "QGraphicsOpacityEffect",
@@ -53,13 +48,13 @@ class MouseHoverEventFilter(QObject):
             # 去重：同一个控件只打印一次进入事件
             if self.last_hovered_widget != obj:
                 self.last_hovered_widget = obj
-                _safe_print(f"🖱️ 鼠标进入: {obj_name} ({class_name})")
+                logger.debug(f"🖱️ 鼠标进入: {obj_name} ({class_name})")
 
         # 可选：监听离开事件
         elif event.type() == QEvent.Type.Leave:
             obj_name, class_name = self._widget_info(obj)
             # 打印离开事件（如需启用，取消注释即可）
-            # print(f"⬅️ 鼠标离开: {obj_name} ({class_name})")
+            # logger.debug(f"⬅️ 鼠标离开: {obj_name} ({class_name})")
 
         # 鼠标按下时输出点击的组件
         elif event.type() == QEvent.Type.MouseButtonPress:
@@ -69,7 +64,7 @@ class MouseHoverEventFilter(QObject):
             button = event.button()
             button_name = self.button_names.get(button.value, str(button))
             pos = event.position()
-            _safe_print(
+            logger.debug(
                 f"🖱️ 鼠标点击: {obj_name} ({class_name}) [按钮: {button_name} @({int(pos.x())},{int(pos.y())})]"
             )
 

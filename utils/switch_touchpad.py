@@ -1,5 +1,8 @@
 import ctypes
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 import subprocess
 
 from resources.constants import root_dir
@@ -29,7 +32,7 @@ def get_touchpad_devices():
 
         # 4. 解析 JSON 数据
         if not result.stdout.strip():
-            print("未找到匹配的触摸板设备。")
+            logger.info("未找到匹配的触摸板设备。")
             return []
 
         # 将 JSON 字符串转换为 Python 的列表/字典
@@ -42,10 +45,10 @@ def get_touchpad_devices():
         return devices
 
     except subprocess.CalledProcessError as e:
-        print(f"PowerShell 脚本执行失败: {e.stderr}")
+        logger.critical(f"PowerShell 脚本执行失败: {e.stderr}")
         return []
     except json.JSONDecodeError as e:
-        print(f"JSON 解析失败: {e}")
+        logger.error(f"JSON 解析失败: {e}")
         return []
 
 
@@ -75,20 +78,20 @@ def get_touchpad_status():
             check=True,
         )
     except subprocess.CalledProcessError as e:
-        print(f"PowerShell 脚本执行失败: {e.stderr}")
+        logger.error(f"PowerShell 脚本执行失败: {e.stderr}")
         return None
     except OSError as e:
-        print(f"无法启动 PowerShell(pwsh.exe): {e}")
+        logger.error(f"无法启动 PowerShell(pwsh.exe): {e}")
         return None
 
     if not result.stdout.strip():
-        print("未找到匹配的触摸板设备。")
+        logger.error("未找到匹配的触摸板设备。")
         return None
 
     try:
         devices = json.loads(result.stdout)
     except json.JSONDecodeError as e:
-        print(f"JSON 解析失败: {e}")
+        logger.error(f"JSON 解析失败: {e}")
         return None
 
     if isinstance(devices, dict):
@@ -116,7 +119,7 @@ def run_ps_as_admin(script_path, arguments=""):
     # -File: 指定运行的脚本文件
     ps_args = f'-NoProfile -ExecutionPolicy Bypass -File "{script_path}" {arguments}'
 
-    print(f"[+] 正在尝试以管理员权限启动 PowerShell 脚本: {script_path}")
+    logger.info(f"[+] 正在尝试以管理员权限启动 PowerShell 脚本: {script_path}")
 
     # 使用 ShellExecuteW 触发 UAC 提权
     # 'runas' 是触发管理员权限的关键
@@ -131,10 +134,10 @@ def run_ps_as_admin(script_path, arguments=""):
 
     # ShellExecuteW 返回值大于 32 表示执行成功
     if retval > 32:
-        print("[+] 提权请求已发送，请在 UAC 弹窗中点击‘是’。")
+        logger.info("[+] 提权请求已发送，请在 UAC 弹窗中点击‘是’。")
         return True
     else:
-        print(f"[-] 启动失败，错误码: {retval}")
+        logger.error(f"[-] 启动失败，错误码: {retval}")
         return False
 
 
@@ -147,15 +150,15 @@ def run_switch_touchpad(enable=True):
     action_value = "Enable" if enable else "Disable"
 
     touchpad_list = get_touchpad_devices()
-    print(f"找到 {len(touchpad_list)} 个相关设备：\n")
+    logger.info(f"找到 {len(touchpad_list)} 个相关设备：\n")
     for device in touchpad_list:
         device_id = device.get("InstanceId")
         if not device_id:
             continue
 
-        print(f"设备名称: {device.get('FriendlyName')}")
-        print(f"实例 ID : {device_id}")
-        print("-" * 40)
+        logger.info(f"设备名称: {device.get('FriendlyName')}")
+        logger.info(f"实例 ID : {device_id}")
+        logger.info("-" * 40)
 
         # 构建符合 PowerShell 规范的参数字符串 (-参数名 参数值)
         ps_arguments = f'-Action "{action_value}" -InstanceId "{device_id}"'

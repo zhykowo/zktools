@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QPalette, QTextCursor
 from PySide6.QtWidgets import QHBoxLayout, QLabel
@@ -106,7 +110,7 @@ class NotePage(BasePage):
             self.status_label.setText("Saved")
         except OSError as e:
             self.status_label.setText("Save failed")
-            print(f"[NotePage] 便笺保存失败: {e}")
+            logger.error(f"[NotePage] 便笺保存失败: {e}")
 
     def _flush_save(self):
         """立即落盘：防抖计时器还在跑时直接写盘，避免退出时丢失最后一次输入"""

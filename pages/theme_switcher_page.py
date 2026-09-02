@@ -12,6 +12,9 @@ import bisect
 import ctypes
 import ctypes.wintypes
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 import subprocess
 import sys
 import threading
@@ -45,15 +48,15 @@ def _apply_theme(theme_file: str) -> bool:
             check=False,
         )
         if result.returncode == 0:
-            print(f"[ThemeSwitcher] 主题已切换: {theme_file}")
+            logger.info(f"[ThemeSwitcher] 主题已切换: {theme_file}")
             return True
         else:
-            print(
+            logger.error(
                 f"[ThemeSwitcher] 切换失败 (rc={result.returncode}): {result.stderr.strip()}"
             )
             return False
     except Exception as exc:
-        print(f"[ThemeSwitcher] 调用异常: {exc}")
+        logger.error(f"[ThemeSwitcher] 调用异常: {exc}")
         return False
 
 
@@ -78,7 +81,7 @@ class WinUnlockListener(QWidget):
             if res:
                 self._registered = True
         except Exception as e:
-            print(f"[ThemeSwitcher] 注册工作区解锁监听失败: {e}")
+            logger.critical(f"[ThemeSwitcher] 注册工作区解锁监听失败: {e}")
 
     def nativeEvent(self, eventType, message):
         if eventType == b"windows_generic_MSG":
@@ -152,7 +155,7 @@ class ThemeSwitcherController(QObject):
                     data = json.load(f)
                     return data.get("last_theme", "")
             except Exception as e:
-                print(f"[ThemeSwitcher] 读取本地状态文件异常: {e}")
+                logger.error(f"[ThemeSwitcher] 读取本地状态文件异常: {e}")
         return ""
 
     def _record_applied_theme(self, theme_file: str):
@@ -166,7 +169,7 @@ class ThemeSwitcherController(QObject):
             with open(_STATE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"[ThemeSwitcher] 写入本地状态文件异常: {e}")
+            logger.error(f"[ThemeSwitcher] 写入本地状态文件异常: {e}")
 
     # ---------- schedule & 时间匹配 ----------
 
@@ -220,7 +223,7 @@ class ThemeSwitcherController(QObject):
         delta_seconds = (next_dt - now).total_seconds() + 1.0
         ms = max(1000, int(delta_seconds * 1000))
 
-        print(
+        logger.info(
             f"[ThemeSwitcher] 安排下次定时切换: {next_dt.strftime('%Y-%m-%d %H:%M:%S')} (约 {delta_seconds:.0f} 秒后)"
         )
         self._timer.start(ms)
@@ -247,7 +250,7 @@ class ThemeSwitcherController(QObject):
             return
 
         if self._is_switching:
-            print(f"[ThemeSwitcher] 切换正在进行中，忽略本次触发 ({reason})")
+            logger.info(f"[ThemeSwitcher] 切换正在进行中，忽略本次触发 ({reason})")
             return
 
         now = datetime.now()
@@ -258,13 +261,13 @@ class ThemeSwitcherController(QObject):
         # 检测本地历史记录
         recorded_theme = self._get_recorded_theme()
         if recorded_theme == target_theme:
-            print(
+            logger.info(
                 f"[ThemeSwitcher] [{reason}] 目标主题与本地记录一致 ({target_theme})，跳过切换"
             )
             self._arm_next_timer()
             return
 
-        print(
+        logger.info(
             f"[ThemeSwitcher] [{reason}] 检测到主题变化，准备从 '{recorded_theme}' 切换为 '{target_theme}'"
         )
         self._is_switching = True

@@ -14,6 +14,9 @@
   状态变化时发出 module_name_changed 信号,由 module_center_page 订阅刷新。
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
 import threading
 from enum import Enum
 
@@ -58,7 +61,7 @@ class TouchpadController(QObject):
         """启动时查询触摸板真实状态;查询失败时回退为禁用(与旧默认行为一致)"""
         enabled = get_touchpad_status()
         if enabled is None:
-            print("[TouchpadController] 读取触摸板状态失败,按禁用状态初始化")
+            logger.error("[TouchpadController] 读取触摸板状态失败,按禁用状态初始化")
             return TouchpadState.DISABLED
         return TouchpadState.ENABLED if enabled else TouchpadState.DISABLED
 
@@ -105,7 +108,7 @@ class TouchpadController(QObject):
         try:
             run_switch_touchpad(enable=enable)
         except Exception as exc:  # 防御:设备枚举/提权失败不应导致崩溃
-            print(f"[TouchpadController] 切换失败: {exc}")
+            logger.error(f"[TouchpadController] 切换失败: {exc}")
             final = previous  # 恢复为操作前的状态
 
         with self._lock:
@@ -144,13 +147,13 @@ class TouchpadCtlPage(VirtualPage):
             CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch
         )
         if not test_ok or not switch_ok:
-            print(
+            logger.error(
                 "[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用"
             )
 
     def _on_test_hotkey(self):
         """测试热键回调:仅打印,不触碰 UI"""
-        print("\n💥 触发了测试动作 (Ctrl + Alt + A)")
+        logger.info("\n💥 触发了测试动作 (Ctrl + Alt + A)")
 
     @property
     def module_name(self) -> str:

@@ -1,3 +1,6 @@
+import logging
+
+logger = logging.getLogger(__name__)
 import time
 from enum import Enum, auto
 from functools import partial
@@ -120,9 +123,11 @@ class TranslationHotkey(QObject):
         hotkey_manager.start()
         if hotkey_manager.register(self._hotkey, self._fire):
             self._registered = True
-            print(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
+            logger.info(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
         else:
-            print(f"[TranslationHotkey] 一键翻译快捷键 {self._hotkey} 注册失败！")
+            logger.error(
+                f"[TranslationHotkey] 一键翻译快捷键 {self._hotkey} 注册失败！"
+            )
 
     def stop(self):
         """注销全局热键"""
@@ -335,7 +340,7 @@ class TranslatorPage(BasePage):
         tm = text_manager.get()
         selected = tm.copy_selected_text()
         if not selected:
-            print("[TranslatorPage] 未获取到选中的文本，一键翻译已取消")
+            logger.info("[TranslatorPage] 未获取到选中的文本，一键翻译已取消")
             return
 
         # 1. 切换到翻译页并展示选中文本
@@ -508,7 +513,9 @@ class TranslatorPage(BasePage):
         from_lang = self.origin_lang.text()
         to_lang = self.target_lang.text()
 
-        print(f"正在使用 [{server}] 将 '{text}' 从 {from_lang} 翻译为 {to_lang}...")
+        logger.info(
+            f"正在使用 [{server}] 将 '{text}' 从 {from_lang} 翻译为 {to_lang}..."
+        )
 
         self._translation_cancelled = False
         self._set_translating(True)

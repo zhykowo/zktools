@@ -1,7 +1,10 @@
+import logging
+
+logger = logging.getLogger(__name__)
 import time
 from typing import Any, cast
 
-import utils.clipboard_monitor as clipboard_monitor
+from utils import clipboard_monitor
 
 
 class _textManager:
@@ -23,7 +26,7 @@ class _textManager:
             # 获取当前获得焦点的控件
             control = self.auto.GetFocusedControl()
             if not control:
-                print("error: not control")
+                logger.info("error: not control")
                 return ""
 
             # 获取控件的文本模式
@@ -38,7 +41,7 @@ class _textManager:
         except Exception:
             # 忽略切换焦点或不受支持控件抛出的异常
             pass
-        # print('error')
+        # logger.info('error')
         return ""
 
     def get_clipboard_text(self, text):
@@ -60,7 +63,7 @@ class _textManager:
         try:
             self.auto.SendKeys("{Ctrl}c")
         except Exception as e:
-            print(f"[text_manager] 模拟 Ctrl+C 失败: {e}")
+            logger.error(f"[text_manager] 模拟 Ctrl+C 失败: {e}")
             return ""
 
         # 剪贴板内容更新是异步的，做几次短重试
@@ -72,7 +75,7 @@ class _textManager:
                 return clipboard_text
             time.sleep(delay)
 
-        print("[text_manager] 未获取到选中文本")
+        logger.info("[text_manager] 未获取到选中文本")
         return ""
 
 

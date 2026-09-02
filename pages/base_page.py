@@ -132,4 +132,4 @@ class BasePage(QWidget):
 
     def clear_data(self):
         pass
-        # print(f"🧹 已清空页面数据")
+        # logger.info(f"🧹 已清空页面数据")

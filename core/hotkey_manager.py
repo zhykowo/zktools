@@ -1,5 +1,8 @@
 import ctypes
 import ctypes.wintypes
+import logging
+
+logger = logging.getLogger(__name__)
 import sys
 import traceback
 
@@ -189,7 +192,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
         True 成功；False 失败（未启动 / 解析失败 / 已被占用）。
         """
         if not self._installed:
-            print(
+            logger.error(
                 f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）"
             )
             return False
@@ -198,11 +201,13 @@ class HotkeyManager(QAbstractNativeEventFilter):
         try:
             mods, vk = self._parse_hotkey_str(formatted_hotkey)
         except ValueError as e:
-            print(f"[HotkeyManager] 解析快捷键 '{hotkey_str}' 失败: {e}")
+            logger.error(f"[HotkeyManager] 解析快捷键 '{hotkey_str}' 失败: {e}")
             return False
 
         if formatted_hotkey in self._hotkeys:
-            print(f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册")
+            logger.info(
+                f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册"
+            )
             return False
 
         hotkey_id = self._alloc_hotkey_id()
@@ -210,11 +215,13 @@ class HotkeyManager(QAbstractNativeEventFilter):
         if self.user32.RegisterHotKey(None, hotkey_id, mods, vk):
             self._hotkeys[formatted_hotkey] = hotkey_id
             self._id_map[hotkey_id] = (formatted_hotkey, callback)
-            print(f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}")
+            logger.info(
+                f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}"
+            )
             return True
         else:
             self._free_hotkey_id(hotkey_id)
-            print(
+            logger.error(
                 f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！"
             )
             return False
@@ -227,7 +234,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             self._id_map.pop(hotkey_id, None)
             self.user32.UnregisterHotKey(None, hotkey_id)
             self._free_hotkey_id(hotkey_id)
-            print(f"[HotkeyManager] 已注销快捷键: {formatted_hotkey}")
+            logger.info(f"[HotkeyManager] 已注销快捷键: {formatted_hotkey}")
 
     def start(self):
         """将热键监听挂到 Qt 事件循环上（幂等）"""
@@ -235,11 +242,13 @@ class HotkeyManager(QAbstractNativeEventFilter):
             return
         app = QCoreApplication.instance()
         if app is None:
-            print("[HotkeyManager] start 失败：尚未创建 QCoreApplication/QApplication")
+            logger.critical(
+                "[HotkeyManager] start 失败：尚未创建 QCoreApplication/QApplication"
+            )
             return
         app.installNativeEventFilter(self)
         self._installed = True
-        print("[HotkeyManager] 原生独占热键监听已挂载到 Qt 事件循环...")
+        logger.info("[HotkeyManager] 原生独占热键监听已挂载到 Qt 事件循环...")
 
     def stop(self):
         """停止监听并注销所有快捷键"""
@@ -255,7 +264,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             self._free_hotkey_id(hotkey_id)
         self._id_map.clear()
         self._hotkeys.clear()
-        print("[HotkeyManager] 监听已安全停止。")
+        logger.info("[HotkeyManager] 监听已安全停止。")
 
 
 # 单例导出

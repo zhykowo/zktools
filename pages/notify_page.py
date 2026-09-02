@@ -25,6 +25,10 @@
   扫过）+ 逐字冒出动画（启动间隔递减的加速节奏，单字时长恒定）。
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 import math
 
 from PySide6.QtCore import QElapsedTimer, QObject, QPointF, QTimer, Signal
@@ -400,7 +404,7 @@ def notify(
     """
     page = page_router.pages.get(NotifyPage.PAGE_NAME)
     if page is None:
-        print("[notify] 通知页尚未注册，丢弃消息:", message)
+        logger.error("[notify] 通知页尚未注册，丢弃消息:" + message)
         return
     if only_when_idle:
         current = page_router.page_queue[0] if page_router.page_queue else "home"
