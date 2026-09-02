@@ -31,7 +31,7 @@ class NotePage(BasePage):
         self.target_size = (400, 300)
 
         # 便笺数据文件：开发目录放在项目根目录，打包环境放在 %APPDATA%（与配置文件同目录）
-        self.note_file = get_data_file_path('notes.txt')
+        self.note_file = get_data_file_path("notes.txt")
 
         # 防抖保存定时器：textChanged 触发重启计时，超时后写盘
         self._save_timer = QTimer(self)
@@ -42,11 +42,13 @@ class NotePage(BasePage):
         # 载入阶段标志：初始化填充文本时不当作"用户编辑"，不进入保存流程
         self._loading = False
 
-        layout = self.set_main_layout('v')
+        layout = self.set_main_layout("v")
         assert layout is not None
 
         # 便笺编辑区（圆角深色背景，与翻译页输入框同款）
-        self.note_editor = RoundedTextEdit(placeholder='Write something here...', bg_color=NEUTRAL_1, parent=self)
+        self.note_editor = RoundedTextEdit(
+            placeholder="Write something here...", bg_color=NEUTRAL_1, parent=self
+        )
         font = QFont()
         font.setPointSize(12)
         self.note_editor.setFont(font)
@@ -56,7 +58,7 @@ class NotePage(BasePage):
         self.status_label = self._make_footer_label()
         self.char_count_label = self._make_footer_label()
 
-        self.clear_btn = CoreButton('Clear', parent=self)
+        self.clear_btn = CoreButton("Clear", parent=self)
         self.clear_btn.setBgColor(COLOR_DANGER)
         self.clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_note)
@@ -88,9 +90,9 @@ class NotePage(BasePage):
     def _load_note(self):
         """启动时从磁盘载入便笺内容"""
         try:
-            content = self.note_file.read_text(encoding='utf-8')
+            content = self.note_file.read_text(encoding="utf-8")
         except OSError:
-            content = ''
+            content = ""
 
         self._loading = True
         self.note_editor.setPlainText(content)
@@ -101,10 +103,10 @@ class NotePage(BasePage):
         """把编辑区内容写入磁盘，并刷新保存状态"""
         try:
             self.note_file.parent.mkdir(parents=True, exist_ok=True)
-            self.note_file.write_text(self.note_editor.toPlainText(), encoding='utf-8')
-            self.status_label.setText('Saved')
+            self.note_file.write_text(self.note_editor.toPlainText(), encoding="utf-8")
+            self.status_label.setText("Saved")
         except OSError as e:
-            self.status_label.setText('Save failed')
+            self.status_label.setText("Save failed")
             print(f"[NotePage] 便笺保存失败: {e}")
 
     def _flush_save(self):
@@ -117,12 +119,12 @@ class NotePage(BasePage):
     def _on_text_changed(self):
         if self._loading:
             return
-        self.status_label.setText('Saving...')
+        self.status_label.setText("Saving...")
         self._refresh_char_count()
         self._save_timer.start()  # 重启计时实现防抖
 
     def _refresh_char_count(self):
-        self.char_count_label.setText(f'{len(self.note_editor.toPlainText())} chars')
+        self.char_count_label.setText(f"{len(self.note_editor.toPlainText())} chars")
 
     def _clear_note(self):
         self.note_editor.clear()  # 触发 textChanged，自动进入防抖保存流程

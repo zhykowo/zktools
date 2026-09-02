@@ -21,9 +21,9 @@ from PySide6.QtCore import QObject, Signal
 
 
 class SwitchMode(Enum):
-    GENTLE = auto()      # 温和切换：加入队列排队
-    IMMEDIATE = auto()   # 立即切换：插队并强制中断当前页面
-    EXIT_SELF = auto()   # 退出自己：当前页面结束，释放并展示队列下一页
+    GENTLE = auto()  # 温和切换：加入队列排队
+    IMMEDIATE = auto()  # 立即切换：插队并强制中断当前页面
+    EXIT_SELF = auto()  # 退出自己：当前页面结束，释放并展示队列下一页
 
 
 class PageRouter(QObject):
@@ -44,11 +44,11 @@ class PageRouter(QObject):
         super().__init__()
 
         # 全局状态
-        self.pages = {}                # 页面注册池 { "page_name": widget_instance }
-        self.page_queue = []           # 页面队列 [page_name, ...]，队首即当前显示页；至少保留 "home"
+        self.pages = {}  # 页面注册池 { "page_name": widget_instance }
+        self.page_queue = []  # 页面队列 [page_name, ...]，队首即当前显示页；至少保留 "home"
 
         # 协作对象（主窗口通过 bind() 注入，避免反向依赖窗口实例）
-        self.window_manager = None     # core.window_manager.WindowManager
+        self.window_manager = None  # core.window_manager.WindowManager
         self.animation_manager = None  # core.page_animation.PageAnimationManager
 
         # 单例导入即接管全局路由请求，无需手动连接
@@ -102,7 +102,11 @@ class PageRouter(QObject):
     def dispatch(self, mode: SwitchMode, page_name: str):
         """核心路由控制阀：按模式调度页面。"""
         if self.window_manager is None or self.animation_manager is None:
-            print("[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求:", mode, page_name)
+            print(
+                "[page_router] 尚未 bind 窗口管理器/动画管理器，忽略路由请求:",
+                mode,
+                page_name,
+            )
             return
 
         # 温和/立即切换的目标必须是可显示的实体页面：
@@ -118,7 +122,7 @@ class PageRouter(QObject):
 
         if mode == SwitchMode.GENTLE:
             # 1. 温和切换：仅塞入队列（已在队列中则跳过，保证队列有界、不重复排队）
-            was_idle = not self.page_queue   # 无当前页（仅异常兜底，正常至少含 "home"）
+            was_idle = not self.page_queue  # 无当前页（仅异常兜底，正常至少含 "home"）
             if page_name not in self.page_queue:
                 self.page_queue.append(page_name)
             # 若当前页为 home（处于空闲）则直接触发下一页
@@ -143,7 +147,7 @@ class PageRouter(QObject):
                 if self.page_queue and self.page_queue[0] == page_name:
                     # 目标页面正在显示（队首）：清数据并调度下一页
                     current_page = self.pages.get(page_name)
-                    if current_page and hasattr(current_page, 'clear_data'):
+                    if current_page and hasattr(current_page, "clear_data"):
                         current_page.clear_data()
                     self.next_page()
                 elif page_name in self.page_queue:
@@ -167,7 +171,9 @@ class PageRouter(QObject):
         if next_name == "home" and self.window_manager is not None:
             # 显示/回到 home：归位居中显示
             self.window_manager.queue_state = False
-            self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
+            self.window_manager.animate(
+                show=self.window_manager.on_focus, recenter=True
+            )
 
 
 page_router = PageRouter()

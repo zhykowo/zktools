@@ -2,9 +2,7 @@ from pages.base_page import BasePage
 from pages.notify_page import VirtualPage
 
 from PySide6.QtCore import Qt, Slot
-from PySide6.QtWidgets import (
-    QVBoxLayout, QGridLayout, QLabel, QWidget
-)
+from PySide6.QtWidgets import QVBoxLayout, QGridLayout, QLabel, QWidget
 from PySide6.QtGui import QPalette
 
 from widgets.svg_button import SvgButton
@@ -17,6 +15,7 @@ from core.colors import NEUTRAL_5
 
 class ModuleCard(QWidget):
     """单个模块卡片：上图下字组件"""
+
     def __init__(self, name: str = "", icon_data=square_icon, parent=None):
         super().__init__(parent)
 
@@ -63,7 +62,7 @@ class ModuleCenterPage(BasePage):
 
         self.target_size = (300, 300)
 
-        main_layout = self.set_main_layout('v')
+        main_layout = self.set_main_layout("v")
         assert main_layout is not None
 
         # 2. 模块网格（按注册页面的 module_name 动态生成）
@@ -73,7 +72,7 @@ class ModuleCenterPage(BasePage):
         self.grid_layout.setHorizontalSpacing(12)
         self.grid_layout.setVerticalSpacing(12)
 
-        self._cards = {}               # page_name -> ModuleCard
+        self._cards = {}  # page_name -> ModuleCard
         self._signals_connected = False
 
         main_layout.addWidget(grid_widget)
@@ -135,7 +134,9 @@ class ModuleCenterPage(BasePage):
             self._apply_module_center_info(card, page)
 
     @staticmethod
-    def _apply_module_center_info(card: ModuleCard, page: BasePage | VirtualPage) -> None:
+    def _apply_module_center_info(
+        card: ModuleCard, page: BasePage | VirtualPage
+    ) -> None:
         """把页面的 module_center 名称与图标应用到卡片（构建与信号刷新共用同一逻辑）"""
         card.label.setText(page.module_name or "")
         icon = page.module_icon

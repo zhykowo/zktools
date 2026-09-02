@@ -1,12 +1,13 @@
 from PySide6.QtCore import QEvent, QObject
 
+
 def _safe_print(*args):
     """控制台编码不安全时降级为纯文本，避免 GBK/ASCII 环境下打印崩溃"""
     try:
         print(*args)
     except UnicodeEncodeError:
-        text = ' '.join(str(a) for a in args)
-        print(text.encode('utf-8', 'replace').decode('ascii', 'replace'))
+        text = " ".join(str(a) for a in args)
+        print(text.encode("utf-8", "replace").decode("ascii", "replace"))
 
 
 # 全局鼠标追踪事件过滤器
@@ -20,12 +21,16 @@ class MouseHoverEventFilter(QObject):
         self.last_hovered_widget = None
         # 过滤掉一些频繁触发但无用的控件（可选）
         # 比如 QWidget, QGraphicsOpacityEffect 等内部控件
-        self.ignore_classes = ['QGraphicsOpacityEffect', 'QGraphicsEffectSource', 'QWidget']
+        self.ignore_classes = [
+            "QGraphicsOpacityEffect",
+            "QGraphicsEffectSource",
+            "QWidget",
+        ]
         # 鼠标按钮 -> 中文名映射（Qt.MouseButton 取值）
         self.button_names = {
-            1: '左键',
-            2: '右键',
-            4: '中键',
+            1: "左键",
+            2: "右键",
+            4: "中键",
         }
 
     def _widget_info(self, obj):
@@ -64,6 +69,8 @@ class MouseHoverEventFilter(QObject):
             button = event.button()
             button_name = self.button_names.get(button.value, str(button))
             pos = event.position()
-            _safe_print(f"🖱️ 鼠标点击: {obj_name} ({class_name}) [按钮: {button_name} @({int(pos.x())},{int(pos.y())})]")
+            _safe_print(
+                f"🖱️ 鼠标点击: {obj_name} ({class_name}) [按钮: {button_name} @({int(pos.x())},{int(pos.y())})]"
+            )
 
         return False

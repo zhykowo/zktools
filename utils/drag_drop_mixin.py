@@ -20,25 +20,25 @@ class DragDropMixin:
             event.ignore()
 
     def dragLeaveEvent(self, event: QDragLeaveEvent):
-        self.on_drag_leave()      # 触发子类的钩子函数
+        self.on_drag_leave()  # 触发子类的钩子函数
         event.accept()
 
     def dropEvent(self, event: QDropEvent):
-        self.on_drag_leave()      # 放下文件/文本通常也意味着离开拖拽状态
-        
+        self.on_drag_leave()  # 放下文件/文本通常也意味着离开拖拽状态
+
         mime_data = event.mimeData()
-        
+
         # 1. 如果拖入的是文件
         if mime_data.hasUrls():
             urls = mime_data.urls()
             file_paths = [url.toLocalFile() for url in urls]
             self.on_files_dropped(file_paths)  # 触发文件处理钩子
             event.acceptProposedAction()
-            
+
         # 2. 如果拖入的是纯文本
         elif mime_data.hasText():
             text = mime_data.text()
-            self.on_text_dropped(text)        # 触发文本处理钩子
+            self.on_text_dropped(text)  # 触发文本处理钩子
             event.acceptProposedAction()
 
     # --- 以下是留给子类实现具体的“业务逻辑”的钩子函数 ---

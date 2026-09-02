@@ -1,7 +1,16 @@
 import time
 
 from pages.base_page import BasePage
-from PySide6.QtCore import QEasingCurve, QParallelAnimationGroup, QPropertyAnimation, Qt, QObject, QThread, Signal, Slot
+from PySide6.QtCore import (
+    QEasingCurve,
+    QParallelAnimationGroup,
+    QPropertyAnimation,
+    Qt,
+    QObject,
+    QThread,
+    Signal,
+    Slot,
+)
 from PySide6.QtWidgets import QHBoxLayout, QWidget, QGridLayout
 from PySide6.QtGui import QFont, QColor
 from widgets.svg_button import SvgButton
@@ -11,7 +20,13 @@ from core.page_router import page_router
 from core.hotkey_manager import hotkey_manager
 
 from resources.svgs import arrow_right_icon, translate_icon
-from core.colors import get_accent_color, get_purest_color, NEUTRAL_1, NEUTRAL_2, color_manager
+from core.colors import (
+    get_accent_color,
+    get_purest_color,
+    NEUTRAL_1,
+    NEUTRAL_2,
+    color_manager,
+)
 from resources.constants import CONFIG
 
 from utils.translator import Translator
@@ -35,7 +50,13 @@ class _Animator(QObject):
         super().__init__(parent)
         self._active_group = None
 
-    def animate_heights(self, animations_data: list[tuple[QWidget, int, int]], duration=300, easing=QEasingCurve.Type.OutQuart, on_finished=None):
+    def animate_heights(
+        self,
+        animations_data: list[tuple[QWidget, int, int]],
+        duration=300,
+        easing=QEasingCurve.Type.OutQuart,
+        on_finished=None,
+    ):
         # 替换旧动画组：stop 后 deleteLater 释放 C++ 对象，
         # 否则旧组因 parent 指向常驻页面而永不回收，每次交互累积泄漏
         if self._active_group is not None:
@@ -61,6 +82,7 @@ class _Animator(QObject):
                 def on_finish():
                     w.setMinimumHeight(target_end)
                     w.setMaximumHeight(target_end)
+
                 return on_finish
 
             anim.finished.connect(create_finish_handler(widget, end_h))
@@ -70,6 +92,7 @@ class _Animator(QObject):
             self._active_group.finished.connect(on_finished)
 
         self._active_group.start()
+
 
 class TranslationHotkey(QObject):
     """一键翻译全局热键
@@ -84,9 +107,11 @@ class TranslationHotkey(QObject):
     def __init__(self, callback, hotkey: str | None = None, parent=None):
         super().__init__(parent)
         self._callback = callback
-        self._hotkey = hotkey or CONFIG['translator'].get('hotkey', 'ctrl+shift+t')
+        self._hotkey = hotkey or CONFIG["translator"].get("hotkey", "ctrl+shift+t")
         self._registered = False
-        self._triggered.connect(self._run_in_main_thread, Qt.ConnectionType.QueuedConnection)
+        self._triggered.connect(
+            self._run_in_main_thread, Qt.ConnectionType.QueuedConnection
+        )
 
     @property
     def hotkey(self) -> str:
@@ -117,6 +142,7 @@ class TranslationHotkey(QObject):
         if self._callback:
             self._callback()
 
+
 class TranslationWorker(QThread):
     """后台翻译线程
 
@@ -144,11 +170,14 @@ class TranslationWorker(QThread):
         if self._cancelled:
             return
         result = self._translator.translate_text(
-            text=self._text, server=self._server,
-            from_lang=self._from_lang, to_lang=self._to_lang,
+            text=self._text,
+            server=self._server,
+            from_lang=self._from_lang,
+            to_lang=self._to_lang,
         )
         if not self._cancelled:
             self.translation_done.emit(result)
+
 
 class TranslatorPage(BasePage):
     PAGE_NAME = "translator"
@@ -157,14 +186,17 @@ class TranslatorPage(BasePage):
     MODULE_ICON = translate_icon
 
     SUPPORTED_LANGUAGES = [
-        "Auto", "English", "Chinese",
-        "Japanese", "Korean", "French",
-        "German", "Spanish", "Russian"
+        "Auto",
+        "English",
+        "Chinese",
+        "Japanese",
+        "Korean",
+        "French",
+        "German",
+        "Spanish",
+        "Russian",
     ]
-    SUPPORTED_SERVERS = [
-        "Google", "DeepL", "Baidu",
-        "Bing", "AI1", "AI2"
-    ]
+    SUPPORTED_SERVERS = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
 
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8
@@ -187,7 +219,7 @@ class TranslatorPage(BasePage):
         self._current_grid_mode = GridMode.NONE
         self._server_display_to_id: dict[str, str] = {}
 
-        layout = self.set_main_layout('v')
+        layout = self.set_main_layout("v")
         assert layout is not None
 
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
@@ -196,8 +228,12 @@ class TranslatorPage(BasePage):
         color_manager.accent_color_changed.connect(self._on_accent_changed)
 
         # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
-        self.input_text = RoundedTextEdit(placeholder='Enter or paste text here...', bg_color=NEUTRAL_1, parent=self)
-        self.result_text = RoundedTextEdit(placeholder='Translation result', bg_color=NEUTRAL_1, radius=10, parent=self)
+        self.input_text = RoundedTextEdit(
+            placeholder="Enter or paste text here...", bg_color=NEUTRAL_1, parent=self
+        )
+        self.result_text = RoundedTextEdit(
+            placeholder="Translation result", bg_color=NEUTRAL_1, radius=10, parent=self
+        )
 
         font = QFont()
         font.setPointSize(12)
@@ -221,33 +257,47 @@ class TranslatorPage(BasePage):
 
         self.footer_layout.addStretch()
 
-        self.origin_lang = CoreButton(text=CONFIG['translator']['default_from_lang'])
+        self.origin_lang = CoreButton(text=CONFIG["translator"]["default_from_lang"])
         self.origin_lang.clicked.connect(lambda: self.display_lang_list("origin"))
-        self.footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.footer_layout.addWidget(
+            self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter
+        )
 
         self.swap_btn = SvgButton(self, icon_size=24, svg_data=arrow_right_icon)
         self.swap_btn.clicked.connect(self._swap_languages)
         self.footer_layout.addWidget(self.swap_btn)
 
-        self.target_lang = CoreButton(CONFIG['translator']['default_to_lang'])
+        self.target_lang = CoreButton(CONFIG["translator"]["default_to_lang"])
         self.target_lang.clicked.connect(lambda: self.display_lang_list("target"))
-        self.footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.footer_layout.addWidget(
+            self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter
+        )
 
         self.footer_layout.addStretch()
 
         # 默认服务：config 指定内部标识符，按钮文本显示 config 中配置的名称
-        default_server = CONFIG['translator'].get('default_server', 'Baidu')
-        self._current_server = default_server if default_server in self.SUPPORTED_SERVERS else self.SUPPORTED_SERVERS[0]
+        default_server = CONFIG["translator"].get("default_server", "Baidu")
+        self._current_server = (
+            default_server
+            if default_server in self.SUPPORTED_SERVERS
+            else self.SUPPORTED_SERVERS[0]
+        )
 
-        self.translation_server_btn = CoreButton(self._server_display_name(self._current_server), parent=self)
+        self.translation_server_btn = CoreButton(
+            self._server_display_name(self._current_server), parent=self
+        )
         self.translation_server_btn.clicked.connect(self._start_translation)
-        self.translation_server_btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
+        self.translation_server_btn.setContextMenuPolicy(
+            Qt.ContextMenuPolicy.CustomContextMenu
+        )
+        self.translation_server_btn.customContextMenuRequested.connect(
+            self.display_server_list
+        )
         self.footer_layout.addWidget(self.translation_server_btn)
 
         # 取消按钮：与翻译按钮共存于布局，翻译时通过 hide/show 切换显示，
         # 隐藏的组件会自动空出布局位置，无需移除/插入操作
-        self.cancel_btn = CoreButton('Cancel', parent=self)
+        self.cancel_btn = CoreButton("Cancel", parent=self)
         self.cancel_btn.setBgColor(self.CANCEL_COLOR)
         self.cancel_btn.hide()
         self.cancel_btn.clicked.connect(self._cancel_translation)
@@ -255,7 +305,7 @@ class TranslatorPage(BasePage):
 
         self.footer_layout.setContentsMargins(0, 0, 0, 0)
         self.footer_layout.addStretch()
-        
+
         # 布局组织
         layout.addWidget(self.input_text)
         layout.addWidget(self.result_text)
@@ -266,14 +316,16 @@ class TranslatorPage(BasePage):
         self._set_lang_buttons_active(GridMode.NONE)
 
         # 一键翻译：注册全局热键（复制选中文本 → 填入输入框 → 默认服务翻译）
-        self.one_click_hotkey = TranslationHotkey(self._on_one_click_translate, parent=self)
+        self.one_click_hotkey = TranslationHotkey(
+            self._on_one_click_translate, parent=self
+        )
         self.one_click_hotkey.start()
 
     def on_show(self):
         tm = text_manager.get()
         now_time = time.perf_counter()
         elapsed = now_time - tm.selection_time
-        if elapsed <= 10 and self.input_text.toPlainText() == '':
+        if elapsed <= 10 and self.input_text.toPlainText() == "":
             selected_text = tm.selected_text
             if selected_text:
                 self.input_text.setText(selected_text)
@@ -293,29 +345,48 @@ class TranslatorPage(BasePage):
         self.input_text.setText(selected)
         self.input_text.setFocus()
 
-        self.origin_lang.setText(CONFIG['translator']['default_from_lang'],)
-        self.target_lang.setText(CONFIG['translator']['default_to_lang'])
+        self.origin_lang.setText(
+            CONFIG["translator"]["default_from_lang"],
+        )
+        self.target_lang.setText(CONFIG["translator"]["default_to_lang"])
 
         # 2. 使用默认服务与默认语言执行翻译
-        default_server = CONFIG['translator'].get('default_server', 'Baidu')
-        self._current_server = default_server if default_server in self.SUPPORTED_SERVERS else self.SUPPORTED_SERVERS[0]
-        self.translation_server_btn.setText(self._server_display_name(self._current_server))
+        default_server = CONFIG["translator"].get("default_server", "Baidu")
+        self._current_server = (
+            default_server
+            if default_server in self.SUPPORTED_SERVERS
+            else self.SUPPORTED_SERVERS[0]
+        )
+        self.translation_server_btn.setText(
+            self._server_display_name(self._current_server)
+        )
         self._start_translation()
 
-
     # ==================== 抽象核心逻辑 ====================
-    def _request_grid_switch(self, mode: GridMode, items: list[str], current_value: str, on_select_callback):
+    def _request_grid_switch(
+        self, mode: GridMode, items: list[str], current_value: str, on_select_callback
+    ):
         """网格切换控制中心：实现平滑过渡"""
         if self._current_grid_mode == mode:
             self._collapse_grid()
             return
 
-        current_height = self._prepare_grid_switch(mode, items, current_value, on_select_callback)
-        self._animate_grid_switch(current_height, self._calculate_grid_height(len(items)))
+        current_height = self._prepare_grid_switch(
+            mode, items, current_value, on_select_callback
+        )
+        self._animate_grid_switch(
+            current_height, self._calculate_grid_height(len(items))
+        )
 
-    def _prepare_grid_switch(self, mode: GridMode, items: list[str], current_value: str, on_select_callback) -> int:
+    def _prepare_grid_switch(
+        self, mode: GridMode, items: list[str], current_value: str, on_select_callback
+    ) -> int:
         """切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变，返回切换前高度"""
-        current_height = self.selection_grid_widget.height() if self._current_grid_mode != GridMode.NONE else 0
+        current_height = (
+            self.selection_grid_widget.height()
+            if self._current_grid_mode != GridMode.NONE
+            else 0
+        )
         self._current_grid_mode = mode
 
         # 填充新按钮并强制固定当前高度防止跳变
@@ -341,7 +412,7 @@ class TranslatorPage(BasePage):
 
         self.animator.animate_heights(
             animations_data=[(self.selection_grid_widget, current_height, 0)],
-            on_finished=on_finished
+            on_finished=on_finished,
         )
 
     def _populate_grid(self, items, current_value, on_select_callback):
@@ -361,10 +432,12 @@ class TranslatorPage(BasePage):
             # 仅当前选中项（激活）以 accent 高亮，其余显示灰色
             if text != current_value:
                 btn.setBgColor(self.idle_btn_bg)
-            
+
             # 使用 functools.partial 代替 lambda 绑定，代码更清晰
-            btn.clicked.connect(partial(self._handle_grid_item_click, text, on_select_callback))
-            
+            btn.clicked.connect(
+                partial(self._handle_grid_item_click, text, on_select_callback)
+            )
+
             row, col = divmod(idx, cols)
             self.grid_layout.addWidget(btn, row, col)
 
@@ -381,7 +454,11 @@ class TranslatorPage(BasePage):
     def display_lang_list(self, target_type="origin"):
         """显示语言选择网格"""
         mode = GridMode.ORIGIN_LANG if target_type == "origin" else GridMode.TARGET_LANG
-        current_lang = self.origin_lang.text() if target_type == "origin" else self.target_lang.text()
+        current_lang = (
+            self.origin_lang.text()
+            if target_type == "origin"
+            else self.target_lang.text()
+        )
 
         def set_language(selected_lang):
             if target_type == "origin":
@@ -389,12 +466,20 @@ class TranslatorPage(BasePage):
             else:
                 self.target_lang.setText(selected_lang)
 
-        self._request_grid_switch(mode, self.SUPPORTED_LANGUAGES, current_lang, set_language)
+        self._request_grid_switch(
+            mode, self.SUPPORTED_LANGUAGES, current_lang, set_language
+        )
 
     def _server_display_name(self, server_id):
         """服务按钮显示名：AI1/AI2 使用 config 中指定的名称，其余显示自身标识符"""
-        if server_id in ('AI1', 'AI2'):
-            name = CONFIG['translator'].get('apis', {}).get('ai', {}).get(server_id, {}).get('name')
+        if server_id in ("AI1", "AI2"):
+            name = (
+                CONFIG["translator"]
+                .get("apis", {})
+                .get("ai", {})
+                .get(server_id, {})
+                .get("name")
+            )
             return name or server_id
         return server_id
 
@@ -432,8 +517,10 @@ class TranslatorPage(BasePage):
 
         self._worker = TranslationWorker(
             translator=self.translator,
-            text=text, server=server,
-            from_lang=from_lang, to_lang=to_lang,
+            text=text,
+            server=server,
+            from_lang=from_lang,
+            to_lang=to_lang,
             parent=self,
         )
         self._worker.translation_done.connect(self._on_translation_done)
@@ -474,10 +561,12 @@ class TranslatorPage(BasePage):
         grid_start_h = self.selection_grid_widget.height()
         result_start_h = self.result_text.height()
 
-        self.animator.animate_heights([
-            (self.selection_grid_widget, grid_start_h, 0),
-            (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT)
-        ])
+        self.animator.animate_heights(
+            [
+                (self.selection_grid_widget, grid_start_h, 0),
+                (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT),
+            ]
+        )
         self._set_translating(False)
 
     def _on_worker_finished(self):
@@ -489,8 +578,12 @@ class TranslatorPage(BasePage):
 
     def _set_lang_buttons_active(self, mode: GridMode):
         """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
-        self.origin_lang.setBgColor(self.accent_qcolor if mode == GridMode.ORIGIN_LANG else self.idle_btn_bg)
-        self.target_lang.setBgColor(self.accent_qcolor if mode == GridMode.TARGET_LANG else self.idle_btn_bg)
+        self.origin_lang.setBgColor(
+            self.accent_qcolor if mode == GridMode.ORIGIN_LANG else self.idle_btn_bg
+        )
+        self.target_lang.setBgColor(
+            self.accent_qcolor if mode == GridMode.TARGET_LANG else self.idle_btn_bg
+        )
 
     def _on_accent_changed(self, new_color: QColor):
         """系统强调色变化时更新 accent 色，并立即刷新当前高亮的按钮"""
@@ -515,12 +608,14 @@ class TranslatorPage(BasePage):
 
     def clear_data(self):
         self._cancel_translation()
-        self.input_text.setText('')
-        self.result_text.setText('')
+        self.input_text.setText("")
+        self.result_text.setText("")
 
         self._set_lang_buttons_active(GridMode.NONE)
 
-        self.animator.animate_heights([
-            (self.selection_grid_widget, self.selection_grid_widget.height(), 0),
-            (self.result_text, self.result_text.height(), 0)
-        ])
+        self.animator.animate_heights(
+            [
+                (self.selection_grid_widget, self.selection_grid_widget.height(), 0),
+                (self.result_text, self.result_text.height(), 0),
+            ]
+        )

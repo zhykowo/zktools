@@ -3,25 +3,27 @@ from typing import Any, cast
 
 import utils.clipboard_monitor as clipboard_monitor
 
+
 class _textManager:
     def __init__(self):
         import uiautomation as auto
+
         self.auto = auto
 
-        self.selected_text = ''
+        self.selected_text = ""
         self.selection_time = time.perf_counter()
 
-        self.clipboard_text = ''
+        self.clipboard_text = ""
         self.copy_time = time.perf_counter()
 
         clipboard_monitor.get().cbChanged.connect(self.get_clipboard_text)
-        
+
     def get_selected_text(self):
         try:
             # 获取当前获得焦点的控件
             control = self.auto.GetFocusedControl()
             if not control:
-                print('error: not control')
+                print("error: not control")
                 return ""
 
             # 获取控件的文本模式
@@ -56,7 +58,7 @@ class _textManager:
 
         # 2. 回退方案：模拟 Ctrl+C 后从剪贴板读取
         try:
-            self.auto.SendKeys('{Ctrl}c')
+            self.auto.SendKeys("{Ctrl}c")
         except Exception as e:
             print(f"[text_manager] 模拟 Ctrl+C 失败: {e}")
             return ""
@@ -73,11 +75,14 @@ class _textManager:
         print("[text_manager] 未获取到选中文本")
         return ""
 
+
 _instance = None
+
 
 def init(*args, **kwargs) -> None:
     global _instance
     _instance = _textManager(*args, **kwargs)
+
 
 def get() -> _textManager:
     """获取单例"""

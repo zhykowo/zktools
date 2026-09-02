@@ -7,6 +7,7 @@
 - 切换前读取本地 json 记录，若与目标主题一致则跳过，否则调用 ThemeSwitcher.exe 切换并记录；
 - 切换消息统一走全局通知页 notify() 弹出。
 """
+
 import bisect
 import ctypes
 import ctypes.wintypes
@@ -47,7 +48,9 @@ def _apply_theme(theme_file: str) -> bool:
             print(f"[ThemeSwitcher] 主题已切换: {theme_file}")
             return True
         else:
-            print(f"[ThemeSwitcher] 切换失败 (rc={result.returncode}): {result.stderr.strip()}")
+            print(
+                f"[ThemeSwitcher] 切换失败 (rc={result.returncode}): {result.stderr.strip()}"
+            )
             return False
     except Exception as exc:
         print(f"[ThemeSwitcher] 调用异常: {exc}")
@@ -159,7 +162,7 @@ class ThemeSwitcherController(QObject):
             _STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
             data = {
                 "last_theme": theme_file,
-                "last_switch_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                "last_switch_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
             with open(_STATE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
@@ -182,7 +185,7 @@ class ThemeSwitcherController(QObject):
 
     def _get_target_theme(self, now: datetime) -> str:
         """根据当前时间匹配应使用的主题。
-        
+
         如果早于今天所有时间点，则匹配前一天最后一个时间段的主题。
         """
         if not self._schedule_list:
@@ -190,7 +193,7 @@ class ThemeSwitcherController(QObject):
         now_time = now.time()
         times = [t for t, _ in self._schedule_list]
         pos = bisect.bisect_right(times, now_time)
-        
+
         if pos == 0:
             # 早于今天第一个时间点，取列表最后一个（跨夜延续前一天最后的主题）
             return self._schedule_list[-1][1]
@@ -217,8 +220,10 @@ class ThemeSwitcherController(QObject):
         # 增加 1 秒缓冲，确保触发时已越过该时刻
         delta_seconds = (next_dt - now).total_seconds() + 1.0
         ms = max(1000, int(delta_seconds * 1000))
-        
-        print(f"[ThemeSwitcher] 安排下次定时切换: {next_dt.strftime('%Y-%m-%d %H:%M:%S')} (约 {delta_seconds:.0f} 秒后)")
+
+        print(
+            f"[ThemeSwitcher] 安排下次定时切换: {next_dt.strftime('%Y-%m-%d %H:%M:%S')} (约 {delta_seconds:.0f} 秒后)"
+        )
         self._timer.start(ms)
 
     # ---------- 启用/禁用 ----------
@@ -254,11 +259,15 @@ class ThemeSwitcherController(QObject):
         # 检测本地历史记录
         recorded_theme = self._get_recorded_theme()
         if recorded_theme == target_theme:
-            print(f"[ThemeSwitcher] [{reason}] 目标主题与本地记录一致 ({target_theme})，跳过切换")
+            print(
+                f"[ThemeSwitcher] [{reason}] 目标主题与本地记录一致 ({target_theme})，跳过切换"
+            )
             self._arm_next_timer()
             return
 
-        print(f"[ThemeSwitcher] [{reason}] 检测到主题变化，准备从 '{recorded_theme}' 切换为 '{target_theme}'")
+        print(
+            f"[ThemeSwitcher] [{reason}] 检测到主题变化，准备从 '{recorded_theme}' 切换为 '{target_theme}'"
+        )
         self._is_switching = True
         self.state_changed.emit("switching")
         notify("主题切换中…", icon=theme_icon, duration=0)

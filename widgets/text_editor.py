@@ -5,9 +5,15 @@ from PySide6.QtGui import QColor, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QFrame, QTextEdit
 
 from core.colors import (
-    get_accent_color, get_purest_color,
-    NEUTRAL_1, NEUTRAL_2, NEUTRAL_3,
-    WHITE, NEUTRAL_4, COLOR_TRANSPARENT, color_manager,
+    get_accent_color,
+    get_purest_color,
+    NEUTRAL_1,
+    NEUTRAL_2,
+    NEUTRAL_3,
+    WHITE,
+    NEUTRAL_4,
+    COLOR_TRANSPARENT,
+    color_manager,
 )
 
 
@@ -22,8 +28,9 @@ class RoundedTextEdit(QTextEdit):
     - placeholder：文本为空且未聚焦时显示灰色提示文字
     """
 
-    def __init__(self, placeholder: str = '', bg_color=NEUTRAL_1,
-                 radius: int = 12, parent=None):
+    def __init__(
+        self, placeholder: str = "", bg_color=NEUTRAL_1, radius: int = 12, parent=None
+    ):
         super().__init__(parent)
         self._placeholder = placeholder
         self._radius = radius
@@ -37,7 +44,7 @@ class RoundedTextEdit(QTextEdit):
         # 去掉 QTextEdit 自带 frame / 边框，背景交由 paintEvent 统一绘制
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setAcceptRichText(False)
-        self.setStyleSheet('QTextEdit { background: transparent; border: none; }')
+        self.setStyleSheet("QTextEdit { background: transparent; border: none; }")
 
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Base, COLOR_TRANSPARENT)
@@ -121,7 +128,8 @@ class RoundedTextEdit(QTextEdit):
             margin = int(self.document().documentMargin())
             fm = p.fontMetrics()
             text = fm.elidedText(
-                self._placeholder, Qt.TextElideMode.ElideRight,
+                self._placeholder,
+                Qt.TextElideMode.ElideRight,
                 viewport.width() - 2 * margin,
             )
             p.drawText(

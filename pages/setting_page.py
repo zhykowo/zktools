@@ -5,6 +5,7 @@ from resources.svgs import settings_icon
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 
+
 class SettingPage(BasePage):
     PAGE_NAME = "setting"
     TITLE = "Setting"
@@ -15,7 +16,7 @@ class SettingPage(BasePage):
 
         self.target_size = (300, 300)
 
-        layout = self.set_main_layout('v')
+        layout = self.set_main_layout("v")
         assert layout is not None
 
         title = QLabel("⚙️ 这是设置页面", self)

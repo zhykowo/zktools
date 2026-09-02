@@ -15,11 +15,11 @@ MOD_NOREPEAT = 0x4000  # 防止长按按键时触发大量重复回调
 WM_HOTKEY = 0x0312
 
 # 在常量定义区域补充 Win32 虚拟键码与 KEYUP 标志
-VK_SHIFT   = 0x10
+VK_SHIFT = 0x10
 VK_CONTROL = 0x11
-VK_MENU    = 0x12  # Alt 键
-VK_LWIN    = 0x5B  # Left Win
-VK_RWIN    = 0x5C  # Right Win
+VK_MENU = 0x12  # Alt 键
+VK_LWIN = 0x5B  # Left Win
+VK_RWIN = 0x5C  # Right Win
 
 KEYEVENTF_KEYUP = 0x0002
 
@@ -37,49 +37,74 @@ class HotkeyManager(QAbstractNativeEventFilter):
     - 回调在 Qt 事件循环线程同步执行，只应做轻量状态裁决并发射信号，
       不得阻塞 UI，也不得直接触碰 UI 控件。
     """
+
     def __init__(self):
-        if sys.platform != 'win32':
-            raise RuntimeError("HotkeyManager 仅支持 Windows（依赖 RegisterHotKey / 原生消息循环）")
+        if sys.platform != "win32":
+            raise RuntimeError(
+                "HotkeyManager 仅支持 Windows（依赖 RegisterHotKey / 原生消息循环）"
+            )
         super().__init__()
 
         self.user32 = ctypes.windll.user32
         self.kernel32 = ctypes.windll.kernel32
 
-        self._hotkeys = {}       # { formatted_hotkey: hotkey_id }
-        self._id_map = {}        # { hotkey_id: (formatted_hotkey, callback) }
+        self._hotkeys = {}  # { formatted_hotkey: hotkey_id }
+        self._id_map = {}  # { hotkey_id: (formatted_hotkey, callback) }
         self._counter = 1
         self._app_id = self.kernel32.GetCurrentProcessId()
-        self._atom_ids = set()   # 记录由 GlobalAddAtom 分配的全局原子 ID（注销时需释放）
+        self._atom_ids = set()  # 记录由 GlobalAddAtom 分配的全局原子 ID（注销时需释放）
         self._installed = False
 
         # 常用特殊按键的虚拟键码 (VK Code) 映射
         self._vk_map = {
-            'space': 0x20, 'enter': 0x0D, 'return': 0x0D, 'tab': 0x09,
-            'esc': 0x1B, 'escape': 0x1B, 'backspace': 0x08, 'delete': 0x2E,
-            'up': 0x26, 'down': 0x28, 'left': 0x25, 'right': 0x27,
-            'insert': 0x2D, 'home': 0x24, 'end': 0x23, 'pageup': 0x21, 'pagedown': 0x22,
+            "space": 0x20,
+            "enter": 0x0D,
+            "return": 0x0D,
+            "tab": 0x09,
+            "esc": 0x1B,
+            "escape": 0x1B,
+            "backspace": 0x08,
+            "delete": 0x2E,
+            "up": 0x26,
+            "down": 0x28,
+            "left": 0x25,
+            "right": 0x27,
+            "insert": 0x2D,
+            "home": 0x24,
+            "end": 0x23,
+            "pageup": 0x21,
+            "pagedown": 0x22,
             # 符号键 → VK 码（不能直接用 ASCII，否则会错位成其他按键，如 '.' → VK_DELETE）
-            '.': 0xBE, ',': 0xBC, '/': 0xBF, ';': 0xBA, "'": 0xDE,
-            '[': 0xDB, ']': 0xDD, '-': 0xBD, '=': 0xBB, '`': 0xC0, '\\': 0xDC,
-            **{f'f{i}': 0x70 + i - 1 for i in range(1, 25)} # F1 - F24
+            ".": 0xBE,
+            ",": 0xBC,
+            "/": 0xBF,
+            ";": 0xBA,
+            "'": 0xDE,
+            "[": 0xDB,
+            "]": 0xDD,
+            "-": 0xBD,
+            "=": 0xBB,
+            "`": 0xC0,
+            "\\": 0xDC,
+            **{f"f{i}": 0x70 + i - 1 for i in range(1, 25)},  # F1 - F24
         }
 
     def _parse_hotkey_str(self, hotkey_str: str):
         """解析快捷键字符串（如 'ctrl+alt+a'），转换为 Win32 的修饰键和 VK 码"""
-        parts = hotkey_str.lower().replace(' ', '').split('+')
+        parts = hotkey_str.lower().replace(" ", "").split("+")
         mods = MOD_NOREPEAT  # 默认加上防重复触发
         vk = None
 
         for part in parts:
             if not part:
                 continue  # 容忍 'ctrl++a' 之类的空段
-            if part in ('ctrl', 'control'):
+            if part in ("ctrl", "control"):
                 mods |= MOD_CONTROL
-            elif part == 'alt':
+            elif part == "alt":
                 mods |= MOD_ALT
-            elif part == 'shift':
+            elif part == "shift":
                 mods |= MOD_SHIFT
-            elif part in ('win', 'cmd'):
+            elif part in ("win", "cmd"):
                 mods |= MOD_WIN
             elif part in self._vk_map:
                 if vk is not None:
@@ -164,10 +189,12 @@ class HotkeyManager(QAbstractNativeEventFilter):
         True 成功；False 失败（未启动 / 解析失败 / 已被占用）。
         """
         if not self._installed:
-            print(f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）")
+            print(
+                f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）"
+            )
             return False
 
-        formatted_hotkey = hotkey_str.lower().replace(' ', '')
+        formatted_hotkey = hotkey_str.lower().replace(" ", "")
         try:
             mods, vk = self._parse_hotkey_str(formatted_hotkey)
         except ValueError as e:
@@ -187,12 +214,14 @@ class HotkeyManager(QAbstractNativeEventFilter):
             return True
         else:
             self._free_hotkey_id(hotkey_id)
-            print(f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！")
+            print(
+                f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！"
+            )
             return False
 
     def unregister(self, hotkey_str: str):
         """动态删除快捷键"""
-        formatted_hotkey = hotkey_str.lower().replace(' ', '')
+        formatted_hotkey = hotkey_str.lower().replace(" ", "")
         hotkey_id = self._hotkeys.pop(formatted_hotkey, None)
         if hotkey_id is not None:
             self._id_map.pop(hotkey_id, None)

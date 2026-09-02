@@ -13,6 +13,7 @@
   module_name 属性按状态动态提供卡片文本("TchPad Off"/"TchPad On"),
   状态变化时发出 module_name_changed 信号,由 module_center_page 订阅刷新。
 """
+
 import threading
 from enum import Enum
 
@@ -100,7 +101,9 @@ class TouchpadController(QObject):
             name="touchpad-switch",
         ).start()
 
-    def _perform_switch(self, enable: bool, final: TouchpadState, previous: TouchpadState):
+    def _perform_switch(
+        self, enable: bool, final: TouchpadState, previous: TouchpadState
+    ):
         """工作线程:执行开关操作,完成后把结果送回主线程。"""
         try:
             run_switch_touchpad(enable=enable)
@@ -144,7 +147,9 @@ class TouchpadCtlPage(VirtualPage):
             CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch
         )
         if not test_ok or not switch_ok:
-            print("[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用")
+            print(
+                "[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用"
+            )
 
     def _on_test_hotkey(self):
         """测试热键回调:仅打印,不触碰 UI"""

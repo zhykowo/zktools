@@ -10,6 +10,7 @@ from widgets.svg_button import SvgButton
 from resources.svgs import arrow_left_icon, close_icon, drag_icon, square_icon
 from core.colors import WHITE, COLOR_DANGER
 
+
 class BasePage(QWidget):
     """所有页面的基类
 
@@ -19,6 +20,7 @@ class BasePage(QWidget):
     - MODULE_NAME: 模块中心显示名；空字符串表示不显示在模块中心
     - MODULE_ICON: 卡片图标（SVG 数据）
     """
+
     PAGE_NAME = None
     TITLE = "标题占位符"
     MODULE_NAME = None
@@ -29,7 +31,7 @@ class BasePage(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.page_name = ''
+        self.page_name = ""
         self.target_size = (300, 300)  # 默认大小，子类可以覆盖
 
         self.main_layout = None
@@ -39,7 +41,13 @@ class BasePage(QWidget):
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.esc_shortcut.activated.connect(self.on_back_clicked)
         # 全局关闭按钮
-        self.close_btn = SvgButton(self, icon_size=20, svg_data=close_icon, hover_color=COLOR_DANGER, enable_rotation=True)
+        self.close_btn = SvgButton(
+            self,
+            icon_size=20,
+            svg_data=close_icon,
+            hover_color=COLOR_DANGER,
+            enable_rotation=True,
+        )
         app = QApplication.instance()
         if app is not None:
             self.close_btn.clicked.connect(app.quit)
@@ -63,7 +71,7 @@ class BasePage(QWidget):
     def set_main_layout(self, d: str, title: str | None = None):
         if title is None:
             title = self.TITLE
-        if d == 'v':
+        if d == "v":
             self.main_layout = QVBoxLayout(self)
             self.main_layout.setContentsMargins(0, 8, 0, 8)
             self.main_layout.setSpacing(8)
@@ -71,7 +79,7 @@ class BasePage(QWidget):
             self.content_layout = QVBoxLayout()
             self.main_layout.addLayout(self.content_layout)
 
-        elif d == 'h':
+        elif d == "h":
             self.main_layout = QHBoxLayout(self)
             self.main_layout.setContentsMargins(0, 0, 0, 0)
             self.content_layout = QHBoxLayout()
@@ -126,4 +134,3 @@ class BasePage(QWidget):
     def clear_data(self):
         pass
         # print(f"🧹 已清空页面数据")
-

@@ -20,10 +20,13 @@ _DROP_HINT_ACTIVE_QSS = (
     f"border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
 )
 
+
 class OnDragEvent(QObject):
     on_drag_event = Signal(bool)
 
+
 on_drag_bus = OnDragEvent()
+
 
 class HomePage(DragDropMixin, BasePage):
     PAGE_NAME = "home"
@@ -35,22 +38,30 @@ class HomePage(DragDropMixin, BasePage):
 
         self.target_size = (140, 50)
 
-        layout = self.set_main_layout('h')
+        layout = self.set_main_layout("h")
         assert layout is not None
 
         # 设置按钮 (齿轮)
-        setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)
+        setting_btn = SvgButton(
+            size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True
+        )
         setting_btn.clicked.connect(lambda: page_router.immediate_switch("setting"))
 
-        app_center_btn = SvgButton(size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True)
-        app_center_btn.clicked.connect(lambda: page_router.immediate_switch("module_center"))
+        app_center_btn = SvgButton(
+            size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True
+        )
+        app_center_btn.clicked.connect(
+            lambda: page_router.immediate_switch("module_center")
+        )
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.drop_hint_label.setStyleSheet(_DROP_HINT_IDLE_QSS)
 
-        self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.drop_hint_label.setMaximumWidth(0) 
+        self.drop_hint_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        self.drop_hint_label.setMaximumWidth(0)
 
         layout.addWidget(setting_btn)
         layout.addWidget(app_center_btn)
@@ -73,6 +84,6 @@ class HomePage(DragDropMixin, BasePage):
         self.drop_anim.stop()
         self.drop_anim.setEndValue(0)
         self.drop_anim.start()
-        
+
     # def on_files_dropped(self, file_paths: list[str]):
     #     pass

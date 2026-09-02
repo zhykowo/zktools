@@ -6,10 +6,19 @@ from widgets.hover import HoverShape, HoverWidget
 
 from core.colors import get_accent_color, WHITE, color_manager
 
+
 class SvgButton(HoverWidget):
     """继承 HoverWidget，天然具备圆形碰撞判定与物理 Hover 检测"""
 
-    def __init__(self, parent=None, size=36, icon_size=16, svg_data=None, hover_color=None, enable_rotation=False):
+    def __init__(
+        self,
+        parent=None,
+        size=36,
+        icon_size=16,
+        svg_data=None,
+        hover_color=None,
+        enable_rotation=False,
+    ):
         # 初始化基类，并指定为圆形碰撞区域 (HoverShape.CIRCLE)
         super().__init__(parent, shape=HoverShape.CIRCLE)
 
@@ -24,8 +33,8 @@ class SvgButton(HoverWidget):
 
         self.svg_renderer = QSvgRenderer()
         # 光栅化缓存：SVG 只渲染一次，之后 hover 动画每帧复用
-        self._icon_cache = None        # 原始 SVG 渲染结果 (QPixmap)
-        self._tint_pixmap = None       # 每帧复用的染色目标 (QPixmap)
+        self._icon_cache = None  # 原始 SVG 渲染结果 (QPixmap)
+        self._tint_pixmap = None  # 每帧复用的染色目标 (QPixmap)
         self._cached_dpr = 0.0
         self._cached_icon_size = 0
 
@@ -65,10 +74,10 @@ class SvgButton(HoverWidget):
         self.update()
 
     def set_svg(self, svg_data: str):
-        if svg_data.endswith('.svg'):
+        if svg_data.endswith(".svg"):
             self.svg_renderer.load(svg_data)
         else:
-            self.svg_renderer.load(svg_data.encode('utf-8'))
+            self.svg_renderer.load(svg_data.encode("utf-8"))
         self._icon_cache = None  # 使光栅化缓存失效，下次绘制时重建
         self.update()
 
@@ -82,9 +91,11 @@ class SvgButton(HoverWidget):
     def _ensure_icon_cache(self):
         """惰性构建 SVG 光栅化缓存；仅当 SVG / icon_size / dpr 变化时重建"""
         dpr = self.devicePixelRatioF()
-        if (self._icon_cache is not None
-                and self._cached_dpr == dpr
-                and self._cached_icon_size == self.icon_size):
+        if (
+            self._icon_cache is not None
+            and self._cached_dpr == dpr
+            and self._cached_icon_size == self.icon_size
+        ):
             return
 
         self._icon_cache = None
@@ -113,9 +124,18 @@ class SvgButton(HoverWidget):
             self._tint_pixmap = QPixmap(cache.size())
             self._tint_pixmap.setDevicePixelRatio(cache.devicePixelRatio())
 
-        r = int(self.normal_color.red() + (self.target_color.red() - self.normal_color.red()) * p)
-        g = int(self.normal_color.green() + (self.target_color.green() - self.normal_color.green()) * p)
-        b = int(self.normal_color.blue() + (self.target_color.blue() - self.normal_color.blue()) * p)
+        r = int(
+            self.normal_color.red()
+            + (self.target_color.red() - self.normal_color.red()) * p
+        )
+        g = int(
+            self.normal_color.green()
+            + (self.target_color.green() - self.normal_color.green()) * p
+        )
+        b = int(
+            self.normal_color.blue()
+            + (self.target_color.blue() - self.normal_color.blue()) * p
+        )
 
         tinted = self._tint_pixmap
         tinted.fill(Qt.GlobalColor.transparent)
@@ -133,7 +153,12 @@ class SvgButton(HoverWidget):
 
         # 绘制背景
         bg_alpha = int(p * 40)
-        bg_color = QColor(self.target_color.red(), self.target_color.green(), self.target_color.blue(), bg_alpha)
+        bg_color = QColor(
+            self.target_color.red(),
+            self.target_color.green(),
+            self.target_color.blue(),
+            bg_alpha,
+        )
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(bg_color)
         painter.drawEllipse(self.rect())

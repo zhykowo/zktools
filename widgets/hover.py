@@ -6,10 +6,10 @@ from PySide6.QtWidgets import QWidget
 
 
 class HoverShape(Enum):
-    RECTANGLE = 0   # 矩形
-    CIRCLE = 1      # 内切圆/正圆
-    ROUNDED_RECT = 2# 圆角矩形
-    CUSTOM = 3      # 自定义路径
+    RECTANGLE = 0  # 矩形
+    CIRCLE = 1  # 内切圆/正圆
+    ROUNDED_RECT = 2  # 圆角矩形
+    CUSTOM = 3  # 自定义路径
 
 
 class HoverWidget(QWidget):
@@ -17,12 +17,18 @@ class HoverWidget(QWidget):
     通用精准悬停组件基类
     完全绕过原生的 enterEvent/leaveEvent，采用纯数学几何距离判定。
     """
+
     # 信号定义
     hover_entered = Signal()  # 鼠标真正进入几何区域
-    hover_left = Signal()     # 鼠标真正离开几何区域
-    clicked = Signal(bool)        # 在几何区域内完成有效点击
+    hover_left = Signal()  # 鼠标真正离开几何区域
+    clicked = Signal(bool)  # 在几何区域内完成有效点击
 
-    def __init__(self, parent=None, shape: HoverShape = HoverShape.RECTANGLE, border_radius: float = 0.0):
+    def __init__(
+        self,
+        parent=None,
+        shape: HoverShape = HoverShape.RECTANGLE,
+        border_radius: float = 0.0,
+    ):
         super().__init__(parent)
         self._shape = shape
         self._border_radius = border_radius
@@ -64,7 +70,9 @@ class HoverWidget(QWidget):
 
         elif self._shape == HoverShape.ROUNDED_RECT:
             path = QPainterPath()
-            path.addRoundedRect(QRectF(self.rect()), self._border_radius, self._border_radius)
+            path.addRoundedRect(
+                QRectF(self.rect()), self._border_radius, self._border_radius
+            )
             return path.contains(pos)
 
         elif self._shape == HoverShape.CUSTOM:

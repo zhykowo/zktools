@@ -24,11 +24,21 @@
 - 消息文本由 NotifyLabel 渲染：动态行渐变（白 ↔ 强调色行波，自左向右
   扫过）+ 逐字冒出动画（启动间隔递减的加速节奏，单字时长恒定）。
 """
+
 import math
 
 from PySide6.QtCore import QElapsedTimer, QObject, QPointF, QTimer, Signal
-from PySide6.QtGui import (QBrush, QColor, QFont, QFontMetrics, QLinearGradient,
-                           QPainter, QPen, QTextLayout, QTextOption)
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QFontMetrics,
+    QLinearGradient,
+    QPainter,
+    QPen,
+    QTextLayout,
+    QTextOption,
+)
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from core.page_router import page_router
@@ -52,7 +62,7 @@ class VirtualPage(QObject):
     """
 
     PAGE_NAME = None
-    MODULE_NAME = None    # None/空：不显示在模块中心
+    MODULE_NAME = None  # None/空：不显示在模块中心
     MODULE_ICON = square_icon
 
     # 模块中心名称变化信号：module_center_page 订阅后实时刷新卡片
@@ -62,7 +72,7 @@ class VirtualPage(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.page_name = ''
+        self.page_name = ""
 
     @property
     def module_name(self) -> str | None:
@@ -93,28 +103,28 @@ class NotifyLabel(QWidget):
     """
 
     # ---- 逐字动画参数（可按观感微调） ----
-    CHAR_DURATION = 210     # 单字动画时长 ms（恒定，不随位置变化）
-    DROP_PX = 10            # 单字起始向下偏移量
-    BACK_OVERSHOOT = 1.2    # 位移回弹强度（标准 OutBack 为 1.0）
-    ACCEL_P = 1.8           # 启动时刻曲线指数，>1 时相邻间隔递减（逐渐加快）
-    SPAN_BASE = 260         # 首末字符启动间隔：基础时长 ms
-    SPAN_PER_CHAR = 9       # 每个字符追加的间隔 ms
+    CHAR_DURATION = 210  # 单字动画时长 ms（恒定，不随位置变化）
+    DROP_PX = 10  # 单字起始向下偏移量
+    BACK_OVERSHOOT = 1.2  # 位移回弹强度（标准 OutBack 为 1.0）
+    ACCEL_P = 1.8  # 启动时刻曲线指数，>1 时相邻间隔递减（逐渐加快）
+    SPAN_BASE = 260  # 首末字符启动间隔：基础时长 ms
+    SPAN_PER_CHAR = 9  # 每个字符追加的间隔 ms
     SPAN_MIN = 320
     SPAN_MAX = 900
-    LINE_SPACING = 2        # 额外行距 px
+    LINE_SPACING = 2  # 额外行距 px
 
     # ---- 行渐变参数 ----
-    WAVE_PERIOD = 2600      # 渐变行波循环周期 ms
-    WAVE_STOPS = 12         # 每行渐变的采样档数
-    WAVE_STRENGTH = 0.85    # 行波峰值处的强调色混合上限
+    WAVE_PERIOD = 2600  # 渐变行波循环周期 ms
+    WAVE_STOPS = 12  # 每行渐变的采样档数
+    WAVE_STRENGTH = 0.85  # 行波峰值处的强调色混合上限
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         self._text = ""
-        self._chars = []         # [(起始索引, 子串), ...] 逐码点拆分
-        self._layout = None      # QTextLayout（QTextLine 依附其存活，须持有）
+        self._chars = []  # [(起始索引, 子串), ...] 逐码点拆分
+        self._layout = None  # QTextLayout（QTextLine 依附其存活，须持有）
         self._lines = []
         self._layout_width = -1
 
@@ -133,9 +143,9 @@ class NotifyLabel(QWidget):
         """设置文本并重置逐字动画时钟（同文本重复设置也会重播动画）"""
         self._text = text.replace("\n", " ")
         self._chars = self._split_chars(self._text)
-        self._lines = []          # 布局缓存失效，paint 时按当前宽度重建
+        self._lines = []  # 布局缓存失效，paint 时按当前宽度重建
         self._clock.restart()
-        self._timer.start()       # 控件隐藏期间 update() 为空操作，hideEvent 会停表
+        self._timer.start()  # 控件隐藏期间 update() 为空操作，hideEvent 会停表
         self.update()
 
     # ---------- 可见性接管定时器 ----------
@@ -216,11 +226,15 @@ class NotifyLabel(QWidget):
         phase = (t % self.WAVE_PERIOD) / self.WAVE_PERIOD
 
         # 文本块整体垂直居中
-        total_h = sum(l.height() for l in self._lines) + self.LINE_SPACING * (len(self._lines) - 1)
+        total_h = sum(l.height() for l in self._lines) + self.LINE_SPACING * (
+            len(self._lines) - 1
+        )
         y0 = max((self.height() - total_h) / 2.0, 0.0)
 
         n = max(len(self._chars), 1)
-        span = min(max(self.SPAN_BASE + self.SPAN_PER_CHAR * n, self.SPAN_MIN), self.SPAN_MAX)
+        span = min(
+            max(self.SPAN_BASE + self.SPAN_PER_CHAR * n, self.SPAN_MIN), self.SPAN_MAX
+        )
 
         char_ptr = 0
         pen = QPen()
@@ -266,7 +280,7 @@ class NotifyLabel(QWidget):
         c1 = 1.70158 * self.BACK_OVERSHOOT
         c3 = c1 + 1.0
         q = p - 1.0
-        return 1.0 + c3 * q ** 3 + c1 * q ** 2
+        return 1.0 + c3 * q**3 + c1 * q**2
 
     # ---------- 渐变 ----------
     def _line_gradient(self, line_width: float, phase: float) -> QLinearGradient:
@@ -275,12 +289,17 @@ class NotifyLabel(QWidget):
         accent = self._wave_color
         for s in range(self.WAVE_STOPS + 1):
             u = s / self.WAVE_STOPS
-            wave = (0.5 - 0.5 * math.cos(2.0 * math.pi * (u - phase))) * self.WAVE_STRENGTH
-            grad.setColorAt(u, QColor(
-                round(WHITE.red() + (accent.red() - WHITE.red()) * wave),
-                round(WHITE.green() + (accent.green() - WHITE.green()) * wave),
-                round(WHITE.blue() + (accent.blue() - WHITE.blue()) * wave),
-            ))
+            wave = (
+                0.5 - 0.5 * math.cos(2.0 * math.pi * (u - phase))
+            ) * self.WAVE_STRENGTH
+            grad.setColorAt(
+                u,
+                QColor(
+                    round(WHITE.red() + (accent.red() - WHITE.red()) * wave),
+                    round(WHITE.green() + (accent.green() - WHITE.green()) * wave),
+                    round(WHITE.blue() + (accent.blue() - WHITE.blue()) * wave),
+                ),
+            )
         return grad
 
 
@@ -290,16 +309,16 @@ class NotifyPage(BasePage):
     PAGE_NAME = "notify"
     TITLE = "Notify"
 
-    MAX_WIDTH = 430    # 主窗口 450 - 容器左右边距 10 * 2
+    MAX_WIDTH = 430  # 主窗口 450 - 容器左右边距 10 * 2
     MIN_WIDTH = 160
-    BASE_HEIGHT = 50   # 单行消息高度，与旧 clipboard/touchpad 通知尺寸一致
+    BASE_HEIGHT = 50  # 单行消息高度，与旧 clipboard/touchpad 通知尺寸一致
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.target_size = (self.MIN_WIDTH, self.BASE_HEIGHT)
 
-        layout = self.set_main_layout('h')
+        layout = self.set_main_layout("h")
         assert self.main_layout is not None
         assert layout is not None
         self.main_layout.setSpacing(6)
@@ -367,8 +386,12 @@ class NotifyPage(BasePage):
         page_router.exit_self(self.page_name)
 
 
-def notify(message: str, icon: str | None = None, duration: int = 1500,
-           only_when_idle: bool = False):
+def notify(
+    message: str,
+    icon: str | None = None,
+    duration: int = 1500,
+    only_when_idle: bool = False,
+):
     """全局通知入口，任何模块调用即弹出通知（须在主线程调用）。
 
     :param message: 消息文本

@@ -4,6 +4,7 @@
 仅当当前处于 home/通知页时提醒（only_when_idle），不打断使用中的页面。
 连接依赖 clipboard_monitor 已 init()（main.py 启动顺序已保证）。
 """
+
 import utils.clipboard_monitor as clipboard_monitor
 
 from pages.notify_page import VirtualPage, notify

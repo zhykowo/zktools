@@ -1,15 +1,31 @@
-from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QParallelAnimationGroup, QSequentialAnimationGroup, QRect, Signal
+from PySide6.QtCore import (
+    QEasingCurve,
+    QObject,
+    QPropertyAnimation,
+    QParallelAnimationGroup,
+    QSequentialAnimationGroup,
+    QRect,
+    Signal,
+)
 from PySide6.QtWidgets import QWidget
 from typing import Callable, Optional, cast
 
 from pages.base_page import BasePage
+
 
 class PageAnimationManager(QObject):
     """页面切换动画管理器（QObject 以支持信号：页面暗下瞬间通知路由层执行 on_show）"""
 
     page_switched = Signal(str)  # 透明度完全暗下、已切到目标页索引时发出，携带页面名
 
-    def __init__(self, container_widget, stacked_widget, opacity_effect, max_width=450, max_height=400):
+    def __init__(
+        self,
+        container_widget,
+        stacked_widget,
+        opacity_effect,
+        max_width=450,
+        max_height=400,
+    ):
         super().__init__()
         self.container = container_widget
         self.stacked_widget = stacked_widget
@@ -17,7 +33,7 @@ class PageAnimationManager(QObject):
         self.max_width = max_width
         self.max_height = max_height
         self.master_timeline = None
-        self.on_radius_update: Optional[Callable[[int], None]] = None   # 圆角更新回调
+        self.on_radius_update: Optional[Callable[[int], None]] = None  # 圆角更新回调
 
     # ---------- 基础动画创建 ----------
     def _create_size_animation(self, start_geom, end_geom):
@@ -37,7 +53,9 @@ class PageAnimationManager(QObject):
         fade_out.setEasingCurve(QEasingCurve.Type.OutCubic)
         fade_out.setStartValue(current_opacity)
         fade_out.setEndValue(0.0)
-        fade_out.finished.connect(lambda: self._apply_page_switch(target_index, page_name))
+        fade_out.finished.connect(
+            lambda: self._apply_page_switch(target_index, page_name)
+        )
 
         fade_in = QPropertyAnimation(self.opacity_effect, b"opacity")
         fade_in.setDuration(200)

@@ -1,6 +1,12 @@
 import sys
 from PySide6.QtCore import QEvent, QVariantAnimation, Qt
-from PySide6.QtWidgets import QApplication, QWidget, QHBoxLayout, QStackedWidget, QGraphicsOpacityEffect
+from PySide6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QHBoxLayout,
+    QStackedWidget,
+    QGraphicsOpacityEffect,
+)
 from PySide6.QtGui import QFont, QPalette
 
 from core.page_router import page_router
@@ -27,7 +33,6 @@ from pages.translator_page import TranslatorPage
 from pages.note_page import NotePage
 
 
-
 # 主窗口类
 class MainShellWindow(QWidget):
     def __init__(self):
@@ -39,11 +44,15 @@ class MainShellWindow(QWidget):
         # 绑定全新的中心调度器
         on_drag_bus.on_drag_event.connect(self.change_drag_state)
 
-        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
+        flags = (
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool
+        )
         self.setWindowFlags(flags)
         self.setWindowTitle("zktools")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        
+
         self.MAX_W, self.MAX_H = 450, 400
         self.resize(self.MAX_W, self.MAX_H)
 
@@ -51,8 +60,8 @@ class MainShellWindow(QWidget):
         self.window_manager = WindowManager(self)
         drag_bus.register_drag_handle_requested.connect(
             self.window_manager.register_drag_handle
-        ) # 监听全局拖拽注册请求
-        
+        )  # 监听全局拖拽注册请求
+
         self._flash_anim = None  # 延迟初始化，见 create_anim()
         self.init_ui()
 
@@ -65,7 +74,6 @@ class MainShellWindow(QWidget):
     def change_drag_state(self, state):
         pass
 
-
     def init_ui(self):
 
         palette = self.palette()
@@ -75,7 +83,7 @@ class MainShellWindow(QWidget):
         font = QFont()
         font.setPointSize(12)
         self.setFont(font)
-        
+
         self.main_container = MainContainerWidget(self)
         self.main_container.setObjectName("MainContainer")
         self.main_container.installEventFilter(self)
@@ -102,17 +110,14 @@ class MainShellWindow(QWidget):
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
         self.register_page(NotePage.PAGE_NAME, NotePage())
 
-        page_router.page_queue = ["home"]   # 队首即当前页，初始为 home
+        page_router.page_queue = ["home"]  # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])
 
         container_layout.addWidget(self.stacked_widget)
-        
+
         start_w, start_h = page_router.pages["home"].target_size
         self.main_container.setGeometry(
-            (self.MAX_W - start_w) // 2, 
-            40, 
-            start_w, 
-            start_h
+            (self.MAX_W - start_w) // 2, 40, start_w, start_h
         )
 
         # 动画管理器设置
@@ -121,7 +126,7 @@ class MainShellWindow(QWidget):
             stacked_widget=self.stacked_widget,
             opacity_effect=self.opacity_effect,
             max_width=self.MAX_W,
-            max_height=self.MAX_H
+            max_height=self.MAX_H,
         )
 
         # 设置圆角更新回调
@@ -150,17 +155,24 @@ class MainShellWindow(QWidget):
         # 创建颜色渐变动画
         self._flash_anim = QVariantAnimation(self)
         self._flash_anim.setDuration(220)  # 闪烁持续时间 (毫秒)
-        self._flash_anim.setStartValue(self.main_container.default_background_color.lighter(255))  # 闪烁高亮颜色
-        self._flash_anim.setEndValue(self.main_container.default_background_color)    # 恢复基础背景色
+        self._flash_anim.setStartValue(
+            self.main_container.default_background_color.lighter(255)
+        )  # 闪烁高亮颜色
+        self._flash_anim.setEndValue(
+            self.main_container.default_background_color
+        )  # 恢复基础背景色
 
         self._flash_anim.valueChanged.connect(self.main_container.set_background_color)
 
     def trigger_flash_effect(self):
         """灵动岛高亮脉冲闪烁动画"""
-        if page_router.page_queue and page_router.page_queue[0] != 'home':
+        if page_router.page_queue and page_router.page_queue[0] != "home":
             return
         # 防止动画重复叠加
-        if self._flash_anim is not None and self._flash_anim.state() == QVariantAnimation.State.Running:
+        if (
+            self._flash_anim is not None
+            and self._flash_anim.state() == QVariantAnimation.State.Running
+        ):
             return
 
         if self._flash_anim is not None:
@@ -173,14 +185,15 @@ class MainShellWindow(QWidget):
 
 
 if __name__ == "__main__":
-
     app = QApplication(sys.argv)
 
     # 通过 QFont 修正字体渲染
     font = app.font()
     # PreferQuality：匹配字体时，选择最接近的标准点大小
     # PreferAntialias：渲染时，尽可能开启抗锯齿
-    font.setStyleStrategy(QFont.StyleStrategy.PreferQuality | QFont.StyleStrategy.PreferAntialias)  # 开启高质量抗锯齿
+    font.setStyleStrategy(
+        QFont.StyleStrategy.PreferQuality | QFont.StyleStrategy.PreferAntialias
+    )  # 开启高质量抗锯齿
     font.setHintingPreference(
         QFont.HintingPreference.PreferNoHinting
     )  # 禁用硬网格对齐，消除发锯齿/粗细不均
@@ -190,13 +203,13 @@ if __name__ == "__main__":
     clipboard_monitor.init()
     color_manager.init()
     text_manager.init()
-    theme_controller.init() # 延迟初始化（WinUnlockListener + 启动触发）
-    
-    # 安装全局鼠标追踪事件过滤器 
+    theme_controller.init()  # 延迟初始化（WinUnlockListener + 启动触发）
+
+    # 安装全局鼠标追踪事件过滤器
     # 创建过滤器实例，debug_enabled=True 表示启用调试输出
     mouse_tracker = MouseHoverEventFilter(debug_enabled=False)
     app.installEventFilter(mouse_tracker)
-    
+
     window = MainShellWindow()
     window.show()
 

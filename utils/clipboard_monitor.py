@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtWidgets import QApplication
 
+
 class _ClipboardMonitor(QObject):
     cbChanged = Signal(str)
 
@@ -15,10 +16,14 @@ class _ClipboardMonitor(QObject):
         if text:
             self.cbChanged.emit(text)
 
+
 _instance = None
+
+
 def init(*args, **kwargs) -> None:
     global _instance
     _instance = _ClipboardMonitor(*args, **kwargs)
+
 
 def get() -> _ClipboardMonitor:
     """获取剪贴板监听器单例"""
