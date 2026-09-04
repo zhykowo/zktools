@@ -74,8 +74,9 @@ class BasePage(QWidget):
         if d == "v":
             self.main_layout = QVBoxLayout(self)
             self.main_layout.setContentsMargins(0, 8, 0, 8)
-            self.main_layout.setSpacing(8)
+            self.main_layout.setSpacing(0)
             self.set_header(self.main_layout, title)
+            self.main_layout.addSpacing(8)
             self.content_layout = QVBoxLayout()
             self.main_layout.addLayout(self.content_layout)
 

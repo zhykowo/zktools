@@ -1,6 +1,6 @@
 """圆角文本编辑框：圆角背景 + 状态边框（accent/灰色）+ placeholder。"""
 
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import Property, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QFrame, QTextEdit
 
@@ -61,6 +61,16 @@ class RoundedTextEdit(QTextEdit):
 
         # 监听系统强调色变化，自动更新选区高亮与聚焦边框色
         color_manager.accent_color_changed.connect(self._on_accent_changed)
+
+    # ==================== 可动画化的高度属性 ====================
+
+    def _get_anim_height(self):
+        return self.height()
+
+    def _set_anim_height(self, h):
+        self.setFixedHeight(h)
+
+    anim_height = Property(int, _get_anim_height, _set_anim_height)
 
     # ---------------- placeholder ----------------
     def set_placeholder(self, text: str):

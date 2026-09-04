@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QPalette, QTextCursor
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from core.colors import COLOR_DANGER, NEUTRAL_1, NEUTRAL_4
+from core.colors import NEUTRAL_1, NEUTRAL_2, NEUTRAL_4
 from pages.base_page import BasePage
 from resources.constants import get_data_file_path
 from resources.svgs import note_icon
@@ -62,7 +62,7 @@ class NotePage(BasePage):
         self.char_count_label = self._make_footer_label()
 
         self.clear_btn = CoreButton("Clear", parent=self)
-        self.clear_btn.setBgColor(COLOR_DANGER)
+        self.clear_btn.setBgColor(NEUTRAL_2)
         self.clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_note)
 
@@ -70,10 +70,14 @@ class NotePage(BasePage):
         self.footer_layout.addWidget(self.status_label)
         self.footer_layout.addStretch()
         self.footer_layout.addWidget(self.char_count_label)
+        self.footer_layout.addSpacing(8)
         self.footer_layout.addWidget(self.clear_btn)
+        self.footer_layout.addSpacing(8)
 
         layout.addWidget(self.note_editor)
+        layout.addSpacing(8)
         layout.addLayout(self.footer_layout)
+        layout.addSpacing(4)
 
         self._load_note()
 

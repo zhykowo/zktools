@@ -3,28 +3,18 @@ import logging
 logger = logging.getLogger(__name__)
 import time
 from enum import Enum, auto
-from functools import partial
 
 from PySide6.QtCore import (
-    QEasingCurve,
     QObject,
-    QParallelAnimationGroup,
-    QPropertyAnimation,
     Qt,
     QThread,
     Signal,
     Slot,
 )
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from core.colors import (
-    NEUTRAL_1,
-    NEUTRAL_2,
-    color_manager,
-    get_accent_color,
-    get_purest_color,
-)
+from core.colors import COLOR_DANGER, NEUTRAL_2
 from core.hotkey_manager import hotkey_manager
 from core.page_router import page_router
 from pages.base_page import BasePage
@@ -33,8 +23,10 @@ from resources.svgs import arrow_right_icon, translate_icon
 from utils import text_manager
 from utils.translator import Translator
 from widgets.core_button import CoreButton
+from widgets.selection_grid import SelectionGrid
 from widgets.svg_button import SvgButton
 from widgets.text_editor import RoundedTextEdit
+from widgets.widget_animator import WidgetAnimator
 
 
 class GridMode(Enum):
@@ -42,57 +34,6 @@ class GridMode(Enum):
     ORIGIN_LANG = auto()
     TARGET_LANG = auto()
     SERVER = auto()
-
-
-class _Animator(QObject):
-    """动画管理器，支持平滑高度动画与链式回调"""
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self._active_group = None
-
-    def animate_heights(
-        self,
-        animations_data: list[tuple[QWidget, int, int]],
-        duration=300,
-        easing=QEasingCurve.Type.OutQuart,
-        on_finished=None,
-    ):
-        # 替换旧动画组：stop 后 deleteLater 释放 C++ 对象，
-        # 否则旧组因 parent 指向常驻页面而永不回收，每次交互累积泄漏
-        if self._active_group is not None:
-            self._active_group.stop()
-            self._active_group.deleteLater()
-
-        self._active_group = QParallelAnimationGroup(self)
-
-        for widget, start_h, end_h in animations_data:
-            widget.setFixedHeight(start_h)
-
-            anim = QPropertyAnimation(widget, b"maximumHeight", self._active_group)
-            anim.setDuration(duration)
-            anim.setStartValue(start_h)
-            anim.setEndValue(end_h)
-            anim.setEasingCurve(easing)
-
-            # 同步更新 minimumHeight
-            anim.valueChanged.connect(widget.setMinimumHeight)
-
-            # 动画结束后的边界对齐处理
-            def create_finish_handler(w, target_end):
-                def on_finish():
-                    w.setMinimumHeight(target_end)
-                    w.setMaximumHeight(target_end)
-
-                return on_finish
-
-            anim.finished.connect(create_finish_handler(widget, end_h))
-            self._active_group.addAnimation(anim)
-
-        if on_finished:
-            self._active_group.finished.connect(on_finished)
-
-        self._active_group.start()
 
 
 class TranslationHotkey(QObject):
@@ -204,14 +145,12 @@ class TranslatorPage(BasePage):
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8
     RESULT_TEXT_HEIGHT = 120
-    # 取消按钮配色（红色）
-    CANCEL_COLOR = QColor(214, 69, 65)
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.translator = Translator()
-        self.animator = _Animator(self)
+        self.animator = WidgetAnimator(self)
         self.target_size = (400, 300)
 
         # 后台翻译线程状态
@@ -226,16 +165,14 @@ class TranslatorPage(BasePage):
         assert layout is not None
 
         # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
-        self.accent_qcolor = get_purest_color(get_accent_color())
         self.idle_btn_bg = NEUTRAL_2
-        color_manager.accent_color_changed.connect(self._on_accent_changed)
 
         # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
         self.input_text = RoundedTextEdit(
-            placeholder="Enter or paste text here...", bg_color=NEUTRAL_1, parent=self
+            placeholder="Enter or paste text here...", parent=self
         )
         self.result_text = RoundedTextEdit(
-            placeholder="Translation result", bg_color=NEUTRAL_1, radius=10, parent=self
+            placeholder="Translation result", parent=self
         )
 
         font = QFont()
@@ -243,17 +180,18 @@ class TranslatorPage(BasePage):
         self.input_text.setFont(font)
         self.result_text.setFont(font)
 
-        self.result_text.setMinimumHeight(0)
-        self.result_text.setMaximumHeight(0)
+        self.result_text.setFixedHeight(0)
 
-        # 3. 通用平铺网格选择面板
-        self.selection_grid_widget = QWidget(self)
-        self.grid_layout = QGridLayout(self.selection_grid_widget)
-        self.grid_layout.setContentsMargins(0, 0, 0, 0)
-        self.grid_layout.setSpacing(self.GRID_SPACING)
-
-        self.selection_grid_widget.setMinimumHeight(0)
-        self.selection_grid_widget.setMaximumHeight(0)
+        # 3. 通用平铺网格选择面板（独立组件）
+        self.selection_grid = SelectionGrid(self)
+        self.selection_grid.configure(
+            cols=3,
+            item_height=self.GRID_ITEM_HEIGHT,
+            spacing=self.GRID_SPACING,
+            idle_bg=self.idle_btn_bg,
+        )
+        # 点击网格项后自动收起（未来组件可按需不连接此信号）
+        self.selection_grid.item_selected.connect(lambda _: self._collapse_grid())
 
         # 4. 底部控制栏
         self.footer_layout = QHBoxLayout()
@@ -301,7 +239,7 @@ class TranslatorPage(BasePage):
         # 取消按钮：与翻译按钮共存于布局，翻译时通过 hide/show 切换显示，
         # 隐藏的组件会自动空出布局位置，无需移除/插入操作
         self.cancel_btn = CoreButton("Cancel", parent=self)
-        self.cancel_btn.setBgColor(self.CANCEL_COLOR)
+        self.cancel_btn.setBgColor(COLOR_DANGER)
         self.cancel_btn.hide()
         self.cancel_btn.clicked.connect(self._cancel_translation)
         self.footer_layout.addWidget(self.cancel_btn)
@@ -311,9 +249,11 @@ class TranslatorPage(BasePage):
 
         # 布局组织
         layout.addWidget(self.input_text)
+        layout.addSpacing(4)
         layout.addWidget(self.result_text)
+        layout.addSpacing(4)
         layout.addLayout(self.footer_layout)
-        layout.addWidget(self.selection_grid_widget)
+        layout.addWidget(self.selection_grid)
 
         # 初始状态：网格未展开，from/to 语言按钮均置为灰色（否则默认 accent 高亮）
         self._set_lang_buttons_active(GridMode.NONE)
@@ -378,7 +318,7 @@ class TranslatorPage(BasePage):
             mode, items, current_value, on_select_callback
         )
         self._animate_grid_switch(
-            current_height, self._calculate_grid_height(len(items))
+            current_height, self.selection_grid.calculate_height(len(items))
         )
 
     def _prepare_grid_switch(
@@ -386,22 +326,24 @@ class TranslatorPage(BasePage):
     ) -> int:
         """切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变，返回切换前高度"""
         current_height = (
-            self.selection_grid_widget.height()
+            self.selection_grid.height()
             if self._current_grid_mode != GridMode.NONE
             else 0
         )
         self._current_grid_mode = mode
 
         # 填充新按钮并强制固定当前高度防止跳变
-        self._populate_grid(items, current_value, on_select_callback)
+        self.selection_grid.populate(items, current_value, on_select_callback)
         self._set_lang_buttons_active(mode)
-        self.selection_grid_widget.setMaximumHeight(current_height)
+        self.selection_grid.setFixedHeight(current_height)
 
         return current_height
 
     def _animate_grid_switch(self, current_height: int, target_height: int):
         """网格展开动画：网格平滑展开，同时收起结果框（若有内容）"""
-        animations = [(self.selection_grid_widget, current_height, target_height)]
+        animations: list[tuple[QWidget, int, int]] = [
+            (self.selection_grid, current_height, target_height)
+        ]
         if self.result_text.height() > 0:
             animations.append((self.result_text, self.result_text.height(), 0))
 
@@ -411,48 +353,12 @@ class TranslatorPage(BasePage):
         """收起当前网格动画"""
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
-        current_height = self.selection_grid_widget.height()
+        current_height = self.selection_grid.height()
 
         self.animator.animate_heights(
-            animations_data=[(self.selection_grid_widget, current_height, 0)],
+            animations_data=[(self.selection_grid, current_height, 0)],
             on_finished=on_finished,
         )
-
-    def _populate_grid(self, items, current_value, on_select_callback):
-        # 清空旧按钮
-        while self.grid_layout.count():
-            item = self.grid_layout.takeAt(0)
-            if item is not None:
-                widget = item.widget()
-                if widget is not None:
-                    widget.deleteLater()
-
-        # 创建新按钮
-        cols = 3
-        for idx, text in enumerate(items):
-            btn = CoreButton(text)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            # 仅当前选中项（激活）以 accent 高亮，其余显示灰色
-            if text != current_value:
-                btn.setBgColor(self.idle_btn_bg)
-
-            # 使用 functools.partial 代替 lambda 绑定，代码更清晰
-            btn.clicked.connect(
-                partial(self._handle_grid_item_click, text, on_select_callback)
-            )
-
-            row, col = divmod(idx, cols)
-            self.grid_layout.addWidget(btn, row, col)
-
-    def _calculate_grid_height(self, item_count):
-        cols = 3
-        rows = (item_count + cols - 1) // cols
-        return rows * self.GRID_ITEM_HEIGHT + (rows - 1) * self.GRID_SPACING
-
-    def _handle_grid_item_click(self, selected_text: str, callback):
-        """点击网格项后的逻辑处理"""
-        callback(selected_text)
-        self._collapse_grid()
 
     def display_lang_list(self, target_type="origin"):
         """显示语言选择网格"""
@@ -563,12 +469,12 @@ class TranslatorPage(BasePage):
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
 
-        grid_start_h = self.selection_grid_widget.height()
+        grid_start_h = self.selection_grid.height()
         result_start_h = self.result_text.height()
 
         self.animator.animate_heights(
             [
-                (self.selection_grid_widget, grid_start_h, 0),
+                (self.selection_grid, grid_start_h, 0),
                 (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT),
             ]
         )
@@ -583,20 +489,15 @@ class TranslatorPage(BasePage):
 
     def _set_lang_buttons_active(self, mode: GridMode):
         """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
-        self.origin_lang.setBgColor(
-            self.accent_qcolor if mode == GridMode.ORIGIN_LANG else self.idle_btn_bg
-        )
-        self.target_lang.setBgColor(
-            self.accent_qcolor if mode == GridMode.TARGET_LANG else self.idle_btn_bg
-        )
-
-    def _on_accent_changed(self, new_color: QColor):
-        """系统强调色变化时更新 accent 色，并立即刷新当前高亮的按钮"""
-        self.accent_qcolor = get_purest_color(new_color)
-        if self._current_grid_mode == GridMode.ORIGIN_LANG:
-            self.origin_lang.setBgColor(self.accent_qcolor)
-        elif self._current_grid_mode == GridMode.TARGET_LANG:
-            self.target_lang.setBgColor(self.accent_qcolor)
+        if mode == GridMode.ORIGIN_LANG:
+            self.origin_lang.resetBgColor()
+            self.target_lang.setBgColor(self.idle_btn_bg)
+        elif mode == GridMode.TARGET_LANG:
+            self.origin_lang.setBgColor(self.idle_btn_bg)
+            self.target_lang.resetBgColor()
+        else:  # NONE or SERVER
+            self.origin_lang.setBgColor(self.idle_btn_bg)
+            self.target_lang.setBgColor(self.idle_btn_bg)
 
     def _swap_languages(self):
         """互换源语言与目标语言"""
@@ -620,7 +521,7 @@ class TranslatorPage(BasePage):
 
         self.animator.animate_heights(
             [
-                (self.selection_grid_widget, self.selection_grid_widget.height(), 0),
+                (self.selection_grid, self.selection_grid.height(), 0),
                 (self.result_text, self.result_text.height(), 0),
             ]
         )
