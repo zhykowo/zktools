@@ -67,10 +67,11 @@ class NotePage(BasePage):
         self.clear_btn.clicked.connect(self._clear_note)
 
         self.footer_layout = QHBoxLayout()
+        self.footer_layout.setSpacing(8)
+        self.footer_layout.addSpacing(16)
         self.footer_layout.addWidget(self.status_label)
         self.footer_layout.addStretch()
         self.footer_layout.addWidget(self.char_count_label)
-        self.footer_layout.addSpacing(8)
         self.footer_layout.addWidget(self.clear_btn)
         self.footer_layout.addSpacing(8)
 
