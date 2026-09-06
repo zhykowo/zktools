@@ -1,3 +1,4 @@
+# translator_page.py
 import logging
 
 logger = logging.getLogger(__name__)
@@ -11,8 +12,8 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QHBoxLayout, QWidget
+from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QHBoxLayout
 
 from core.colors import COLOR_DANGER, NEUTRAL_2
 from core.hotkey_manager import hotkey_manager
@@ -26,7 +27,6 @@ from widgets.core_button import CoreButton
 from widgets.selection_grid import SelectionGrid
 from widgets.svg_button import SvgButton
 from widgets.text_editor import RoundedTextEdit
-from widgets.widget_animator import WidgetAnimator
 
 
 class GridMode(Enum):
@@ -150,7 +150,6 @@ class TranslatorPage(BasePage):
         super().__init__(parent)
 
         self.translator = Translator()
-        self.animator = WidgetAnimator(self)
         self.target_size = (400, 300)
 
         # 后台翻译线程状态
@@ -326,19 +325,18 @@ class TranslatorPage(BasePage):
         self.selection_grid.setFixedHeight(current_height)
 
         # 展开网格，同时收起结果框（若有内容）
-        target_height = self.selection_grid.calculate_height(len(items))
-        animations: list[tuple[QWidget, int, int]] = [
-            (self.selection_grid, current_height, target_height)
-        ]
-        if self.result_text.height() > 0:
-            animations.append((self.result_text, self.result_text.height(), 0))
-        self.animator.animate_heights(animations)
+        extra = (
+            [(self.result_text, self.result_text.height(), 0)]
+            if self.result_text.height() > 0
+            else None
+        )
+        self.selection_grid.expand_to(len(items), extra_animations=extra)
 
     def _collapse_grid(self, on_finished=None):
         """收起当前网格动画"""
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
-        self.selection_grid.collapse(self.animator, on_finished=on_finished)
+        self.selection_grid.collapse(on_finished=on_finished)
 
     def display_lang_list(self, target_type="origin"):
         """显示语言选择网格"""
@@ -450,9 +448,8 @@ class TranslatorPage(BasePage):
         self._set_lang_buttons_active(GridMode.NONE)
 
         # 收起网格、展开结果框的联动动画
-        self.animator.animate_heights(
-            [
-                (self.selection_grid, self.selection_grid.height(), 0),
+        self.selection_grid.collapse(
+            extra_animations=[
                 (self.result_text, self.result_text.height(), self.RESULT_TEXT_HEIGHT),
             ]
         )
@@ -497,9 +494,8 @@ class TranslatorPage(BasePage):
 
         self._set_lang_buttons_active(GridMode.NONE)
 
-        self.animator.animate_heights(
-            [
-                (self.selection_grid, self.selection_grid.height(), 0),
+        self.selection_grid.collapse(
+            extra_animations=[
                 (self.result_text, self.result_text.height(), 0),
             ]
         )

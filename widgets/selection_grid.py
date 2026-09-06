@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QGridLayout, QWidget
 
 from core.colors import NEUTRAL_2
 from widgets.core_button import CoreButton
+from widgets.widget_animator import WidgetAnimator
 
 
 class SelectionGrid(QWidget):
@@ -46,6 +47,8 @@ class SelectionGrid(QWidget):
 
         self.setMinimumHeight(0)
         self.setMaximumHeight(0)
+
+        self._animator = WidgetAnimator(self)
 
     # ==================== 可动画化的高度属性 ====================
 
@@ -101,7 +104,7 @@ class SelectionGrid(QWidget):
     def expand_to(
         self,
         item_count: int,
-        animator=None,
+        extra_animations=None,
         duration=300,
         easing=None,
         on_finished=None,
@@ -110,7 +113,8 @@ class SelectionGrid(QWidget):
 
         Args:
             item_count: 需要容纳的项数（通过 calculate_height 计算目标高度）
-            animator: WidgetAnimator 实例，为 None 时直接设置高度（无动画）
+            extra_animations: 与网格并行执行的附加动画，格式为
+                [(widget, start_height, end_height), ...]
             duration: 动画时长（毫秒）
             easing: 缓动曲线，默认 OutQuart
             on_finished: 动画完成回调
@@ -118,40 +122,39 @@ class SelectionGrid(QWidget):
         target_height = self.calculate_height(item_count)
         current_height = self.height()
 
-        if animator is not None:
-            animator.animate_heights(
-                [(self, current_height, target_height)],
-                duration=duration,
-                easing=easing or QEasingCurve.Type.OutQuart,
-                on_finished=on_finished,
-            )
-        else:
-            self.setFixedHeight(target_height)
-            if on_finished:
-                on_finished()
+        animations = [(self, current_height, target_height)]
+        if extra_animations:
+            animations.extend(extra_animations)
 
-    def collapse(self, animator=None, duration=300, easing=None, on_finished=None):
+        self._animator.animate_heights(
+            animations,
+            duration=duration,
+            easing=easing or QEasingCurve.Type.OutQuart,
+            on_finished=on_finished,
+        )
+
+    def collapse(self, extra_animations=None, duration=300, easing=None, on_finished=None):
         """收起网格高度到 0
 
         Args:
-            animator: WidgetAnimator 实例，为 None 时直接设置高度为 0（无动画）
+            extra_animations: 与网格并行执行的附加动画，格式为
+                [(widget, start_height, end_height), ...]
             duration: 动画时长（毫秒）
             easing: 缓动曲线，默认 OutQuart
             on_finished: 动画完成回调
         """
         current_height = self.height()
 
-        if animator is not None:
-            animator.animate_heights(
-                [(self, current_height, 0)],
-                duration=duration,
-                easing=easing or QEasingCurve.Type.OutQuart,
-                on_finished=on_finished,
-            )
-        else:
-            self.setFixedHeight(0)
-            if on_finished:
-                on_finished()
+        animations = [(self, current_height, 0)]
+        if extra_animations:
+            animations.extend(extra_animations)
+
+        self._animator.animate_heights(
+            animations,
+            duration=duration,
+            easing=easing or QEasingCurve.Type.OutQuart,
+            on_finished=on_finished,
+        )
 
     @property
     def cols(self) -> int:
