@@ -7,12 +7,13 @@ from typing import ClassVar
 logger = logging.getLogger(__name__)
 
 from PySide6.QtCore import QThread, Signal
-from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from core.colors import COLOR_DANGER, NEUTRAL_2
+from core.colors import COLOR_DANGER, NEUTRAL_2, NEUTRAL_4
 from pages.base_page import BasePage
 from resources.constants import root_dir
-from resources.svgs import square_icon
+from resources.svgs import text_scan_icon
 from utils.screenshot_region import screenshot_region
 from widgets.core_button import CoreButton
 from widgets.selection_grid import SelectionGrid
@@ -97,21 +98,21 @@ class OcrWorker(QThread):
 class TextRecognitionPage(BasePage):
     PAGE_NAME = "text_recognition"
     TITLE = "Text Recognition"
-    MODULE_NAME = "Text Recognition"
-    MODULE_ICON = square_icon
+    MODULE_NAME = "OCR"
+    MODULE_ICON = text_scan_icon
 
     # (语言代码, 显示名称)
     SUPPORTED_LANGUAGES: ClassVar[list[tuple[str, str]]] = [
         ("ch", "Chinese"),
+        ("chinese_cht", "Chinese (Trad.)"),
         ("en", "English"),
         ("japan", "Japanese"),
         ("ko", "Korean"),
         ("latin", "Latin"),
         ("th", "Thai"),
         ("arabic", "Arabic"),
-        ("chinese_cht", "Chinese (Trad.)"),
         ("cyrillic", "Cyrillic"),
-        ("devanagari", "Devanagari"),
+        # ("devanagari", "Devanagari"),
     ]
 
     GRID_ITEM_HEIGHT = 36
@@ -151,6 +152,12 @@ class TextRecognitionPage(BasePage):
         self.lang_button = CoreButton(text=self._current_lang_display)
         self.lang_button.clicked.connect(self._toggle_lang_grid)
 
+        self.download_serve_button = CoreButton(text="Download")
+        self.download_serve_button.hide()
+        self.download_serve_button.clicked.connect(self._download_ocr_service)
+
+        self.serve_state = self._make_footer_label()
+
         self.ocr_button = CoreButton(text="Get Text")
         self.ocr_button.clicked.connect(self.capture)
 
@@ -159,22 +166,35 @@ class TextRecognitionPage(BasePage):
         self.cancel_btn.hide()
         self.cancel_btn.clicked.connect(self._cancel_ocr)
 
-        footer.addStretch()
+        footer.setSpacing(8)
         footer.addWidget(self.lang_button)
+        footer.addWidget(self.serve_state)
         footer.addStretch()
         footer.addWidget(self.ocr_button)
         footer.addWidget(self.cancel_btn)
-        footer.addStretch()
-        footer.setContentsMargins(0, 0, 0, 0)
+        footer.setContentsMargins(8, 0, 8, 0)
 
         # 布局组织
         layout.addWidget(self.text_edit)
-        layout.addSpacing(8)
+        layout.addSpacing(4)
         layout.addLayout(footer)
+        layout.setSpacing(8)
         layout.addWidget(self.selection_grid)
 
         # 截图信号连接
         screenshot_region.region_selected.connect(self.save_pixmap)
+
+    def _make_footer_label(self) -> QLabel:
+        """底部状态栏的灰色小字标签"""
+        label = QLabel(self)
+        label_font = label.font()
+        label_font.setPixelSize(11)
+        label.setFont(label_font)
+
+        palette = label.palette()
+        palette.setColor(QPalette.ColorRole.WindowText, NEUTRAL_4)
+        label.setPalette(palette)
+        return label
 
     # ==================== 截图流程 ====================
 
@@ -248,13 +268,34 @@ class TextRecognitionPage(BasePage):
         if worker is not None:
             worker.deleteLater()
 
+    # ==================== 服务检测 ====================
+
+    def on_show(self):
+        """页面显示时检测 OCR 服务是否存在，动态切换 UI 状态"""
+        if self.ocr_script_path.exists():
+            self.lang_button.show()
+            self.download_serve_button.hide()
+            self.serve_state.setText("OCR Service Ready")
+        else:
+            self.lang_button.hide()
+            self.download_serve_button.show()
+            self.serve_state.setText("OCR Service Not found")
+
+    def _download_ocr_service(self):
+        """下载 OCR 服务（占位实现，打开一个示例链接）"""
+        import webbrowser
+
+        # TODO: 替换为真实的下载地址
+        url = "https://github.com/zhykowo/quick_rapidocr/releases"
+        webbrowser.open(url)
+        logger.info(f"用户点击下载 OCR 服务: {url}")
+
     # ==================== 语言选择 ====================
 
     def _toggle_lang_grid(self):
         """展开/收起语言选择网格"""
         if self.selection_grid.height() > 0:
-            # 收起
-            self.selection_grid.setFixedHeight(0)
+            self.selection_grid.collapse()
         else:
             # 展开（populate 内部会先清空旧按钮）
             display_names = [name for _, name in self.SUPPORTED_LANGUAGES]
@@ -263,10 +304,7 @@ class TextRecognitionPage(BasePage):
                 current_value=self._current_lang_display,
                 on_select_callback=self._on_lang_selected,
             )
-            target_height = self.selection_grid.calculate_height(
-                len(self.SUPPORTED_LANGUAGES)
-            )
-            self.selection_grid.setFixedHeight(target_height)
+            self.selection_grid.expand_to(len(self.SUPPORTED_LANGUAGES))
 
     def _on_lang_selected(self, display_name: str):
         """语言选择回调：更新当前语言并收起网格"""
@@ -277,7 +315,7 @@ class TextRecognitionPage(BasePage):
                 self.lang_button.setText(name)
                 break
         # 收起网格
-        self.selection_grid.setFixedHeight(0)
+        self.selection_grid.collapse()
 
     # ==================== 页面生命周期 ====================
 
@@ -285,4 +323,4 @@ class TextRecognitionPage(BasePage):
         self._cancel_ocr()
         self.text_edit.setText("")
         if self.selection_grid.height() > 0:
-            self.selection_grid.setFixedHeight(0)
+            self.selection_grid.collapse()

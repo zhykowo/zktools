@@ -1,7 +1,7 @@
 """圆角文本编辑框：圆角背景 + 状态边框（accent/灰色）+ placeholder。"""
 
 from PySide6.QtCore import Property, QRectF, Qt
-from PySide6.QtGui import QColor, QPainter, QPalette, QPen
+from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen
 from PySide6.QtWidgets import QFrame, QTextEdit
 
 from core.colors import (
@@ -52,6 +52,10 @@ class RoundedTextEdit(QTextEdit):
         palette.setColor(QPalette.ColorRole.Highlight, self._accent)
         palette.setColor(QPalette.ColorRole.HighlightedText, WHITE)
         self.setPalette(palette)
+
+        font = QFont()
+        font.setPointSize(12)
+        self.setFont(font)
 
         self.setViewportMargins(0, 0, 0, 0)
         # 文字内边距：让内容与圆角边缘保持呼吸感

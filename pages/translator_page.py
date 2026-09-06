@@ -12,7 +12,6 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout
 
 from core.colors import COLOR_DANGER, NEUTRAL_2
@@ -173,11 +172,6 @@ class TranslatorPage(BasePage):
         self.result_text = RoundedTextEdit(
             placeholder="Translation result", parent=self
         )
-
-        font = QFont()
-        font.setPointSize(12)
-        self.input_text.setFont(font)
-        self.result_text.setFont(font)
 
         self.result_text.setFixedHeight(0)
 
