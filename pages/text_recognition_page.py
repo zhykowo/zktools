@@ -285,7 +285,6 @@ class TextRecognitionPage(BasePage):
         """下载 OCR 服务（占位实现，打开一个示例链接）"""
         import webbrowser
 
-        # TODO: 替换为真实的下载地址
         url = "https://github.com/zhykowo/quick_rapidocr/releases"
         webbrowser.open(url)
         logger.info(f"用户点击下载 OCR 服务: {url}")

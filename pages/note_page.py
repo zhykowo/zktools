@@ -52,9 +52,6 @@ class NotePage(BasePage):
         self.note_editor = RoundedTextEdit(
             placeholder="Write something here...", bg_color=NEUTRAL_1, parent=self
         )
-        font = QFont()
-        font.setPointSize(12)
-        self.note_editor.setFont(font)
         self.note_editor.textChanged.connect(self._on_text_changed)
 
         # 底部状态栏：保存状态 + 字数统计 + 清空按钮
