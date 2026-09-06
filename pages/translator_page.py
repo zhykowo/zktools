@@ -305,7 +305,7 @@ class TranslatorPage(BasePage):
         )
         self._start_translation()
 
-    # ==================== 抽象核心逻辑 ====================
+    # ==================== 网格切换核心逻辑 ====================
     def _request_grid_switch(
         self, mode: GridMode, items: list[str], current_value: str, on_select_callback
     ):
@@ -314,51 +314,31 @@ class TranslatorPage(BasePage):
             self._collapse_grid()
             return
 
-        current_height = self._prepare_grid_switch(
-            mode, items, current_value, on_select_callback
-        )
-        self._animate_grid_switch(
-            current_height, self.selection_grid.calculate_height(len(items))
-        )
-
-    def _prepare_grid_switch(
-        self, mode: GridMode, items: list[str], current_value: str, on_select_callback
-    ) -> int:
-        """切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变，返回切换前高度"""
+        # 切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变
         current_height = (
             self.selection_grid.height()
             if self._current_grid_mode != GridMode.NONE
             else 0
         )
         self._current_grid_mode = mode
-
-        # 填充新按钮并强制固定当前高度防止跳变
         self.selection_grid.populate(items, current_value, on_select_callback)
         self._set_lang_buttons_active(mode)
         self.selection_grid.setFixedHeight(current_height)
 
-        return current_height
-
-    def _animate_grid_switch(self, current_height: int, target_height: int):
-        """网格展开动画：网格平滑展开，同时收起结果框（若有内容）"""
+        # 展开网格，同时收起结果框（若有内容）
+        target_height = self.selection_grid.calculate_height(len(items))
         animations: list[tuple[QWidget, int, int]] = [
             (self.selection_grid, current_height, target_height)
         ]
         if self.result_text.height() > 0:
             animations.append((self.result_text, self.result_text.height(), 0))
-
         self.animator.animate_heights(animations)
 
     def _collapse_grid(self, on_finished=None):
         """收起当前网格动画"""
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
-        current_height = self.selection_grid.height()
-
-        self.animator.animate_heights(
-            animations_data=[(self.selection_grid, current_height, 0)],
-            on_finished=on_finished,
-        )
+        self.selection_grid.collapse(self.animator, on_finished=on_finished)
 
     def display_lang_list(self, target_type="origin"):
         """显示语言选择网格"""
@@ -469,13 +449,11 @@ class TranslatorPage(BasePage):
         self._current_grid_mode = GridMode.NONE
         self._set_lang_buttons_active(GridMode.NONE)
 
-        grid_start_h = self.selection_grid.height()
-        result_start_h = self.result_text.height()
-
+        # 收起网格、展开结果框的联动动画
         self.animator.animate_heights(
             [
-                (self.selection_grid, grid_start_h, 0),
-                (self.result_text, result_start_h, self.RESULT_TEXT_HEIGHT),
+                (self.selection_grid, self.selection_grid.height(), 0),
+                (self.result_text, self.result_text.height(), self.RESULT_TEXT_HEIGHT),
             ]
         )
         self._set_translating(False)

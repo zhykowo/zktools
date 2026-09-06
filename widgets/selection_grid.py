@@ -9,7 +9,7 @@
 
 from functools import partial
 
-from PySide6.QtCore import Property, Qt, Signal
+from PySide6.QtCore import Property, QEasingCurve, Qt, Signal
 from PySide6.QtWidgets import QGridLayout, QWidget
 
 from core.colors import NEUTRAL_2
@@ -97,6 +97,61 @@ class SelectionGrid(QWidget):
         cols = self._cols
         rows = (item_count + cols - 1) // cols
         return rows * self._item_height + (rows - 1) * self._spacing
+
+    def expand_to(
+        self,
+        item_count: int,
+        animator=None,
+        duration=300,
+        easing=None,
+        on_finished=None,
+    ):
+        """展开网格到容纳 item_count 项的高度
+
+        Args:
+            item_count: 需要容纳的项数（通过 calculate_height 计算目标高度）
+            animator: WidgetAnimator 实例，为 None 时直接设置高度（无动画）
+            duration: 动画时长（毫秒）
+            easing: 缓动曲线，默认 OutQuart
+            on_finished: 动画完成回调
+        """
+        target_height = self.calculate_height(item_count)
+        current_height = self.height()
+
+        if animator is not None:
+            animator.animate_heights(
+                [(self, current_height, target_height)],
+                duration=duration,
+                easing=easing or QEasingCurve.Type.OutQuart,
+                on_finished=on_finished,
+            )
+        else:
+            self.setFixedHeight(target_height)
+            if on_finished:
+                on_finished()
+
+    def collapse(self, animator=None, duration=300, easing=None, on_finished=None):
+        """收起网格高度到 0
+
+        Args:
+            animator: WidgetAnimator 实例，为 None 时直接设置高度为 0（无动画）
+            duration: 动画时长（毫秒）
+            easing: 缓动曲线，默认 OutQuart
+            on_finished: 动画完成回调
+        """
+        current_height = self.height()
+
+        if animator is not None:
+            animator.animate_heights(
+                [(self, current_height, 0)],
+                duration=duration,
+                easing=easing or QEasingCurve.Type.OutQuart,
+                on_finished=on_finished,
+            )
+        else:
+            self.setFixedHeight(0)
+            if on_finished:
+                on_finished()
 
     @property
     def cols(self) -> int:
