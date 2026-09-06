@@ -46,6 +46,19 @@ class _RegionSelectorOverlay(QWidget):
     def __init__(self, background: QPixmap):
         super().__init__()
         # 背景底图：遮罩显示前已抓取全屏，避免把遮罩本身截进去
+        # 注意：screen.grabWindow(0) 返回的 QPixmap 是物理像素尺寸，
+        # 而遮罩几何和鼠标坐标是逻辑像素。在高 DPI 缩放（如 150% / 200%）
+        # 下，直接用逻辑像素的 rect 裁剪物理像素的图片会导致选区偏移。
+        # 此处将背景图缩放到逻辑像素尺寸，统一坐标系。
+        dpr = background.devicePixelRatio()
+        if dpr > 1.0:
+            background = background.scaled(
+                int(background.width() / dpr),
+                int(background.height() / dpr),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            background.setDevicePixelRatio(1.0)
         self._background = background
         self._drag_start = None  # 左键按下位置
         self._drag_end = None  # 当前拖拽位置

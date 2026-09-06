@@ -24,6 +24,7 @@ from pages.module_center_page import ModuleCenterPage
 from pages.note_page import NotePage
 from pages.notify_page import NotifyPage
 from pages.setting_page import SettingPage
+from pages.text_recognition_page import TextRecognitionPage
 from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
 from pages.touchpad_ctl_page import TouchpadCtlPage
 from pages.translator_page import TranslatorPage
@@ -109,6 +110,7 @@ class MainShellWindow(QWidget):
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
         self.register_page(NotePage.PAGE_NAME, NotePage())
+        self.register_page(TextRecognitionPage.PAGE_NAME, TextRecognitionPage())
 
         page_router.page_queue = ["home"]  # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])

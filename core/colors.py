@@ -55,7 +55,7 @@ def get_purest_color(color: QColor) -> QColor:
     if h == -1:
         return QColor(color)
 
-    return QColor.fromHsv(h, 255, 255, a)
+    return QColor.fromHsv(h, s, 255, a)
 
 
 def get_accent_color(brightness: int = 0) -> QColor:

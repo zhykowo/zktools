@@ -272,7 +272,7 @@ class ThemeSwitcherController(QObject):
         )
         self._is_switching = True
         self.state_changed.emit("switching")
-        notify("主题切换中…", icon=theme_icon, duration=0)
+        notify("Theme Switching…", icon=theme_icon, duration=0)
 
         threading.Thread(
             target=self._perform_switch_worker,
