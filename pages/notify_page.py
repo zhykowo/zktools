@@ -133,7 +133,7 @@ class NotifyLabel(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(16)
         self._timer.timeout.connect(self.update)
-        self._wave_color = get_accent_color()
+        self._wave_color = get_accent_color(brightness=140)
         color_manager.accent_color_changed.connect(self._on_accent_changed)
 
     # ---------- 公开接口 ----------

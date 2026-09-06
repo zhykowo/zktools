@@ -55,10 +55,10 @@ def get_purest_color(color: QColor) -> QColor:
     if h == -1:
         return QColor(color)
 
-    return QColor.fromHsv(h, s, int(v * 0.9), a)
+    return QColor.fromHsv(h, 255, 255, a)
 
 
-def get_accent_color() -> QColor:
+def get_accent_color(brightness: int = 0) -> QColor:
     """获取系统强调色。
 
     保底机制：当系统未提供有效的 Accent 色（无效色 / 接近黑色）时，
@@ -74,7 +74,14 @@ def get_accent_color() -> QColor:
         # 保底：系统未提供有效强调色时使用默认配色
         accent = QColor(DEFAULT_ACCENT)
 
-    return get_purest_color(accent)
+    if brightness == 0:
+        return get_purest_color(accent)
+    elif brightness > 0:
+        return get_purest_color(accent).lighter(brightness)
+    elif brightness < 0:
+        return get_purest_color(accent).darker(-brightness)
+    else:
+        raise
 
 
 class ColorManager(QObject):

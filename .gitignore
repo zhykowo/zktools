@@ -17,3 +17,4 @@ uv.lock
 notes.txt
 .python-version
 data/
+test.py
