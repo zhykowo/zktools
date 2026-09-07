@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont, QPalette, QTextCursor
+from PySide6.QtGui import QPalette, QTextCursor
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
 from core.colors import NEUTRAL_1, NEUTRAL_2, NEUTRAL_4

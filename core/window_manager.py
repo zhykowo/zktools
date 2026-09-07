@@ -6,9 +6,12 @@ from PySide6.QtCore import (
     QPropertyAnimation,
     Qt,
     Signal,
+    Slot,
 )
 from PySide6.QtGui import QSinglePointEvent
 from PySide6.QtWidgets import QApplication, QWidget
+
+from core.signal import global_signals
 
 
 class WindowDragFilter(QObject):
@@ -44,6 +47,8 @@ class WindowManager:
 
     def __init__(self, window: QWidget):
         self.window = window
+
+        global_signals.window_active_changed.connect(self._on_window_active_changed)
 
         # 状态标志
         self.is_expanded = False
@@ -98,7 +103,8 @@ class WindowManager:
         self.anim.setEndValue(QPoint(target_x, target_y))
         self.anim.start()
 
-    def handle_focus_change(self, is_active: bool):
+    @Slot(bool)
+    def _on_window_active_changed(self, is_active: bool):
         """处理窗口焦点变化"""
         self.on_focus = is_active
         self.animate(is_active)

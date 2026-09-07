@@ -50,7 +50,7 @@ def to_qss_color(color: QColor) -> str:
 
 def get_purest_color(color: QColor) -> QColor:
     """获取输入颜色对应的最纯净版本（最高饱和度 & 明度）"""
-    h, s, v, a = cast("tuple[int, int, int, int]", color.getHsv())
+    h, s, _v, a = cast("tuple[int, int, int, int]", color.getHsv())
 
     if h == -1:
         return QColor(color)
@@ -58,7 +58,7 @@ def get_purest_color(color: QColor) -> QColor:
     return QColor.fromHsv(h, s, 255, a)
 
 
-def get_purest_accent_color(brightness: int = 0) -> QColor:
+def get_purest_accent_color(strength: float = 0) -> QColor:
     """获取系统强调色。
 
     保底机制：当系统未提供有效的 Accent 色（无效色 / 接近黑色）时，
@@ -74,12 +74,20 @@ def get_purest_accent_color(brightness: int = 0) -> QColor:
         # 保底：系统未提供有效强调色时使用默认配色
         accent = QColor(DEFAULT_ACCENT)
 
-    if brightness == 0:
+    if strength == 0:
         return get_purest_color(accent)
-    elif brightness > 0:
-        return get_purest_color(accent).lighter(brightness)
-    elif brightness < 0:
-        return get_purest_color(accent).darker(-brightness)
+    elif strength > 0:
+        h, s, l, a = cast(
+            "tuple[int, int, int, int]", get_purest_color(accent).getHsl()
+        )
+        new_l = int(l + strength * (255 - l))
+        return QColor.fromHsl(h, s, new_l, a)
+    elif strength < 0:
+        h, s, v, a = cast(
+            "tuple[int, int, int, int]", get_purest_color(accent).getHsv()
+        )
+        new_v = int(v * (1 + strength))
+        return QColor.fromHsl(h, s, new_v, a)
     else:
         raise
 

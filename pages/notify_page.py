@@ -133,7 +133,8 @@ class NotifyLabel(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(16)
         self._timer.timeout.connect(self.update)
-        self._wave_color = get_purest_accent_color(brightness=140)
+        self._wave_color = get_purest_accent_color(strength=0.2)
+        print(self._wave_color.getHsl())
         color_manager.accent_color_changed.connect(self._on_accent_changed)
 
     # ---------- 公开接口 ----------
@@ -161,7 +162,7 @@ class NotifyLabel(QWidget):
 
     def _on_accent_changed(self, new_color: QColor):
         """系统强调色变化时更新波浪动画颜色"""
-        self._wave_color = get_purest_accent_color(brightness=140)
+        self._wave_color = get_purest_accent_color(strength=0.2)
         self.update()
 
     # ---------- 布局 ----------

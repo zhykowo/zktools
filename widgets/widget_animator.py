@@ -16,7 +16,12 @@ MinimumHeight / MaximumHeight。
 
 from collections.abc import Sequence
 
-from PySide6.QtCore import QEasingCurve, QObject, QParallelAnimationGroup, QPropertyAnimation
+from PySide6.QtCore import (
+    QEasingCurve,
+    QObject,
+    QParallelAnimationGroup,
+    QPropertyAnimation,
+)
 from PySide6.QtWidgets import QWidget
 
 

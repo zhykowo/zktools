@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from core.colors import WHITE, color_manager
 from core.page_animation import PageAnimationManager
 from core.page_router import page_router
+from core.signal import global_signals
 from core.system_tray import SystemTrayManager
 from core.window_manager import WindowManager, drag_bus
 from pages.clipboard_ctl_page import ClipboardCtlPage
@@ -23,6 +24,8 @@ from pages.homepage import HomePage, on_drag_bus
 from pages.module_center_page import ModuleCenterPage
 from pages.note_page import NotePage
 from pages.notify_page import NotifyPage
+from pages.open_file_location_page import OpenFileLocationPage
+from pages.restart_explorer_page import RestartExplorerPage
 from pages.setting_page import SettingPage
 from pages.text_recognition_page import TextRecognitionPage
 from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
@@ -107,6 +110,8 @@ class MainShellWindow(QWidget):
         page_router.register_virtual(ClipboardCtlPage())
         page_router.register_virtual(TouchpadCtlPage())
         page_router.register_virtual(ThemeSwitcherPage())
+        page_router.register_virtual(RestartExplorerPage())
+        page_router.register_virtual(OpenFileLocationPage())
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
         self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
         self.register_page(NotePage.PAGE_NAME, NotePage())
@@ -181,9 +186,10 @@ class MainShellWindow(QWidget):
             self._flash_anim.start()
 
     def changeEvent(self, event):
-        # 当窗口的激活状态发生改变时触发
+        # 当窗口的激活状态发生改变时触发；
+        # 只负责广播信号，具体行为由各模块自行订阅
         if event.type() == QEvent.Type.ActivationChange:
-            self.window_manager.handle_focus_change(self.isActiveWindow())
+            global_signals.window_active_changed.emit(self.isActiveWindow())
 
 
 if __name__ == "__main__":
