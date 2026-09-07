@@ -99,7 +99,8 @@ class ModuleCenterPage(BasePage):
                     widget.deleteLater()
         self._cards.clear()
 
-        for index, (page_name, page) in enumerate(page_router.pages.items()):
+        display_index = 0
+        for page_name, page in page_router.pages.items():
             if not page.module_name:
                 continue
             card = ModuleCard(parent=self)
@@ -108,8 +109,9 @@ class ModuleCenterPage(BasePage):
             card.icon_btn.clicked.connect(
                 lambda _=None, p=page: p.on_module_center_clicked()
             )
-            row, col = divmod(index, self.GRID_COLS)
+            row, col = divmod(display_index, self.GRID_COLS)
             self.grid_layout.addWidget(card, row, col)
+            display_index += 1
             self._cards[page_name] = card
             self._apply_module_center_info(card, page)
 
