@@ -1,3 +1,4 @@
+import json
 import logging
 import subprocess
 import tempfile
@@ -23,7 +24,7 @@ from widgets.text_editor import RoundedTextEdit
 class OcrWorker(QThread):
     """后台 OCR 识别线程
 
-    调用 cli.exe 进行文字识别，完成后通过信号回传结果到主线程。
+    调用 nbocr.exe 进行文字识别，完成后通过信号回传结果到主线程。
     """
 
     ocr_done = Signal(str)  # 识别结果文本
@@ -55,29 +56,47 @@ class OcrWorker(QThread):
             result = subprocess.run(
                 [
                     str(self._exe_path),
-                    "-i",
+                    "r",
                     str(self._image_path),
                     "-l",
                     self._lang,
+                    "-d",
+                    "v6-small",
+                    "-m",
+                    str(self._exe_path.parent / "models"),
+                    "-f",
+                    "json",
                     "-o",
                     tmp_path,
-                    "--no-vis",
                 ],
                 capture_output=True,
                 text=True,
                 timeout=30,
                 check=False,
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
 
             if self._cancelled:
                 return
 
             if result.returncode == 0:
-                text = Path(tmp_path).read_text(encoding="utf-8").strip()
-                if text:
-                    self.ocr_done.emit(text)
-                else:
+                raw = Path(tmp_path).read_text(encoding="utf-8").strip()
+                if not raw:
                     self.ocr_done.emit("(No text detected)")
+                else:
+                    try:
+                        # JSON 输出：提取每条结果的 text 字段，按行拼接
+                        data = json.loads(raw)
+                        text = "\n".join(
+                            item["text"] for item in data.get("results", [])
+                        ).strip()
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        # 非 JSON 输出：直接使用原始内容
+                        text = raw
+                    if text:
+                        self.ocr_done.emit(text)
+                    else:
+                        self.ocr_done.emit("(No text detected)")
             else:
                 error_msg = result.stderr.strip() or f"Exit code: {result.returncode}"
                 self.ocr_error.emit(error_msg)
@@ -115,6 +134,19 @@ class TextRecognitionPage(BasePage):
         # ("devanagari", "Devanagari"),
     ]
 
+    # nbocr 语言代码映射（旧代码 → nbocr 接受的代码）
+    _LANG_CODE_MAP: ClassVar[dict[str, str]] = {
+        "ch": "ch",
+        "chinese_cht": "ch",
+        "en": "en",
+        "japan": "ja",
+        "ko": "ko",
+        "latin": "latin",
+        "th": "th",
+        "arabic": "arabic",
+        "cyrillic": "cyrillic",
+    }
+
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8
 
@@ -124,7 +156,7 @@ class TextRecognitionPage(BasePage):
         self.target_size = (400, 300)
 
         self.screenshot_path = root_dir / "data" / "screenshot.png"
-        self.ocr_script_path = root_dir / "tools" / "ocr" / "cli.exe"
+        self.ocr_script_path = root_dir / "tools" / "newbee_ocr" / "nbocr.exe"
 
         # 后台 OCR 线程状态
         self._worker: OcrWorker | None = None
@@ -225,10 +257,11 @@ class TextRecognitionPage(BasePage):
 
         self._set_recognizing(True)
 
+        nb_lang = self._LANG_CODE_MAP.get(self._current_lang, self._current_lang)
         self._worker = OcrWorker(
             exe_path=self.ocr_script_path,
             image_path=self.screenshot_path,
-            lang=self._current_lang,
+            lang=nb_lang,
             parent=self,
         )
         self._worker.ocr_done.connect(self._on_ocr_done)
