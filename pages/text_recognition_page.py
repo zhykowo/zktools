@@ -1,9 +1,9 @@
+# text_recognition_page.py
 import json
 import logging
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -53,22 +53,25 @@ class OcrWorker(QThread):
             ) as tmp:
                 tmp_path = tmp.name
 
+            args = [
+                str(self._exe_path),
+                "r",
+                str(self._image_path),
+                "-d",
+                "v6-small",
+                "-m",
+                str(self._exe_path.parent / "models"),
+                "-f",
+                "json",
+                "-o",
+                tmp_path,
+            ]
+
+            if self._lang != "Auto":
+                args.extend(["-l", self._lang])
+
             result = subprocess.run(
-                [
-                    str(self._exe_path),
-                    "r",
-                    str(self._image_path),
-                    "-l",
-                    self._lang,
-                    "-d",
-                    "v6-small",
-                    "-m",
-                    str(self._exe_path.parent / "models"),
-                    "-f",
-                    "json",
-                    "-o",
-                    tmp_path,
-                ],
+                args=args,
                 capture_output=True,
                 text=True,
                 timeout=30,
@@ -90,7 +93,7 @@ class OcrWorker(QThread):
                         text = "\n".join(
                             item["text"] for item in data.get("results", [])
                         ).strip()
-                    except (json.JSONDecodeError, KeyError, TypeError):
+                    except json.JSONDecodeError, KeyError, TypeError:
                         # 非 JSON 输出：直接使用原始内容
                         text = raw
                     if text:
@@ -120,32 +123,17 @@ class TextRecognitionPage(BasePage):
     MODULE_NAME = "OCR"
     MODULE_ICON = text_scan_icon
 
-    # (语言代码, 显示名称)
-    SUPPORTED_LANGUAGES: ClassVar[list[tuple[str, str]]] = [
-        ("ch", "Chinese"),
-        ("chinese_cht", "Chinese (Trad.)"),
-        ("en", "English"),
-        ("japan", "Japanese"),
-        ("ko", "Korean"),
-        ("latin", "Latin"),
-        ("th", "Thai"),
-        ("arabic", "Arabic"),
-        ("cyrillic", "Cyrillic"),
-        # ("devanagari", "Devanagari"),
+    SUPPORTED_LANGUAGES: list[str] = [
+        "Auto",
+        "English",
+        "Chinese",
+        "Japanese",
+        "Korean",
+        "French",
+        "German",
+        "Spanish",
+        "Russian",
     ]
-
-    # nbocr 语言代码映射（旧代码 → nbocr 接受的代码）
-    _LANG_CODE_MAP: ClassVar[dict[str, str]] = {
-        "ch": "ch",
-        "chinese_cht": "ch",
-        "en": "en",
-        "japan": "ja",
-        "ko": "ko",
-        "latin": "latin",
-        "th": "th",
-        "arabic": "arabic",
-        "cyrillic": "cyrillic",
-    }
 
     GRID_ITEM_HEIGHT = 36
     GRID_SPACING = 8
@@ -160,8 +148,7 @@ class TextRecognitionPage(BasePage):
 
         # 后台 OCR 线程状态
         self._worker: OcrWorker | None = None
-        self._current_lang = "ch"
-        self._current_lang_display = "Chinese"
+        self._current_lang = "Chinese"
 
         layout = self.set_main_layout("v")
         assert layout is not None
@@ -181,7 +168,7 @@ class TextRecognitionPage(BasePage):
         # 3. 底部控制栏
         footer = QHBoxLayout()
 
-        self.lang_button = CoreButton(text=self._current_lang_display)
+        self.lang_button = CoreButton(text=self._current_lang)
         self.lang_button.clicked.connect(self._toggle_lang_grid)
 
         self.download_serve_button = CoreButton(text="Download")
@@ -257,7 +244,8 @@ class TextRecognitionPage(BasePage):
 
         self._set_recognizing(True)
 
-        nb_lang = self._LANG_CODE_MAP.get(self._current_lang, self._current_lang)
+        nb_lang = self._current_lang
+
         self._worker = OcrWorker(
             exe_path=self.ocr_script_path,
             image_path=self.screenshot_path,
@@ -330,21 +318,19 @@ class TextRecognitionPage(BasePage):
             self.selection_grid.collapse()
         else:
             # 展开（populate 内部会先清空旧按钮）
-            display_names = [name for _, name in self.SUPPORTED_LANGUAGES]
             self.selection_grid.populate(
-                items=display_names,
-                current_value=self._current_lang_display,
+                items=self.SUPPORTED_LANGUAGES,
+                current_value=self._current_lang,
                 on_select_callback=self._on_lang_selected,
             )
             self.selection_grid.expand_to(len(self.SUPPORTED_LANGUAGES))
 
     def _on_lang_selected(self, display_name: str):
         """语言选择回调：更新当前语言并收起网格"""
-        for code, name in self.SUPPORTED_LANGUAGES:
-            if name == display_name:
-                self._current_lang = code
-                self._current_lang_display = name
-                self.lang_button.setText(name)
+        for lang in self.SUPPORTED_LANGUAGES:
+            if lang == display_name:
+                self._current_lang = lang
+                self.lang_button.setText(lang)
                 break
         # 收起网格
         self.selection_grid.collapse()

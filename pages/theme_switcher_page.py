@@ -46,6 +46,7 @@ def _apply_theme(theme_file: str) -> bool:
             text=True,
             timeout=15,
             check=False,
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
         if result.returncode == 0:
             logger.info(f"[ThemeSwitcher] 主题已切换: {theme_file}")

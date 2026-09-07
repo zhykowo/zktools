@@ -149,7 +149,7 @@ class MainShellWindow(QWidget):
     def eventFilter(self, watched, event):
         """当鼠标进入灵动岛容器时触发闪烁"""
         if watched == self.main_container and event.type() == QEvent.Type.Enter:
-            text_manager.get().get_selected_text()
+            # text_manager.get().get_selected_text()
             self.trigger_flash_effect()
         return super().eventFilter(watched, event)
 
