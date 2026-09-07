@@ -12,7 +12,7 @@ from core.colors import (
     NEUTRAL_4,
     WHITE,
     color_manager,
-    get_accent_color,
+    get_purest_accent_color,
     get_purest_color,
 )
 
@@ -36,7 +36,7 @@ class RoundedTextEdit(QTextEdit):
         self._radius = radius
         self._bg_color = bg_color if isinstance(bg_color, QColor) else QColor(bg_color)
 
-        self._accent = get_purest_color(get_accent_color())
+        self._accent = get_purest_accent_color()
         self._idle_border = NEUTRAL_2
         self._hover_border = NEUTRAL_3
         self._placeholder_color = NEUTRAL_4

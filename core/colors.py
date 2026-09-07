@@ -58,7 +58,7 @@ def get_purest_color(color: QColor) -> QColor:
     return QColor.fromHsv(h, s, 255, a)
 
 
-def get_accent_color(brightness: int = 0) -> QColor:
+def get_purest_accent_color(brightness: int = 0) -> QColor:
     """获取系统强调色。
 
     保底机制：当系统未提供有效的 Accent 色（无效色 / 接近黑色）时，
@@ -103,7 +103,7 @@ class ColorManager(QObject):
         self._cached_accent = self._read_accent()
 
     def _read_accent(self) -> QColor:
-        return get_accent_color()
+        return get_purest_accent_color()
 
     def init(self):
         """在 QApplication 创建后调用，连接系统调色板变化信号。

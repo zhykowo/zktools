@@ -2,7 +2,7 @@ from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRectF, Q
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
-from core.colors import WHITE, color_manager, get_accent_color
+from core.colors import WHITE, color_manager, get_purest_accent_color
 from widgets.hover import HoverShape, HoverWidget
 
 
@@ -25,7 +25,7 @@ class SvgButton(HoverWidget):
         self.icon_size = icon_size
         self.normal_color = WHITE
         self._custom_hover_color = QColor(hover_color) if hover_color else None
-        self.target_color = self._custom_hover_color or get_accent_color()
+        self.target_color = self._custom_hover_color or get_purest_accent_color()
         self.enable_rotation = enable_rotation
 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
