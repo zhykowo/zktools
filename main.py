@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from core.background import BackgroundWidget
 from core.colors import WHITE, color_manager
 from core.page_animation import PageAnimationManager
 from core.page_router import page_router
@@ -96,6 +97,10 @@ class MainShellWindow(QWidget):
         container_layout.setContentsMargins(10, 0, 10, 0)
         container_layout.setSpacing(5)
 
+        # 五色光斑背景：置于容器最底层（在页面内容之下、容器底色之上），
+        # 尺寸与圆角随容器动画同步
+        self.background = BackgroundWidget.attach_to(self.main_container)
+
         self.stacked_widget = QStackedWidget(self.main_container)
 
         self.opacity_effect = QGraphicsOpacityEffect(self.stacked_widget)
@@ -148,8 +153,9 @@ class MainShellWindow(QWidget):
         )
 
     def update_container_radius(self, radius):
-        """原生更新容器圆角"""
+        """原生更新容器圆角（同步给光斑背景，保持裁剪边界一致）"""
         self.main_container.set_radius(radius)
+        self.background.set_radius(radius)
 
     def eventFilter(self, watched, event):
         """当鼠标进入灵动岛容器时触发闪烁"""
