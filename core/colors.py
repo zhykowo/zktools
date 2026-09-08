@@ -58,7 +58,7 @@ def get_purest_color(color: QColor) -> QColor:
     return QColor.fromHsv(h, s, 255, a)
 
 
-def get_purest_accent_color(strength: float = 0) -> QColor:
+def get_accent_color(strength: float = 0) -> QColor:
     """获取系统强调色。
 
     保底机制：当系统未提供有效的 Accent 色（无效色 / 接近黑色）时，
@@ -75,17 +75,13 @@ def get_purest_accent_color(strength: float = 0) -> QColor:
         accent = QColor(DEFAULT_ACCENT)
 
     if strength == 0:
-        return get_purest_color(accent)
+        return accent
     elif strength > 0:
-        h, s, l, a = cast(
-            "tuple[int, int, int, int]", get_purest_color(accent).getHsl()
-        )
+        h, s, l, a = cast("tuple[int, int, int, int]", accent.getHsl())
         new_l = int(l + strength * (255 - l))
         return QColor.fromHsl(h, s, new_l, a)
     elif strength < 0:
-        h, s, v, a = cast(
-            "tuple[int, int, int, int]", get_purest_color(accent).getHsv()
-        )
+        h, s, v, a = cast("tuple[int, int, int, int]", accent.getHsv())
         new_v = int(v * (1 + strength))
         return QColor.fromHsl(h, s, new_v, a)
     else:
@@ -111,7 +107,7 @@ class ColorManager(QObject):
         self._cached_accent = self._read_accent()
 
     def _read_accent(self) -> QColor:
-        return get_purest_accent_color()
+        return get_accent_color()
 
     def init(self):
         """在 QApplication 创建后调用，连接系统调色板变化信号。

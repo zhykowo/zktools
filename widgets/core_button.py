@@ -3,20 +3,24 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
 
-from core.colors import NEUTRAL_4, WHITE, color_manager, get_purest_accent_color
+from core.colors import (
+    COLOR_DANGER,
+    NEUTRAL_2,
+    NEUTRAL_4,
+    WHITE,
+    color_manager,
+    get_accent_color,
+)
 
 
 class CoreButton(QPushButton):
     def __init__(self, text, bg_color=None, text_color=None, radius=12, parent=None):
         super().__init__(text, parent)
-
-        self.accent_qcolor = get_purest_accent_color(strength=-0.3)
-        print("核心按钮颜色：" + str(self.accent_qcolor.getHsl()))
-
         self._custom_bg_color = QColor(bg_color) if bg_color else None
-        self.bg_color = self._custom_bg_color or self.accent_qcolor
         self.text_color = QColor(text_color) if text_color else WHITE
         self.radius = radius
+
+        self._on_accent_changed()
 
         color_manager.accent_color_changed.connect(self._on_accent_changed)
 
@@ -57,16 +61,29 @@ class CoreButton(QPushButton):
         painter.setFont(self.font())
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text())
 
-    def setBgColor(self, bg_color: QColor):
-        self.bg_color = bg_color
+    def setBgColor(self, bg_color: QColor | str = "accent"):
+        """设置颜色，不指定bg_color时重置为系统配色"""
+
+        if bg_color == "accent":
+            self.bg_color = self.custom_accent_qcolor
+        elif bg_color == "danger":
+            self.bg_color = QColor(COLOR_DANGER)
+        elif bg_color == "gray":
+            self.bg_color = QColor(NEUTRAL_2)
+        elif isinstance(bg_color, QColor):
+            self.bg_color = bg_color
+        else:
+            raise TypeError(
+                f"bg_color must be QColor, str, or None, got {type(bg_color)}"
+            )
+
         self.update()
 
-    def resetBgColor(self):
-        self.bg_color = self.accent_qcolor
-        self.update()
-
-    def _on_accent_changed(self, new_color: QColor):
+    def _on_accent_changed(self, new_color: QColor | None = None):
         """系统强调色变化时更新 accent 底色（仅当未自定义 bg_color 时）"""
-        if self._custom_bg_color is None:
-            self.accent_qcolor = get_purest_accent_color(strength=-0.3)
-            self.resetBgColor()
+        self.custom_accent_qcolor = get_accent_color(strength=-0.6)
+
+        if self._custom_bg_color:
+            self.setBgColor(self._custom_bg_color)
+        else:
+            self.setBgColor("gray")

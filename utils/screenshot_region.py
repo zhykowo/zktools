@@ -29,7 +29,7 @@ from PySide6.QtCore import QEventLoop, QObject, QRect, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 
-from core.colors import get_purest_accent_color
+from core.colors import get_accent_color
 
 # 最小选区边长（逻辑像素）：小于此值视为误触，不产生截图
 MIN_SELECT_SIZE = 5
@@ -179,7 +179,7 @@ class _RegionSelectorOverlay(QWidget):
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
         # 选区边框（系统强调色）
-        accent = get_purest_accent_color()
+        accent = get_accent_color()
         painter.setPen(QPen(accent, 2))
         painter.drawRect(rect)
 

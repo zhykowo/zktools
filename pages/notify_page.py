@@ -45,7 +45,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from core.colors import WHITE, color_manager, get_purest_accent_color
+from core.colors import WHITE, color_manager, get_accent_color
 from core.page_router import page_router
 from pages.base_page import BasePage
 from resources.svgs import square_icon
@@ -133,7 +133,7 @@ class NotifyLabel(QWidget):
         self._timer = QTimer(self)
         self._timer.setInterval(16)
         self._timer.timeout.connect(self.update)
-        self._wave_color = get_purest_accent_color(strength=0.2)
+        self._wave_color = get_accent_color()
         print(self._wave_color.getHsl())
         color_manager.accent_color_changed.connect(self._on_accent_changed)
 
@@ -162,7 +162,7 @@ class NotifyLabel(QWidget):
 
     def _on_accent_changed(self, new_color: QColor):
         """系统强调色变化时更新波浪动画颜色"""
-        self._wave_color = get_purest_accent_color(strength=0.2)
+        self._wave_color = get_accent_color()
         self.update()
 
     # ---------- 布局 ----------

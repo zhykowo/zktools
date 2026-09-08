@@ -11,7 +11,7 @@ from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QPalette
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from core.colors import COLOR_DANGER, NEUTRAL_2, NEUTRAL_4
+from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
 from resources.constants import root_dir
 from resources.svgs import text_scan_icon
@@ -135,9 +135,6 @@ class TextRecognitionPage(BasePage):
         "Russian",
     ]
 
-    GRID_ITEM_HEIGHT = 36
-    GRID_SPACING = 8
-
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -157,13 +154,7 @@ class TextRecognitionPage(BasePage):
         self.text_edit = RoundedTextEdit(placeholder="Output", parent=self)
 
         # 2. 语言选择网格（选中回调直接绑定 _on_lang_selected，内部 _clear 复用）
-        self.selection_grid = SelectionGrid(self)
-        self.selection_grid.configure(
-            cols=3,
-            item_height=self.GRID_ITEM_HEIGHT,
-            spacing=self.GRID_SPACING,
-            idle_bg=NEUTRAL_2,
-        )
+        self.selection_grid = SelectionGrid()
 
         # 3. 底部控制栏
         footer = QHBoxLayout()
@@ -177,11 +168,11 @@ class TextRecognitionPage(BasePage):
 
         self.serve_state = self._make_footer_label()
 
-        self.ocr_button = CoreButton(text="Get Text")
+        self.ocr_button = CoreButton(text="Get Text", bg_color="accent")
         self.ocr_button.clicked.connect(self.capture)
 
         self.cancel_btn = CoreButton("Cancel", parent=self)
-        self.cancel_btn.setBgColor(COLOR_DANGER)
+        self.cancel_btn.setBgColor("danger")
         self.cancel_btn.hide()
         self.cancel_btn.clicked.connect(self._cancel_ocr)
 

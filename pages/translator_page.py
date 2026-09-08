@@ -14,7 +14,6 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QHBoxLayout
 
-from core.colors import COLOR_DANGER, NEUTRAL_2
 from core.hotkey_manager import hotkey_manager
 from core.page_router import page_router
 from pages.base_page import BasePage
@@ -141,8 +140,6 @@ class TranslatorPage(BasePage):
     ]
     SUPPORTED_SERVERS: list[str] = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
 
-    GRID_ITEM_HEIGHT = 36
-    GRID_SPACING = 8
     RESULT_TEXT_HEIGHT = 120
 
     def __init__(self, parent=None):
@@ -162,9 +159,6 @@ class TranslatorPage(BasePage):
         layout = self.set_main_layout("v")
         assert layout is not None
 
-        # 配色：激活态使用 accent 高亮，非激活态使用灰色（参考 text_editor 的暗灰配色）
-        self.idle_btn_bg = NEUTRAL_2
-
         # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
         self.input_text = RoundedTextEdit(
             placeholder="Enter or paste text here...", parent=self
@@ -176,13 +170,8 @@ class TranslatorPage(BasePage):
         self.result_text.setFixedHeight(0)
 
         # 3. 通用平铺网格选择面板（独立组件）
-        self.selection_grid = SelectionGrid(self)
-        self.selection_grid.configure(
-            cols=3,
-            item_height=self.GRID_ITEM_HEIGHT,
-            spacing=self.GRID_SPACING,
-            idle_bg=self.idle_btn_bg,
-        )
+        self.selection_grid = SelectionGrid()
+
         # 点击网格项后自动收起（未来组件可按需不连接此信号）
         self.selection_grid.item_selected.connect(lambda _: self._collapse_grid())
 
@@ -232,7 +221,7 @@ class TranslatorPage(BasePage):
         # 取消按钮：与翻译按钮共存于布局，翻译时通过 hide/show 切换显示，
         # 隐藏的组件会自动空出布局位置，无需移除/插入操作
         self.cancel_btn = CoreButton("Cancel", parent=self)
-        self.cancel_btn.setBgColor(COLOR_DANGER)
+        self.cancel_btn.setBgColor("danger")
         self.cancel_btn.hide()
         self.cancel_btn.clicked.connect(self._cancel_translation)
         self.footer_layout.addWidget(self.cancel_btn)
@@ -459,14 +448,14 @@ class TranslatorPage(BasePage):
     def _set_lang_buttons_active(self, mode: GridMode):
         """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
         if mode == GridMode.ORIGIN_LANG:
-            self.origin_lang.resetBgColor()
-            self.target_lang.setBgColor(self.idle_btn_bg)
+            self.origin_lang.setBgColor("accent")
+            self.target_lang.setBgColor("gray")
         elif mode == GridMode.TARGET_LANG:
-            self.origin_lang.setBgColor(self.idle_btn_bg)
-            self.target_lang.resetBgColor()
+            self.origin_lang.setBgColor("gray")
+            self.target_lang.setBgColor("accent")
         else:  # NONE or SERVER
-            self.origin_lang.setBgColor(self.idle_btn_bg)
-            self.target_lang.setBgColor(self.idle_btn_bg)
+            self.origin_lang.setBgColor("gray")
+            self.target_lang.setBgColor("gray")
 
     def _swap_languages(self):
         """互换源语言与目标语言"""

@@ -22,8 +22,7 @@ class SelectionGrid(QWidget):
 
     用法示例::
 
-        grid = SelectionGrid(parent)
-        grid.configure(cols=3, item_height=36, spacing=8)
+        grid = SelectionGrid(cols=3, item_height=36, spacing=8, parent=parent)
         grid.populate(items, current_value, on_select)
         height = grid.calculate_height(len(items))
 
@@ -33,13 +32,20 @@ class SelectionGrid(QWidget):
 
     item_selected = Signal(str)  # 点击项时发射，携带选中文本
 
-    def __init__(self, parent=None):
+    def __init__(
+        self,
+        cols: int = 3,
+        item_height: int = 36,
+        spacing: int = 8,
+        idle_bg=NEUTRAL_2,
+        parent=None,
+    ):
         super().__init__(parent)
 
-        self._idle_bg = NEUTRAL_2
-        self._cols = 3
-        self._item_height = 36
-        self._spacing = 8
+        self._cols = cols
+        self._item_height = item_height
+        self._spacing = spacing
+        self._idle_bg = idle_bg
 
         self.grid_layout = QGridLayout(self)
         self.grid_layout.setContentsMargins(0, 0, 0, 0)
@@ -62,18 +68,6 @@ class SelectionGrid(QWidget):
 
     # ==================== 公共接口 ====================
 
-    def configure(self, cols=None, item_height=None, spacing=None, idle_bg=None):
-        """配置网格参数（初始化时调用，不要在 populate 后调用）"""
-        if cols is not None:
-            self._cols = cols
-        if item_height is not None:
-            self._item_height = item_height
-        if spacing is not None:
-            self._spacing = spacing
-            self.grid_layout.setSpacing(self._spacing)
-        if idle_bg is not None:
-            self._idle_bg = idle_bg
-
     def populate(self, items: list[str], current_value: str, on_select_callback):
         """填充按钮并更新网格
 
@@ -87,11 +81,9 @@ class SelectionGrid(QWidget):
         for idx, text in enumerate(items):
             btn = CoreButton(text)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            if text != current_value:
-                btn.setBgColor(self._idle_bg)
-            btn.clicked.connect(
-                partial(self._on_item_click, text, on_select_callback)
-            )
+            if text == current_value:
+                btn.setBgColor("accent")
+            btn.clicked.connect(partial(self._on_item_click, text, on_select_callback))
             row, col = divmod(idx, self._cols)
             self.grid_layout.addWidget(btn, row, col)
 
@@ -133,7 +125,9 @@ class SelectionGrid(QWidget):
             on_finished=on_finished,
         )
 
-    def collapse(self, extra_animations=None, duration=300, easing=None, on_finished=None):
+    def collapse(
+        self, extra_animations=None, duration=300, easing=None, on_finished=None
+    ):
         """收起网格高度到 0
 
         Args:
@@ -184,7 +178,7 @@ class SelectionGrid(QWidget):
                 btn = item.widget()
                 if isinstance(btn, CoreButton):
                     if btn.text() == selected_text:
-                        btn.resetBgColor()
+                        btn.setBgColor("accent")
                     else:
                         btn.setBgColor(self._idle_bg)
         callback(selected_text)

@@ -6,7 +6,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QPalette, QTextCursor
 from PySide6.QtWidgets import QHBoxLayout, QLabel
 
-from core.colors import NEUTRAL_1, NEUTRAL_2, NEUTRAL_4
+from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
 from resources.constants import get_data_file_path
 from resources.svgs import note_icon
@@ -50,7 +50,7 @@ class NotePage(BasePage):
 
         # 便笺编辑区（圆角深色背景，与翻译页输入框同款）
         self.note_editor = RoundedTextEdit(
-            placeholder="Write something here...", bg_color=NEUTRAL_1, parent=self
+            placeholder="Write something here...", parent=self
         )
         self.note_editor.textChanged.connect(self._on_text_changed)
 
@@ -59,7 +59,7 @@ class NotePage(BasePage):
         self.char_count_label = self._make_footer_label()
 
         self.clear_btn = CoreButton("Clear", parent=self)
-        self.clear_btn.setBgColor(NEUTRAL_2)
+        self.clear_btn.setBgColor("gray")
         self.clear_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.clear_btn.clicked.connect(self._clear_note)
 
