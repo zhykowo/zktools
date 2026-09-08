@@ -21,3 +21,4 @@ test.py
 tools/ocr
 tools/newbee_ocr
 models/
+.workbuddy/
