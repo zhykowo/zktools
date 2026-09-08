@@ -66,7 +66,7 @@ def get_accent_color(strength: float = 0) -> QColor:
     """
     try:
         accent = QApplication.palette().color(QPalette.ColorRole.Accent)
-    except AttributeError, TypeError:
+    except (AttributeError, TypeError):
         logger.error("未能获取系统配色，使用默认颜色")
         accent = QColor()
 
@@ -83,7 +83,7 @@ def get_accent_color(strength: float = 0) -> QColor:
     elif strength < 0:
         h, s, v, a = cast("tuple[int, int, int, int]", accent.getHsv())
         new_v = int(v * (1 + strength))
-        return QColor.fromHsl(h, s, new_v, a)
+        return QColor.fromHsv(h, s, new_v, a)
     else:
         raise
 
