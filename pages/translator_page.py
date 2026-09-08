@@ -207,7 +207,9 @@ class TranslatorPage(BasePage):
         )
 
         self.translation_server_btn = CoreButton(
-            self._server_display_name(self._current_server), parent=self
+            self._server_display_name(self._current_server),
+            bg_color="accent",
+            parent=self,
         )
         self.translation_server_btn.clicked.connect(self._start_translation)
         self.translation_server_btn.setContextMenuPolicy(
