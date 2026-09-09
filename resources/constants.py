@@ -79,10 +79,7 @@ def load_config() -> dict[str, Any]:
         return config
     else:
         # 双方都不存在
-        raise FileNotFoundError(
-            "未找到任何配置文件，请在项目根目录放置 config.json "
-            "或 %APPDATA%\\zHyko\\zktools\\config.json"
-        )
+        raise FileNotFoundError("未找到任何配置文件，请在项目根目录放置 config.json 或 %APPDATA%\\zHyko\\zktools\\config.json")
 
 
 CONFIG = load_config()

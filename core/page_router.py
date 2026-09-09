@@ -177,9 +177,7 @@ class PageRouter(QObject):
         if next_name == "home" and self.window_manager is not None:
             # 显示/回到 home：归位居中显示
             self.window_manager.queue_state = False
-            self.window_manager.animate(
-                show=self.window_manager.on_focus, recenter=True
-            )
+            self.window_manager.animate(show=self.window_manager.on_focus, recenter=True)
 
 
 page_router = PageRouter()

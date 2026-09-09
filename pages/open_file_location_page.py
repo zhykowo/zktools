@@ -38,9 +38,7 @@ def _get_foreground_process_path() -> str | None:
 
     PROCESS_QUERY_INFORMATION = 0x0400
     PROCESS_VM_READ = 0x0010
-    handle = kernel32.OpenProcess(
-        PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid.value
-    )
+    handle = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid.value)
     if not handle:
         return None
 
@@ -83,9 +81,7 @@ class OpenFileLocationPage(VirtualPage):
         try:
             exe_path = _get_foreground_process_path()
             if not exe_path:
-                notify(
-                    "No foreground window found", icon=folder_open_icon, duration=3000
-                )
+                notify("No foreground window found", icon=folder_open_icon, duration=3000)
                 return
 
             directory = os.path.dirname(exe_path)

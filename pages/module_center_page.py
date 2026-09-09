@@ -106,9 +106,7 @@ class ModuleCenterPage(BasePage):
             card = ModuleCard(parent=self)
             # 点击行为由页面自身决定（BasePage.on_module_center_clicked），
             # 本页不感知任何模块特殊性
-            card.icon_btn.clicked.connect(
-                lambda _=None, p=page: p.on_module_center_clicked()
-            )
+            card.icon_btn.clicked.connect(lambda _=None, p=page: p.on_module_center_clicked())
             row, col = divmod(display_index, self.GRID_COLS)
             self.grid_layout.addWidget(card, row, col)
             display_index += 1
@@ -133,9 +131,7 @@ class ModuleCenterPage(BasePage):
             self._apply_module_center_info(card, page)
 
     @staticmethod
-    def _apply_module_center_info(
-        card: ModuleCard, page: BasePage | VirtualPage
-    ) -> None:
+    def _apply_module_center_info(card: ModuleCard, page: BasePage | VirtualPage) -> None:
         """把页面的 module_center 名称与图标应用到卡片（构建与信号刷新共用同一逻辑）"""
         card.label.setText(page.module_name or "")
         icon = page.module_icon

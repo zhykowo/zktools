@@ -48,9 +48,7 @@ class OcrWorker(QThread):
         tmp_path = None
         try:
             # 使用临时文件保存 OCR 结果（比 stdout 更可靠）
-            with tempfile.NamedTemporaryFile(
-                suffix=".txt", mode="w+", encoding="utf-8", delete=False
-            ) as tmp:
+            with tempfile.NamedTemporaryFile(suffix=".txt", mode="w+", encoding="utf-8", delete=False) as tmp:
                 tmp_path = tmp.name
 
             args = [
@@ -90,10 +88,8 @@ class OcrWorker(QThread):
                     try:
                         # JSON 输出：提取每条结果的 text 字段，按行拼接
                         data = json.loads(raw)
-                        text = "\n".join(
-                            item["text"] for item in data.get("results", [])
-                        ).strip()
-                    except json.JSONDecodeError, KeyError, TypeError:
+                        text = "\n".join(item["text"] for item in data.get("results", [])).strip()
+                    except (json.JSONDecodeError, KeyError, TypeError):
                         # 非 JSON 输出：直接使用原始内容
                         text = raw
                     if text:
@@ -217,9 +213,7 @@ class TextRecognitionPage(BasePage):
         # 确保截图目录存在
         self.screenshot_path.parent.mkdir(parents=True, exist_ok=True)
         pixmap.save(str(self.screenshot_path))
-        logger.info(
-            f"截图已保存: {self.screenshot_path} (尺寸: {pixmap.width()}x{pixmap.height()})"
-        )
+        logger.info(f"截图已保存: {self.screenshot_path} (尺寸: {pixmap.width()}x{pixmap.height()})")
         self.start_recognition()
 
     # ==================== OCR 识别 ====================
@@ -229,9 +223,7 @@ class TextRecognitionPage(BasePage):
         if self._worker is not None:
             return  # 已有识别进行中
 
-        logger.info(
-            f"开始 OCR 识别: {self.screenshot_path}, 语言: {self._current_lang}"
-        )
+        logger.info(f"开始 OCR 识别: {self.screenshot_path}, 语言: {self._current_lang}")
 
         self._set_recognizing(True)
 

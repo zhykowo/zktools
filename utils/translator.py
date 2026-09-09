@@ -118,12 +118,8 @@ class Translator:
 
     # ==================== Google（付费官方 API 优先，否则免费网页接口）====================
     def google_translate(self, text, from_lang, to_lang):
-        from_lang = self.GOOGLE_LANG_CODES.get(from_lang) or self.LANGUAGES.get(
-            from_lang, "auto"
-        )
-        to_lang = self.GOOGLE_LANG_CODES.get(to_lang) or self.LANGUAGES.get(
-            to_lang, "zh"
-        )
+        from_lang = self.GOOGLE_LANG_CODES.get(from_lang) or self.LANGUAGES.get(from_lang, "auto")
+        to_lang = self.GOOGLE_LANG_CODES.get(to_lang) or self.LANGUAGES.get(to_lang, "zh")
 
         if self._is_valid_key(self.google_api_key):
             # 付费官方 API（Google Cloud Translation v2）
@@ -138,9 +134,7 @@ class Translator:
             response = httpx.post(url, params=params, timeout=self.TIMEOUT)
             response.raise_for_status()
             # v2 返回的 translatedText 含 HTML 实体（如 &#39;）
-            return html.unescape(
-                response.json()["data"]["translations"][0]["translatedText"]
-            )
+            return html.unescape(response.json()["data"]["translations"][0]["translatedText"])
 
         # 免费网页接口
         url = "https://translate.googleapis.com/translate_a/single"
@@ -159,9 +153,7 @@ class Translator:
             return f"错误: DeepL 不支持目标语言 '{to_lang}'"
 
         # 付费 key 优先走付费端点；未配置 / 占位 key / :fx 免费 key 走免费端点
-        if self._is_valid_key(self.deepl_api_key) and not str(
-            self.deepl_api_key
-        ).lower().endswith(":fx"):
+        if self._is_valid_key(self.deepl_api_key) and not str(self.deepl_api_key).lower().endswith(":fx"):
             url = "https://api.deepl.com/v2/translate"
         else:
             url = "https://api-free.deepl.com/v2/translate"
@@ -186,12 +178,8 @@ class Translator:
         if not self.baidu_appid or not self.baidu_secret_key:
             return "错误: 未配置百度翻译 key（config 的 translator.apis.baidu.appid / secret_key）"
 
-        from_lang = self.BAIDU_LANG_CODES.get(from_lang) or self.LANGUAGES.get(
-            from_lang, "auto"
-        )
-        to_lang = self.BAIDU_LANG_CODES.get(to_lang) or self.LANGUAGES.get(
-            to_lang, "auto"
-        )
+        from_lang = self.BAIDU_LANG_CODES.get(from_lang) or self.LANGUAGES.get(from_lang, "auto")
+        to_lang = self.BAIDU_LANG_CODES.get(to_lang) or self.LANGUAGES.get(to_lang, "auto")
 
         salt = random.randint(1, 65536)
         # 拼接签名原文
@@ -219,12 +207,8 @@ class Translator:
 
     # ==================== Bing（付费官方 API 优先，否则微软 Edge 免费接口）====================
     def bing_translate(self, text, from_lang, to_lang):
-        from_lang = self.BING_LANG_CODES.get(from_lang) or self.LANGUAGES.get(
-            from_lang, "auto"
-        )
-        to_lang = self.BING_LANG_CODES.get(to_lang) or self.LANGUAGES.get(
-            to_lang, "zh-Hans"
-        )
+        from_lang = self.BING_LANG_CODES.get(from_lang) or self.LANGUAGES.get(from_lang, "auto")
+        to_lang = self.BING_LANG_CODES.get(to_lang) or self.LANGUAGES.get(to_lang, "zh-Hans")
 
         if self._is_valid_key(self.bing_api_key):
             # 付费官方 API（Azure Cognitive Services Translator）
@@ -247,9 +231,7 @@ class Translator:
             return response.json()[0]["translations"][0]["text"]
 
         # 免费 Edge 接口
-        auth_response = httpx.get(
-            "https://edge.microsoft.com/translate/auth", timeout=self.TIMEOUT
-        )
+        auth_response = httpx.get("https://edge.microsoft.com/translate/auth", timeout=self.TIMEOUT)
         auth_response.raise_for_status()
         token = auth_response.text.strip()
 
@@ -295,11 +277,7 @@ class Translator:
             "messages": [
                 {
                     "role": "system",
-                    "content": (
-                        "You are a professional translation engine. Translate the user input "
-                        "faithfully and return ONLY the translated text — no explanations, notes, "
-                        "or surrounding quotes."
-                    ),
+                    "content": ("You are a professional translation engine. Translate the user input faithfully and return ONLY the translated text — no explanations, notes, or surrounding quotes."),
                 },
                 {
                     "role": "user",
@@ -309,9 +287,7 @@ class Translator:
             "temperature": 0.2,
         }
 
-        response = httpx.post(
-            url, headers=headers, json=payload, timeout=self.AI_TIMEOUT
-        )
+        response = httpx.post(url, headers=headers, json=payload, timeout=self.AI_TIMEOUT)
         response.raise_for_status()
 
         result = response.json()

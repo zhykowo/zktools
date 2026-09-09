@@ -28,9 +28,7 @@ class RoundedTextEdit(QTextEdit):
     - placeholder：文本为空且未聚焦时显示灰色提示文字
     """
 
-    def __init__(
-        self, placeholder: str = "", bg_color=NEUTRAL_1, radius: int = 12, parent=None
-    ):
+    def __init__(self, placeholder: str = "", bg_color=NEUTRAL_1, radius: int = 12, parent=None):
         super().__init__(parent)
         self._placeholder = placeholder
         self._radius = radius

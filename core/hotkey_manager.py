@@ -43,9 +43,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
 
     def __init__(self):
         if sys.platform != "win32":
-            raise RuntimeError(
-                "HotkeyManager 仅支持 Windows（依赖 RegisterHotKey / 原生消息循环）"
-            )
+            raise RuntimeError("HotkeyManager 仅支持 Windows（依赖 RegisterHotKey / 原生消息循环）")
         super().__init__()
 
         self.user32 = ctypes.windll.user32
@@ -192,9 +190,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
         True 成功；False 失败（未启动 / 解析失败 / 已被占用）。
         """
         if not self._installed:
-            logger.error(
-                f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）"
-            )
+            logger.error(f"[HotkeyManager] register 失败：监听未启动，请先调用 start()（快捷键 '{hotkey_str}'）")
             return False
 
         formatted_hotkey = hotkey_str.lower().replace(" ", "")
@@ -205,9 +201,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             return False
 
         if formatted_hotkey in self._hotkeys:
-            logger.info(
-                f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册"
-            )
+            logger.info(f"[HotkeyManager] 快捷键 '{hotkey_str}' 已注册，请先注销再重新注册")
             return False
 
         hotkey_id = self._alloc_hotkey_id()
@@ -215,15 +209,11 @@ class HotkeyManager(QAbstractNativeEventFilter):
         if self.user32.RegisterHotKey(None, hotkey_id, mods, vk):
             self._hotkeys[formatted_hotkey] = hotkey_id
             self._id_map[hotkey_id] = (formatted_hotkey, callback)
-            logger.info(
-                f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}"
-            )
+            logger.info(f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}")
             return True
         else:
             self._free_hotkey_id(hotkey_id)
-            logger.error(
-                f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！"
-            )
+            logger.error(f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！")
             return False
 
     def unregister(self, hotkey_str: str):
@@ -242,9 +232,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             return
         app = QCoreApplication.instance()
         if app is None:
-            logger.critical(
-                "[HotkeyManager] start 失败：尚未创建 QCoreApplication/QApplication"
-            )
+            logger.critical("[HotkeyManager] start 失败：尚未创建 QCoreApplication/QApplication")
             return
         app.installNativeEventFilter(self)
         self._installed = True

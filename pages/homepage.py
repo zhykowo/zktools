@@ -9,14 +9,8 @@ from utils.drag_drop_mixin import DragDropMixin
 from widgets.svg_button import SvgButton
 
 # 拖拽提示样式（颜色统一由 colors.py 管理）
-_DROP_HINT_IDLE_QSS = (
-    f"color: {to_qss_color(COLOR_TRANSPARENT)}; font-size: 18px; "
-    f"border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
-)
-_DROP_HINT_ACTIVE_QSS = (
-    f"color: {to_qss_color(WHITE)}; font-size: 18px; "
-    f"border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
-)
+_DROP_HINT_IDLE_QSS = f"color: {to_qss_color(COLOR_TRANSPARENT)}; font-size: 18px; border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
+_DROP_HINT_ACTIVE_QSS = f"color: {to_qss_color(WHITE)}; font-size: 18px; border: 2px dashed {to_qss_color(NEUTRAL_4)}; border-radius: 5px; "
 
 
 class OnDragEvent(QObject):
@@ -40,25 +34,17 @@ class HomePage(DragDropMixin, BasePage):
         assert layout is not None
 
         # 设置按钮 (齿轮)
-        setting_btn = SvgButton(
-            size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True
-        )
+        setting_btn = SvgButton(size=36, icon_size=22, svg_data=settings_icon, enable_rotation=True)
         setting_btn.clicked.connect(lambda: page_router.immediate_switch("setting"))
 
-        app_center_btn = SvgButton(
-            size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True
-        )
-        app_center_btn.clicked.connect(
-            lambda: page_router.immediate_switch("module_center")
-        )
+        app_center_btn = SvgButton(size=36, icon_size=22, svg_data=app_center_icon, enable_rotation=True)
+        app_center_btn.clicked.connect(lambda: page_router.immediate_switch("module_center"))
 
         self.drop_hint_label = QLabel("Drag here", self)
         self.drop_hint_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.drop_hint_label.setStyleSheet(_DROP_HINT_IDLE_QSS)
 
-        self.drop_hint_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.drop_hint_label.setMaximumWidth(0)
 
         layout.addWidget(setting_btn)

@@ -228,15 +228,11 @@ class NotifyLabel(QWidget):
         phase = (t % self.WAVE_PERIOD) / self.WAVE_PERIOD
 
         # 文本块整体垂直居中
-        total_h = sum(l.height() for l in self._lines) + self.LINE_SPACING * (
-            len(self._lines) - 1
-        )
+        total_h = sum(l.height() for l in self._lines) + self.LINE_SPACING * (len(self._lines) - 1)
         y0 = max((self.height() - total_h) / 2.0, 0.0)
 
         n = max(len(self._chars), 1)
-        span = min(
-            max(self.SPAN_BASE + self.SPAN_PER_CHAR * n, self.SPAN_MIN), self.SPAN_MAX
-        )
+        span = min(max(self.SPAN_BASE + self.SPAN_PER_CHAR * n, self.SPAN_MIN), self.SPAN_MAX)
 
         char_ptr = 0
         pen = QPen()
@@ -289,17 +285,16 @@ class NotifyLabel(QWidget):
         """横跨一行宽度的动态渐变：白 ↔ 强调色行波，相位随时间自左向右扫过"""
         grad = QLinearGradient(0.0, 0.0, max(line_width, 1.0), 0.0)
         accent = self._wave_color
+        base_light = accent.lighter(220)
         for s in range(self.WAVE_STOPS + 1):
             u = s / self.WAVE_STOPS
-            wave = (
-                0.5 - 0.5 * math.cos(2.0 * math.pi * (u - phase))
-            ) * self.WAVE_STRENGTH
+            wave = (0.5 - 0.5 * math.cos(2.0 * math.pi * (u - phase))) * self.WAVE_STRENGTH
             grad.setColorAt(
                 u,
                 QColor(
-                    round(WHITE.red() + (accent.red() - WHITE.red()) * wave),
-                    round(WHITE.green() + (accent.green() - WHITE.green()) * wave),
-                    round(WHITE.blue() + (accent.blue() - WHITE.blue()) * wave),
+                    round(base_light.red() + (accent.red() - base_light.red()) * wave),
+                    round(base_light.green() + (accent.green() - base_light.green()) * wave),
+                    round(base_light.blue() + (accent.blue() - base_light.blue()) * wave),
                 ),
             )
         return grad

@@ -55,9 +55,7 @@ class PageAnimationManager(QObject):
         fade_out.setEasingCurve(QEasingCurve.Type.OutCubic)
         fade_out.setStartValue(current_opacity)
         fade_out.setEndValue(0.0)
-        fade_out.finished.connect(
-            lambda: self._apply_page_switch(target_index, page_name)
-        )
+        fade_out.finished.connect(lambda: self._apply_page_switch(target_index, page_name))
 
         fade_in = QPropertyAnimation(self.opacity_effect, b"opacity")
         fade_in.setDuration(200)

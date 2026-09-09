@@ -49,11 +49,7 @@ class MainShellWindow(QWidget):
         # 绑定全新的中心调度器
         on_drag_bus.on_drag_event.connect(self.change_drag_state)
 
-        flags = (
-            Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Tool
-        )
+        flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
         self.setWindowFlags(flags)
         self.setWindowTitle("zktools")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -63,9 +59,7 @@ class MainShellWindow(QWidget):
 
         # self.init_island_movement()
         self.window_manager = WindowManager(self)
-        drag_bus.register_drag_handle_requested.connect(
-            self.window_manager.register_drag_handle
-        )  # 监听全局拖拽注册请求
+        drag_bus.register_drag_handle_requested.connect(self.window_manager.register_drag_handle)  # 监听全局拖拽注册请求
 
         self._flash_anim = None  # 延迟初始化，见 create_anim()
         self.init_ui()
@@ -128,9 +122,7 @@ class MainShellWindow(QWidget):
         container_layout.addWidget(self.stacked_widget)
 
         start_w, start_h = page_router.pages["home"].target_size
-        self.main_container.setGeometry(
-            (self.MAX_W - start_w) // 2, 40, start_w, start_h
-        )
+        self.main_container.setGeometry((self.MAX_W - start_w) // 2, 40, start_w, start_h)
 
         # 动画管理器设置
         self.animation_manager = PageAnimationManager(
@@ -168,12 +160,8 @@ class MainShellWindow(QWidget):
         # 创建颜色渐变动画
         self._flash_anim = QVariantAnimation(self)
         self._flash_anim.setDuration(220)  # 闪烁持续时间 (毫秒)
-        self._flash_anim.setStartValue(
-            self.main_container.default_background_color.lighter(255)
-        )  # 闪烁高亮颜色
-        self._flash_anim.setEndValue(
-            self.main_container.default_background_color
-        )  # 恢复基础背景色
+        self._flash_anim.setStartValue(self.main_container.default_background_color.lighter(255))  # 闪烁高亮颜色
+        self._flash_anim.setEndValue(self.main_container.default_background_color)  # 恢复基础背景色
 
         self._flash_anim.valueChanged.connect(self.main_container.set_background_color)
 
@@ -182,10 +170,7 @@ class MainShellWindow(QWidget):
         if page_router.page_queue and page_router.page_queue[0] != "home":
             return
         # 防止动画重复叠加
-        if (
-            self._flash_anim is not None
-            and self._flash_anim.state() == QVariantAnimation.State.Running
-        ):
+        if self._flash_anim is not None and self._flash_anim.state() == QVariantAnimation.State.Running:
             return
 
         if self._flash_anim is not None:
@@ -213,12 +198,8 @@ if __name__ == "__main__":
     font = app.font()
     # PreferQuality：匹配字体时，选择最接近的标准点大小
     # PreferAntialias：渲染时，尽可能开启抗锯齿
-    font.setStyleStrategy(
-        QFont.StyleStrategy.PreferQuality | QFont.StyleStrategy.PreferAntialias
-    )  # 开启高质量抗锯齿
-    font.setHintingPreference(
-        QFont.HintingPreference.PreferNoHinting
-    )  # 禁用硬网格对齐，消除发锯齿/粗细不均
+    font.setStyleStrategy(QFont.StyleStrategy.PreferQuality | QFont.StyleStrategy.PreferAntialias)  # 开启高质量抗锯齿
+    font.setHintingPreference(QFont.HintingPreference.PreferNoHinting)  # 禁用硬网格对齐，消除发锯齿/粗细不均
 
     app.setFont(font)
 

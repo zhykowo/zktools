@@ -50,9 +50,7 @@ class BasePage(QWidget):
         if app is not None:
             self.close_btn.clicked.connect(app.quit)
         else:
-            raise RuntimeError(
-                "QApplication must be instantiated before creating BasePage"
-            )
+            raise RuntimeError("QApplication must be instantiated before creating BasePage")
 
     @property
     def module_name(self) -> str | None:

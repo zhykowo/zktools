@@ -101,9 +101,7 @@ class TouchpadController(QObject):
             name="touchpad-switch",
         ).start()
 
-    def _perform_switch(
-        self, enable: bool, final: TouchpadState, previous: TouchpadState
-    ):
+    def _perform_switch(self, enable: bool, final: TouchpadState, previous: TouchpadState):
         """工作线程:执行开关操作,完成后把结果送回主线程。"""
         try:
             run_switch_touchpad(enable=enable)
@@ -140,16 +138,10 @@ class TouchpadCtlPage(VirtualPage):
 
     def _register_hotkeys(self):
         hotkey_manager.start()
-        test_ok = hotkey_manager.register(
-            CONFIG["touchpad_ctl"]["hotkeys"]["test"], self._on_test_hotkey
-        )
-        switch_ok = hotkey_manager.register(
-            CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch
-        )
+        test_ok = hotkey_manager.register(CONFIG["touchpad_ctl"]["hotkeys"]["test"], self._on_test_hotkey)
+        switch_ok = hotkey_manager.register(CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch)
         if not test_ok or not switch_ok:
-            logger.error(
-                "[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用"
-            )
+            logger.error("[TouchpadCtlPage] 警告：部分触控板控制热键注册失败，相关快捷键将不可用")
 
     def _on_test_hotkey(self):
         """测试热键回调:仅打印,不触碰 UI"""

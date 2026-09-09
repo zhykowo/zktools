@@ -90,11 +90,7 @@ class SvgButton(HoverWidget):
     def _ensure_icon_cache(self):
         """惰性构建 SVG 光栅化缓存；仅当 SVG / icon_size / dpr 变化时重建"""
         dpr = self.devicePixelRatioF()
-        if (
-            self._icon_cache is not None
-            and self._cached_dpr == dpr
-            and self._cached_icon_size == self.icon_size
-        ):
+        if self._icon_cache is not None and self._cached_dpr == dpr and self._cached_icon_size == self.icon_size:
             return
 
         self._icon_cache = None
@@ -123,18 +119,9 @@ class SvgButton(HoverWidget):
             self._tint_pixmap = QPixmap(cache.size())
             self._tint_pixmap.setDevicePixelRatio(cache.devicePixelRatio())
 
-        r = int(
-            self.normal_color.red()
-            + (self.target_color.red() - self.normal_color.red()) * p
-        )
-        g = int(
-            self.normal_color.green()
-            + (self.target_color.green() - self.normal_color.green()) * p
-        )
-        b = int(
-            self.normal_color.blue()
-            + (self.target_color.blue() - self.normal_color.blue()) * p
-        )
+        r = int(self.normal_color.red() + (self.target_color.red() - self.normal_color.red()) * p)
+        g = int(self.normal_color.green() + (self.target_color.green() - self.normal_color.green()) * p)
+        b = int(self.normal_color.blue() + (self.target_color.blue() - self.normal_color.blue()) * p)
 
         tinted = self._tint_pixmap
         tinted.fill(Qt.GlobalColor.transparent)

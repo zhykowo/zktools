@@ -64,8 +64,6 @@ class MouseHoverEventFilter(QObject):
             button = event.button()
             button_name = self.button_names.get(button.value, str(button))
             pos = event.position()
-            logger.debug(
-                f"🖱️ 鼠标点击: {obj_name} ({class_name}) [按钮: {button_name} @({int(pos.x())},{int(pos.y())})]"
-            )
+            logger.debug(f"🖱️ 鼠标点击: {obj_name} ({class_name}) [按钮: {button_name} @({int(pos.x())},{int(pos.y())})]")
 
         return False

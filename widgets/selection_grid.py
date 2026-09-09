@@ -125,9 +125,7 @@ class SelectionGrid(QWidget):
             on_finished=on_finished,
         )
 
-    def collapse(
-        self, extra_animations=None, duration=300, easing=None, on_finished=None
-    ):
+    def collapse(self, extra_animations=None, duration=300, easing=None, on_finished=None):
         """收起网格高度到 0
 
         Args:

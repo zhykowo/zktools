@@ -71,9 +71,7 @@ class HoverWidget(QWidget):
 
         elif self._shape == HoverShape.ROUNDED_RECT:
             path = QPainterPath()
-            path.addRoundedRect(
-                QRectF(self.rect()), self._border_radius, self._border_radius
-            )
+            path.addRoundedRect(QRectF(self.rect()), self._border_radius, self._border_radius)
             return path.contains(pos)
 
         elif self._shape == HoverShape.CUSTOM:

@@ -1,10 +1,13 @@
 # core_button.py
+from typing import cast
+
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen
 from PySide6.QtWidgets import QPushButton
 
 from core.colors import (
     COLOR_DANGER,
+    NEUTRAL_0,
     NEUTRAL_2,
     NEUTRAL_4,
     WHITE,
@@ -17,7 +20,8 @@ class CoreButton(QPushButton):
     def __init__(self, text, bg_color=None, text_color=None, radius=12, parent=None):
         super().__init__(text, parent)
         self._custom_bg_color = QColor(bg_color) if bg_color else None
-        self.text_color = QColor(text_color) if text_color else WHITE
+        self._custom_text_color = QColor(text_color) if text_color else None
+        # self.text_color = QColor(text_color) if text_color else WHITE
         self.radius = radius
 
         self._on_accent_changed()
@@ -73,15 +77,19 @@ class CoreButton(QPushButton):
         elif isinstance(bg_color, QColor):
             self.bg_color = bg_color
         else:
-            raise TypeError(
-                f"bg_color must be QColor, str, or None, got {type(bg_color)}"
-            )
+            raise TypeError(f"bg_color must be QColor, str, or None, got {type(bg_color)}")
+        if self._custom_text_color:
+            self.text_color = self._custom_text_color
+        else:
+            r, g, b, a = cast("tuple[int, int, int, int]", self.bg_color.getRgbF())
+            luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            self.text_color = NEUTRAL_0 if luminance > 0.5 else WHITE
 
         self.update()
 
     def _on_accent_changed(self, new_color: QColor | None = None):
         """系统强调色变化时更新 accent 底色（仅当未自定义 bg_color 时）"""
-        self.custom_accent_qcolor = get_accent_color(strength=-0.6)
+        self.custom_accent_qcolor = get_accent_color()
 
         if self._custom_bg_color:
             self.setBgColor(self._custom_bg_color)

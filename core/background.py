@@ -240,9 +240,7 @@ class BackgroundWidget(QWidget):
         count = len(self._spots)
         long_side = max(self.width(), self.height())
         orbit = ORBIT_RATIOS[index] * long_side
-        orbit *= 1.0 + BREATH_AMPLITUDE * math.sin(
-            self._elapsed_time * BREATH_SPEED + index
-        )
+        orbit *= 1.0 + BREATH_AMPLITUDE * math.sin(self._elapsed_time * BREATH_SPEED + index)
 
         angle = math.radians(self._angle + index * (360.0 / count))
         center = QPointF(self.rect().center())
@@ -258,9 +256,7 @@ class BackgroundWidget(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
 
         # 裁剪进主容器圆角内部（内缩以避开描边）
-        rect = QRectF(self.rect()).adjusted(
-            CLIP_INSET, CLIP_INSET, -CLIP_INSET, -CLIP_INSET
-        )
+        rect = QRectF(self.rect()).adjusted(CLIP_INSET, CLIP_INSET, -CLIP_INSET, -CLIP_INSET)
         radius = max(0.0, self._radius - CLIP_INSET)
         path = QPainterPath()
         path.addRoundedRect(rect, radius, radius)

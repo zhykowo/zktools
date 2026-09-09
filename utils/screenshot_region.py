@@ -64,11 +64,7 @@ class _RegionSelectorOverlay(QWidget):
         self._drag_end = None  # 当前拖拽位置
         self._dragging = False
 
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint
-            | Qt.WindowType.WindowStaysOnTopHint
-            | Qt.WindowType.Tool
-        )
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setCursor(Qt.CursorShape.CrossCursor)
 
@@ -101,9 +97,7 @@ class _RegionSelectorOverlay(QWidget):
         self._dragging = False
         self._drag_end = event.position().toPoint()
         rect = self._selection_rect()
-        if rect is not None and (
-            rect.width() >= MIN_SELECT_SIZE and rect.height() >= MIN_SELECT_SIZE
-        ):
+        if rect is not None and (rect.width() >= MIN_SELECT_SIZE and rect.height() >= MIN_SELECT_SIZE):
             self._finish_and_emit(rect)
         else:
             # 选区过小（误触），视同取消
@@ -229,9 +223,7 @@ class ScreenshotRegionManager(QObject):
             self._overlay._cancel()
 
         if QApplication.instance() is None:
-            raise RuntimeError(
-                "screenshot_region.capture() 必须在 QApplication 创建后调用"
-            )
+            raise RuntimeError("screenshot_region.capture() 必须在 QApplication 创建后调用")
         screen = QApplication.primaryScreen()
 
         if screen is None:

@@ -49,9 +49,7 @@ class NotePage(BasePage):
         assert layout is not None
 
         # 便笺编辑区（圆角深色背景，与翻译页输入框同款）
-        self.note_editor = RoundedTextEdit(
-            placeholder="Write something here...", parent=self
-        )
+        self.note_editor = RoundedTextEdit(placeholder="Write something here...", parent=self)
         self.note_editor.textChanged.connect(self._on_text_changed)
 
         # 底部状态栏：保存状态 + 字数统计 + 清空按钮

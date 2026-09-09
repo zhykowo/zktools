@@ -24,18 +24,11 @@ class WindowDragFilter(QObject):
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         if event.type() == QEvent.Type.MouseButtonPress:
-            if (
-                isinstance(event, QSinglePointEvent)
-                and event.button() == Qt.MouseButton.LeftButton
-            ):
+            if isinstance(event, QSinglePointEvent) and event.button() == Qt.MouseButton.LeftButton:
                 # 记录点击时鼠标相对窗口左上角的偏移量
                 self._drag_pos = event.globalPosition().toPoint() - self.window.pos()
                 return True
-        elif (
-            event.type() == QEvent.Type.MouseMove
-            and isinstance(event, QSinglePointEvent)
-            and event.buttons() & Qt.MouseButton.LeftButton
-        ):
+        elif event.type() == QEvent.Type.MouseMove and isinstance(event, QSinglePointEvent) and event.buttons() & Qt.MouseButton.LeftButton:
             # 随鼠标移动更新窗口位置
             self.window.move(event.globalPosition().toPoint() - self._drag_pos)
             return True
