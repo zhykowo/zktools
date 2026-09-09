@@ -50,14 +50,13 @@ def _apply_theme(theme_file: str) -> bool:
             check=False,
             creationflags=subprocess.CREATE_NO_WINDOW,
         )
-        if result.returncode == 0:
-            logger.info(f"[ThemeSwitcher] 主题已切换: {theme_file}")
-            return True
-        else:
+        if result.returncode != 0:
             logger.error(f"[ThemeSwitcher] 切换失败 (rc={result.returncode}): {result.stderr.strip()}")
             return False
-    except Exception as exc:
-        logger.error(f"[ThemeSwitcher] 调用异常: {exc}")
+        logger.info(f"[ThemeSwitcher] 主题已切换: {theme_file}")
+        return True
+    except Exception:
+        logger.exception("[ThemeSwitcher] 调用异常")
         return False
 
 
@@ -91,11 +90,8 @@ class WinUnlockListener(QWidget):
 
     def closeEvent(self, event):
         if sys.platform == "win32" and self._registered:
-            try:
-                hwnd = int(self.winId())
-                ctypes.windll.wtsapi32.WTSUnRegisterSessionNotification(hwnd)
-            except Exception:
-                raise
+            hwnd = int(self.winId())
+            ctypes.windll.wtsapi32.WTSUnRegisterSessionNotification(hwnd)
         super().closeEvent(event)
 
 
@@ -151,8 +147,8 @@ class ThemeSwitcherController(QObject):
                 with open(_STATE_FILE, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     return data.get("last_theme", "")
-            except Exception as e:
-                logger.error(f"[ThemeSwitcher] 读取本地状态文件异常: {e}")
+            except Exception:
+                logger.exception("[ThemeSwitcher] 读取本地状态文件异常")
         return ""
 
     def _record_applied_theme(self, theme_file: str):
@@ -165,8 +161,8 @@ class ThemeSwitcherController(QObject):
             }
             with open(_STATE_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            logger.error(f"[ThemeSwitcher] 写入本地状态文件异常: {e}")
+        except Exception:
+            logger.exception("[ThemeSwitcher] 写入本地状态文件异常")
 
     # ---------- schedule & 时间匹配 ----------
 
@@ -209,12 +205,8 @@ class ThemeSwitcherController(QObject):
         times = [t for t, _ in self._schedule_list]
         pos = bisect.bisect_right(times, now_time)
 
-        if pos < len(times):
-            # 今天后续还有时间点
-            next_dt = datetime.combine(now.date(), times[pos])
-        else:
-            # 今天的已经全部过完，取明天第一个时间点
-            next_dt = datetime.combine(now.date() + timedelta(days=1), times[0])
+        # 今天后续还有时间点则取之，否则（今天已全部过完）取明天第一个
+        next_dt = datetime.combine(now.date(), times[pos]) if pos < len(times) else datetime.combine(now.date() + timedelta(days=1), times[0])
 
         # 增加 1 秒缓冲，确保触发时已越过该时刻
         delta_seconds = (next_dt - now).total_seconds() + 1.0
@@ -283,11 +275,10 @@ class ThemeSwitcherController(QObject):
         self._is_switching = False
         if success:
             self._record_applied_theme(theme_file)
-            self.state_changed.emit("on")
             notify("主题已切换", icon=theme_icon, duration=3000)
         else:
-            self.state_changed.emit("on")
             notify("主题切换失败", icon=theme_icon, duration=3000)
+        self.state_changed.emit("on")
 
         # 每次切换完成（无论成功失败）后，设置下一个定时点
         self._arm_next_timer()
@@ -313,7 +304,7 @@ class ThemeSwitcherPage(VirtualPage):
         self.controller.set_enabled(not self.controller.enabled)
 
     @Slot(object)
-    def _on_state_changed(self, state: str):
+    def _on_state_changed(self, _state: str):
         self.module_name_changed.emit()
 
 

@@ -108,9 +108,9 @@ class NotePage(BasePage):
             self.note_file.parent.mkdir(parents=True, exist_ok=True)
             self.note_file.write_text(self.note_editor.toPlainText(), encoding="utf-8")
             self.status_label.setText("Saved")
-        except OSError as e:
+        except OSError:
             self.status_label.setText("Save failed")
-            logger.error(f"[NotePage] 便笺保存失败: {e}")
+            logger.exception("[NotePage] 便笺保存失败")
 
     def _flush_save(self):
         """立即落盘：防抖计时器还在跑时直接写盘，避免退出时丢失最后一次输入"""

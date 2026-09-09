@@ -27,6 +27,7 @@ def get_touchpad_devices():
             command,
             capture_output=True,
             text=True,  # 将输出作为字符串处理（自动解码）
+            errors="replace",  # pwsh 可能输出 GBK，解码失败会让 stdout 变 None 并导致后续崩溃
             check=True,  # 如果脚本报错则抛出异常
         )
 
@@ -47,8 +48,8 @@ def get_touchpad_devices():
     except subprocess.CalledProcessError as e:
         logger.critical(f"PowerShell 脚本执行失败: {e.stderr}")
         return []
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON 解析失败: {e}")
+    except json.JSONDecodeError:
+        logger.exception("JSON 解析失败")
         return []
 
 
@@ -75,13 +76,14 @@ def get_touchpad_status():
             command,
             capture_output=True,
             text=True,
+            errors="replace",
             check=True,
         )
     except subprocess.CalledProcessError as e:
-        logger.error(f"PowerShell 脚本执行失败: {e.stderr}")
+        logger.exception(f"PowerShell 脚本执行失败: {e.stderr}")
         return None
-    except OSError as e:
-        logger.error(f"无法启动 PowerShell(pwsh.exe): {e}")
+    except OSError:
+        logger.exception("无法启动 PowerShell(pwsh.exe)")
         return None
 
     if not result.stdout.strip():
@@ -90,18 +92,15 @@ def get_touchpad_status():
 
     try:
         devices = json.loads(result.stdout)
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON 解析失败: {e}")
+    except json.JSONDecodeError:
+        logger.exception("JSON 解析失败")
         return None
 
     if isinstance(devices, dict):
         devices = [devices]
 
     # 只要还有任一设备处于启用状态,就认为触摸板整体可用
-    for device in devices:
-        if device.get("ConfigManagerErrorCode") == 0:
-            return True
-    return False
+    return any(device.get("ConfigManagerErrorCode") == 0 for device in devices)
 
 
 def run_ps_as_admin(script_path, arguments=""):
@@ -136,9 +135,8 @@ def run_ps_as_admin(script_path, arguments=""):
     if retval > 32:
         logger.info("[+] 提权请求已发送，请在 UAC 弹窗中点击‘是’。")
         return True
-    else:
-        logger.error(f"[-] 启动失败，错误码: {retval}")
-        return False
+    logger.error(f"[-] 启动失败，错误码: {retval}")
+    return False
 
 
 def run_switch_touchpad(enable=True):

@@ -21,7 +21,9 @@ class CoreButton(QPushButton):
         super().__init__(text, parent)
         self._custom_bg_color = QColor(bg_color) if bg_color else None
         self._custom_text_color = QColor(text_color) if text_color else None
-        # self.text_color = QColor(text_color) if text_color else WHITE
+        # 由 setBgColor() 维护；先赋默认值，保证 paintEvent 之前一定可读
+        self.bg_color = QColor()
+        self.text_color = WHITE
         self.radius = radius
 
         self._on_accent_changed()
@@ -81,13 +83,13 @@ class CoreButton(QPushButton):
         if self._custom_text_color:
             self.text_color = self._custom_text_color
         else:
-            r, g, b, a = cast("tuple[int, int, int, int]", self.bg_color.getRgbF())
+            r, g, b, _ = cast("tuple[int, int, int, int]", self.bg_color.getRgbF())
             luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
             self.text_color = NEUTRAL_0 if luminance > 0.5 else WHITE
 
         self.update()
 
-    def _on_accent_changed(self, new_color: QColor | None = None):
+    def _on_accent_changed(self, _new_color: QColor | None = None):
         """系统强调色变化时更新 accent 底色（仅当未自定义 bg_color 时）"""
         self.custom_accent_qcolor = get_accent_color()
 

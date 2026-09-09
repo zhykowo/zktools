@@ -39,8 +39,8 @@ class _textManager:
                     # 获取选中区域的文本内容（-1 表示获取完整文本）
                     return self.selected_text
         except Exception:
-            # 忽略切换焦点或不受支持控件抛出的异常
-            pass
+            # 忽略切换焦点或不受支持控件抛出的异常（高频调用，仅 debug 级留痕）
+            logger.debug("[text_manager] 读取选中文本失败", exc_info=True)
         # logger.info('error')
         return ""
 
@@ -62,8 +62,8 @@ class _textManager:
         # 2. 回退方案：模拟 Ctrl+C 后从剪贴板读取
         try:
             self.auto.SendKeys("{Ctrl}c")
-        except Exception as e:
-            logger.error(f"[text_manager] 模拟 Ctrl+C 失败: {e}")
+        except Exception:
+            logger.exception("[text_manager] 模拟 Ctrl+C 失败")
             return ""
 
         # 剪贴板内容更新是异步的，做几次短重试

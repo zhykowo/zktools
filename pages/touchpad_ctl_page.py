@@ -105,8 +105,8 @@ class TouchpadController(QObject):
         """工作线程:执行开关操作,完成后把结果送回主线程。"""
         try:
             run_switch_touchpad(enable=enable)
-        except Exception as exc:  # 防御:设备枚举/提权失败不应导致崩溃
-            logger.error(f"[TouchpadController] 切换失败: {exc}")
+        except Exception:  # 防御:设备枚举/提权失败不应导致崩溃
+            logger.exception("[TouchpadController] 切换失败")
             final = previous  # 恢复为操作前的状态
 
         with self._lock:
@@ -160,11 +160,8 @@ class TouchpadCtlPage(VirtualPage):
     @staticmethod
     def _module_center_text(state: TouchpadState) -> str:
         """触摸板状态 → 模块中心卡片文本：关闭显示 TchPad Off，开启显示 TchPad On"""
-        if state in (TouchpadState.DISABLED, TouchpadState.ENABLING):
-            return "TchPad Off"
-        if state in (TouchpadState.ENABLED, TouchpadState.DISABLING):
-            return "TchPad On"
-        return "TchPad Off"  # 未知状态兜底
+        on_states = (TouchpadState.ENABLED, TouchpadState.DISABLING)
+        return "TchPad On" if state in on_states else "TchPad Off"
 
     # 主线程槽:热键切换流程的通知驱动
     @Slot(object)

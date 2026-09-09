@@ -4,6 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 import time
 from enum import Enum, auto
+from typing import ClassVar
 
 from PySide6.QtCore import (
     QObject,
@@ -123,7 +124,7 @@ class TranslatorPage(BasePage):
     MODULE_NAME = "Translator"
     MODULE_ICON = translate_icon
 
-    SUPPORTED_LANGUAGES: list[str] = [
+    SUPPORTED_LANGUAGES: ClassVar[list[str]] = [
         "Auto",
         "English",
         "Chinese",
@@ -134,7 +135,7 @@ class TranslatorPage(BasePage):
         "Spanish",
         "Russian",
     ]
-    SUPPORTED_SERVERS: list[str] = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
+    SUPPORTED_SERVERS: ClassVar[list[str]] = ["Google", "DeepL", "Baidu", "Bing", "AI1", "AI2"]
 
     RESULT_TEXT_HEIGHT = 120
 

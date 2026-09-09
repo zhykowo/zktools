@@ -4,6 +4,7 @@ import logging
 import subprocess
 import tempfile
 from pathlib import Path
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class TextRecognitionPage(BasePage):
     MODULE_NAME = "OCR"
     MODULE_ICON = text_scan_icon
 
-    SUPPORTED_LANGUAGES: list[str] = [
+    SUPPORTED_LANGUAGES: ClassVar[list[str]] = [
         "Auto",
         "English",
         "Chinese",

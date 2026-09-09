@@ -16,6 +16,7 @@ import hashlib
 import html
 import random
 from functools import partial
+from typing import ClassVar
 
 import httpx
 
@@ -24,7 +25,7 @@ from resources.constants import CONFIG
 
 class Translator:
     # 通用语言代码（ISO 639-1），多数服务直接使用
-    LANGUAGES: dict = {
+    LANGUAGES: ClassVar[dict[str, str]] = {
         "Auto": "auto",
         "English": "en",
         "Chinese": "zh",
@@ -37,7 +38,7 @@ class Translator:
     }
 
     # 百度专用语言代码
-    BAIDU_LANG_CODES: dict = {
+    BAIDU_LANG_CODES: ClassVar[dict[str, str]] = {
         "Japanese": "jp",
         "Korean": "kor",
         "French": "fra",
@@ -45,15 +46,15 @@ class Translator:
     }
 
     # Google 专用语言代码（仅覆盖与通用代码不同的项）
-    GOOGLE_LANG_CODES: dict = {
+    GOOGLE_LANG_CODES: ClassVar[dict[str, str]] = {
         "Chinese": "zh-CN",
     }
 
     # DeepL 专用语言代码（目标语言必填大写；源语言缺省时由服务端自动检测）
-    DEEPL_LANG_CODES: dict = {"Auto": None}
+    DEEPL_LANG_CODES: ClassVar[dict[str, str | None]] = {"Auto": None}
 
     # Bing 专用语言代码（仅覆盖与通用代码不同的项）
-    BING_LANG_CODES: dict = {
+    BING_LANG_CODES: ClassVar[dict[str, str]] = {
         "Chinese": "zh-Hans",
     }
 

@@ -21,6 +21,7 @@
 用户按 Esc 或右键取消时：方式一/二不触发回调，方式三返回 None。
 """
 
+import contextlib
 import logging
 
 logger = logging.getLogger(__name__)
@@ -78,7 +79,7 @@ class _RegionSelectorOverlay(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
-            self._cancel()
+            self.cancel()
             return
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_start = event.position().toPoint()
@@ -101,11 +102,11 @@ class _RegionSelectorOverlay(QWidget):
             self._finish_and_emit(rect)
         else:
             # 选区过小（误触），视同取消
-            self._cancel()
+            self.cancel()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
-            self._cancel()
+            self.cancel()
 
     # ---- 内部 ----
 
@@ -127,18 +128,18 @@ class _RegionSelectorOverlay(QWidget):
         """结束遮罩，从背景图抠出选区部分并发出信号"""
         if self._background is None or self._background.isNull():
             logger.error("背景图无效，无法截图")
-            self._cancel()
+            self.cancel()
             return
         pixmap = self._background.copy(rect)
         if pixmap.isNull():
             logger.error("从背景图抠取选区失败")
-            self._cancel()
+            self.cancel()
             return
         self.close()
         self.deleteLater()
         self.region_selected.emit(pixmap)
 
-    def _cancel(self):
+    def cancel(self):
         self.close()
         self.deleteLater()
         self.cancelled.emit()
@@ -220,7 +221,7 @@ class ScreenshotRegionManager(QObject):
         """
         # 若已有截图流程进行中，先取消旧的
         if self._overlay is not None:
-            self._overlay._cancel()
+            self._overlay.cancel()
 
         if QApplication.instance() is None:
             raise RuntimeError("screenshot_region.capture() 必须在 QApplication 创建后调用")
@@ -263,11 +264,9 @@ class ScreenshotRegionManager(QObject):
             self.capture(callback=_done)
             loop.exec()
         finally:
-            # 避免信号在多次调用间累积
-            try:
+            # 避免信号在多次调用间累积（已断开时会抛 RuntimeError，忽略即可）
+            with contextlib.suppress(RuntimeError):
                 self.capture_cancelled.disconnect(_cancelled)
-            except RuntimeError:
-                pass
         return result["pixmap"]
 
     # ---- 内部信号处理 ----

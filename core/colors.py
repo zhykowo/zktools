@@ -66,7 +66,7 @@ def get_accent_color(strength: float = 0) -> QColor:
     """
     try:
         accent = QApplication.palette().color(QPalette.ColorRole.Accent)
-    except (AttributeError, TypeError):
+    except AttributeError, TypeError:
         logger.error("未能获取系统配色，使用默认颜色")
         accent = QColor()
 
@@ -77,15 +77,15 @@ def get_accent_color(strength: float = 0) -> QColor:
     if strength == 0:
         return accent
     elif strength > 0:
-        h, s, l, a = cast("tuple[int, int, int, int]", accent.getHsl())
-        new_l = int(l + strength * (255 - l))
-        return QColor.fromHsl(h, s, new_l, a)
+        h, s, light, a = cast("tuple[int, int, int, int]", accent.getHsl())
+        new_light = int(light + strength * (255 - light))
+        return QColor.fromHsl(h, s, new_light, a)
     elif strength < 0:
         h, s, v, a = cast("tuple[int, int, int, int]", accent.getHsv())
         new_v = int(v * (1 + strength))
         return QColor.fromHsv(h, s, new_v, a)
     else:
-        raise
+        raise TypeError("参数 'strength' 必须是Qcolor")
 
 
 class ColorManager(QObject):
@@ -128,7 +128,7 @@ class ColorManager(QObject):
             # 低版本 PySide6 可能没有此信号 —— 安全忽略
             pass
 
-    def _on_palette_changed(self, palette: QPalette):
+    def _on_palette_changed(self, _palette: QPalette):
         new_color = self._read_accent()
         if new_color.rgb() != self._cached_accent.rgb():
             self._cached_accent = new_color

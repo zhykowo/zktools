@@ -32,6 +32,7 @@ class RestartExplorerPage(VirtualPage):
             subprocess.run(
                 ["taskkill", "/f", "/im", "explorer.exe"],
                 capture_output=True,
+                check=False,  # explorer 未运行时 taskkill 必然失败，属预期情况
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
             # Manually restart explorer.exe
@@ -40,6 +41,6 @@ class RestartExplorerPage(VirtualPage):
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
             notify("Explorer restarted", icon=restart_icon, duration=3000)
-        except Exception as e:
-            logger.error(f"Restart Explorer failed: {e}")
+        except Exception:
+            logger.exception("Restart Explorer failed")
             notify("Restart failed", icon=restart_icon, duration=3000)

@@ -90,7 +90,7 @@ class OpenFileLocationPage(VirtualPage):
                 ["explorer", directory],
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
-            notify(f"Success!", icon=folder_open_icon, duration=3000)
-        except Exception as e:
-            logger.error(f"Open file location failed: {e}")
+            notify("Success!", icon=folder_open_icon, duration=3000)
+        except Exception:
+            logger.exception("Open file location failed")
             notify("Open failed", icon=folder_open_icon, duration=3000)

@@ -142,7 +142,7 @@ class BackgroundWidget(QWidget):
 
     # ---------- 装配 ----------
     @classmethod
-    def attach_to(cls, host: QWidget) -> "BackgroundWidget":
+    def attach_to(cls, host: QWidget) -> BackgroundWidget:
         """挂到主容器上：跟随其尺寸变化，并置于所有兄弟控件最底层"""
         bg = cls(host)
         bg._host = host

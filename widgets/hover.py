@@ -115,10 +115,7 @@ class HoverWidget(QWidget):
     # ---------------- 统一点击模拟 ----------------
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            if isinstance(event, QSinglePointEvent):
-                pos = event.position()
-            else:
-                pos = QPointF()
+            pos = event.position() if isinstance(event, QSinglePointEvent) else QPointF()
             if self.contains_point(pos):
                 self._is_pressed = True
         super().mousePressEvent(cast(QMouseEvent, event))
@@ -126,10 +123,7 @@ class HoverWidget(QWidget):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self._is_pressed:
             self._is_pressed = False
-            if isinstance(event, QSinglePointEvent):
-                pos = event.position()
-            else:
-                pos = QPointF()
+            pos = event.position() if isinstance(event, QSinglePointEvent) else QPointF()
             if self.contains_point(pos):
                 self.clicked.emit(False)
         super().mouseReleaseEvent(cast(QMouseEvent, event))

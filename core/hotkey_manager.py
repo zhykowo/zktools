@@ -4,7 +4,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 import sys
-import traceback
 
 from PySide6.QtCore import QAbstractNativeEventFilter, QCoreApplication
 
@@ -178,7 +177,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             try:
                 callback()
             except Exception:
-                traceback.print_exc()
+                logger.exception("[HotkeyManager] 快捷键回调抛出异常")
         return False
 
     # ================= 公开 API =================
@@ -196,8 +195,8 @@ class HotkeyManager(QAbstractNativeEventFilter):
         formatted_hotkey = hotkey_str.lower().replace(" ", "")
         try:
             mods, vk = self._parse_hotkey_str(formatted_hotkey)
-        except ValueError as e:
-            logger.error(f"[HotkeyManager] 解析快捷键 '{hotkey_str}' 失败: {e}")
+        except ValueError:
+            logger.exception(f"[HotkeyManager] 解析快捷键 '{hotkey_str}' 失败")
             return False
 
         if formatted_hotkey in self._hotkeys:
@@ -211,10 +210,10 @@ class HotkeyManager(QAbstractNativeEventFilter):
             self._id_map[hotkey_id] = (formatted_hotkey, callback)
             logger.info(f"[HotkeyManager] 已成功注册并独占拦截快捷键: {formatted_hotkey}")
             return True
-        else:
-            self._free_hotkey_id(hotkey_id)
-            logger.error(f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！")
-            return False
+
+        self._free_hotkey_id(hotkey_id)
+        logger.error(f"[HotkeyManager] 快捷键 {formatted_hotkey} 注册失败，可能已被系统或其他软件占用！")
+        return False
 
     def unregister(self, hotkey_str: str):
         """动态删除快捷键"""

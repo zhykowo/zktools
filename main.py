@@ -70,7 +70,7 @@ class MainShellWindow(QWidget):
         page_router.pages[name].page_name = name
         self.stacked_widget.addWidget(widget)
 
-    def change_drag_state(self, state):
+    def change_drag_state(self, _state):
         pass
 
     def init_ui(self):
