@@ -1,51 +1,55 @@
 {
-    "touchpad_ctl": {
-        "hotkeys": {
-            "switch": "ctrl+shift+b",
-            "test": "ctrl+alt+a"
-        }
-    },
-    "theme_switcher": {
-        "enabled": false,
-        "schedule": {
-            "7:00": "C:\\xxx.theme",
-            "19:00": "C:\\xxx.theme"
-        }
-    },
-    "translator": {
-        "hotkey": "ctrl+shift+s",
-        "default_server": "Baidu",
-        "default_from_lang": "Auto",
-        "default_to_lang": "Chinese",
-        "apis": {
-            "baidu": {
-                "appid": "your_appid",
-                "secret_key": "your_secret_key"
-            },
-            "deepl": {
-                "api_key": "your_deepl_api_key"
-            },
-            "google": {
-                "api_key": "your_google_api_key"
-            },
-            "bing": {
-                "api_key": "your_bing_api_key",
-                "region": ""
-            },
-            "ai": {
-                "AI1": {
-                    "name": "OpenAI",
-                    "base_url": "https://api.openai.com/v1",
-                    "api_key": "your_api_key",
-                    "model": "gpt-4o-mini"
-                },
-                "AI2": {
-                    "name": "DeepSeek",
-                    "base_url": "https://api.deepseek.com/v1",
-                    "api_key": "your_api_key",
-                    "model": "deepseek-chat"
-                }
-            }
-        }
+  "touchpad_ctl": {
+    "hotkeys": {
+      "switch": "ctrl+shift+b",
+      "test": "ctrl+alt+a"
     }
+  },
+  "theme_switcher": {
+    "enabled": false,
+    "schedule": {
+      "7:00": "C:\\xxx.theme",
+      "19:00": "C:\\xxx.theme"
+    }
+  },
+  "text_recognition": {
+    "proxy": "http://127.0.0.1:7890",
+    "ocr_model": "v6-small"
+  },
+  "translator": {
+    "hotkey": "ctrl+shift+s",
+    "default_server": "Baidu",
+    "default_from_lang": "Auto",
+    "default_to_lang": "Chinese",
+    "apis": {
+      "baidu": {
+        "appid": "your_appid",
+        "secret_key": "your_secret_key"
+      },
+      "deepl": {
+        "api_key": "your_deepl_api_key"
+      },
+      "google": {
+        "api_key": "your_google_api_key"
+      },
+      "bing": {
+        "api_key": "your_bing_api_key",
+        "region": ""
+      },
+      "ai": {
+        "AI1": {
+          "name": "OpenAI",
+          "base_url": "https://api.openai.com/v1",
+          "api_key": "your_api_key",
+          "model": "gpt-4o-mini"
+        },
+        "AI2": {
+          "name": "DeepSeek",
+          "base_url": "https://api.deepseek.com/v1",
+          "api_key": "your_api_key",
+          "model": "deepseek-chat"
+        }
+      }
+    }
+  }
 }

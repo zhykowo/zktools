@@ -1,8 +1,10 @@
 # text_recognition_page.py
 import json
 import logging
+import os
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 from typing import ClassVar
 
@@ -14,7 +16,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel
 
 from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
-from resources.constants import root_dir
+from resources.constants import CONFIG, root_dir
 from resources.svgs import text_scan_icon
 from utils.screenshot_region import screenshot_region
 from widgets.core_button import CoreButton
@@ -31,22 +33,34 @@ class OcrWorker(QThread):
     ocr_done = Signal(str)  # 识别结果文本
     ocr_error = Signal(str)  # 错误信息
 
-    def __init__(self, exe_path: Path, image_path: Path, lang: str, parent=None):
+    TIMEOUT_SECONDS = 300  # nbocr 最长等待时间
+
+    PROXY_ENV_KEYS = "all_proxy"
+
+    def __init__(self, exe_path: Path, image_path: Path, ocr_model: str, lang: str, proxy: str = "", parent=None):
         super().__init__(parent)
         self._exe_path = exe_path
         self._image_path = image_path
+        self._ocr_model = ocr_model
         self._lang = lang
+        self._proxy = (proxy or "").strip()
         self._cancelled = False
+        self._proc: subprocess.Popen[str] | None = None
 
     def cancel(self):
-        """请求取消（同步请求无法中断网络传输，但会丢弃结果）"""
+        """请求取消：直接终止 nbocr 子进程，并丢弃后续结果"""
         self._cancelled = True
+        proc = self._proc
+        if proc is not None and proc.poll() is None:
+            proc.kill()
 
+    # 已修改：nbocr 的输出（stdout + stderr）会实时转发到本项目日志，控制台可直接看到
     def run(self):
         if self._cancelled:
             return
 
         tmp_path = None
+        proc = None
         try:
             # 使用临时文件保存 OCR 结果（比 stdout 更可靠）
             with tempfile.NamedTemporaryFile(suffix=".txt", mode="w+", encoding="utf-8", delete=False) as tmp:
@@ -57,7 +71,7 @@ class OcrWorker(QThread):
                 "r",
                 str(self._image_path),
                 "-d",
-                "v6-small",
+                str(self._ocr_model),
                 "-m",
                 str(self._exe_path.parent / "models"),
                 "-f",
@@ -69,19 +83,52 @@ class OcrWorker(QThread):
             if self._lang != "Auto":
                 args.extend(["-l", self._lang])
 
-            result = subprocess.run(
+            # 为本次 nbocr 会话注入代理（模型自动下载走 proxy-from-env，国内直连基本下不动）
+            env = os.environ.copy()
+            if self._proxy:
+                env[self.PROXY_ENV_KEYS] = self._proxy
+                logger.info(f"[nbocr] 已为本次会话设置代理: {self._proxy}")
+
+            # 流式读取：nbocr 的进度/日志实时转发到本项目 logger（控制台可见）
+            proc = subprocess.Popen(
                 args=args,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # 合并 stderr，避免双管道读满阻塞
                 text=True,
-                timeout=30,
-                check=False,
+                encoding="utf-8",
+                errors="replace",  # nbocr 可能输出非 UTF-8 字节，避免解码直接崩溃
+                env=env,
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
+            self._proc = proc
+
+            def _pump_output():
+                """把 nbocr 的每行输出实时写入本项目日志"""
+                try:
+                    for line in proc.stdout or ():
+                        line = line.rstrip()
+                        if line:
+                            logger.info(f"[nbocr] {line}")
+                except OSError, ValueError:
+                    logger.debug("[nbocr] 输出流读取中断", exc_info=True)
+
+            pump = threading.Thread(target=_pump_output, daemon=True)
+            pump.start()
+
+            try:
+                returncode = proc.wait(timeout=self.TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait()
+                self.ocr_error.emit(f"OCR timed out ({self.TIMEOUT_SECONDS}s)")
+                return
+            finally:
+                pump.join(timeout=2)  # 等输出转发收尾，避免丢掉最后几行
 
             if self._cancelled:
                 return
 
-            if result.returncode == 0:
+            if returncode == 0:
                 raw = Path(tmp_path).read_text(encoding="utf-8").strip()
                 if not raw:
                     self.ocr_done.emit("(No text detected)")
@@ -90,19 +137,22 @@ class OcrWorker(QThread):
                         # JSON 输出：提取每条结果的 text 字段，按行拼接
                         data = json.loads(raw)
                         text = "\n".join(item["text"] for item in data.get("results", [])).strip()
-                    except (json.JSONDecodeError, KeyError, TypeError):
+                    except json.JSONDecodeError, KeyError, TypeError:
                         # 非 JSON 输出：直接使用原始内容
                         text = raw
                     if text:
                         self.ocr_done.emit(text)
+                        logger.info(f"[nbocr] 识别完成，共 {len(text.splitlines())} 行")
                     else:
                         self.ocr_done.emit("(No text detected)")
             else:
-                error_msg = result.stderr.strip() or f"Exit code: {result.returncode}"
-                self.ocr_error.emit(error_msg)
+                self.ocr_error.emit(f"Exit code: {returncode}")
 
         except subprocess.TimeoutExpired:
-            self.ocr_error.emit("OCR timed out (30s)")
+            if proc is not None:
+                proc.kill()
+                proc.wait()
+            self.ocr_error.emit(f"OCR timed out ({self.TIMEOUT_SECONDS}s)")
         except (OSError, ValueError) as e:
             logger.exception("OCR 识别调用异常")
             self.ocr_error.emit(str(e))
@@ -142,7 +192,7 @@ class TextRecognitionPage(BasePage):
 
         # 后台 OCR 线程状态
         self._worker: OcrWorker | None = None
-        self._current_lang = "Chinese"
+        self._current_lang = "Auto"
 
         layout = self.set_main_layout("v")
         assert layout is not None
@@ -174,6 +224,7 @@ class TextRecognitionPage(BasePage):
         self.cancel_btn.clicked.connect(self._cancel_ocr)
 
         footer.setSpacing(8)
+        footer.addWidget(self.download_serve_button)
         footer.addWidget(self.lang_button)
         footer.addWidget(self.serve_state)
         footer.addStretch()
@@ -233,7 +284,9 @@ class TextRecognitionPage(BasePage):
         self._worker = OcrWorker(
             exe_path=self.ocr_script_path,
             image_path=self.screenshot_path,
+            ocr_model=CONFIG.get("text_recognition", {}).get("ocr_model", "v6-small"),
             lang=nb_lang,
+            proxy=self._proxy_config(),
             parent=self,
         )
         self._worker.ocr_done.connect(self._on_ocr_done)
@@ -275,22 +328,32 @@ class TextRecognitionPage(BasePage):
 
     # ==================== 服务检测 ====================
 
+    def _proxy_config(self) -> str:
+        """从配置文件读取 OCR 代理地址（text_recognition.proxy），空串表示不设置
+
+        每次识别都重新读取，改完 config.json 无需重启即可生效。
+        """
+        section = CONFIG.get("text_recognition") or {}
+        return str(section.get("proxy") or "").strip()
+
     def on_show(self):
         """页面显示时检测 OCR 服务是否存在，动态切换 UI 状态"""
+        proxy = self._proxy_config()
+        proxy_state = f" · Proxy" if proxy else ""
         if self.ocr_script_path.exists():
             self.lang_button.show()
             self.download_serve_button.hide()
-            self.serve_state.setText("OCR Service Ready")
+            self.serve_state.setText(f"OCR Service Ready{proxy_state}")
         else:
             self.lang_button.hide()
             self.download_serve_button.show()
-            self.serve_state.setText("OCR Service Not found")
+            self.serve_state.setText(f"OCR Service Not found{proxy_state}")
 
     def _download_ocr_service(self):
         """下载 OCR 服务（占位实现，打开一个示例链接）"""
         import webbrowser
 
-        url = "https://github.com/zhykowo/quick_rapidocr/releases"
+        url = "https://github.com/zibo-chen/newbee-ocr-cli/releases"
         webbrowser.open(url)
         logger.info(f"用户点击下载 OCR 服务: {url}")
 
