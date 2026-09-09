@@ -130,15 +130,15 @@ class BackgroundWidget(QWidget):
         self._timer.setInterval(FRAME_INTERVAL_MS)
         self._timer.timeout.connect(self._tick)
 
-        # 帧循环的开关条件：必须同时满足「可见」与「窗口处于焦点」，
-        # 任一不满足都停止定时器，避免无谓的 CPU / GPU 开销
-        self._visible = False
+        # 帧循环的开关条件之一：主窗口是否处于焦点（由 main.py 的 changeEvent 广播）
         self._active = False
 
         # 系统强调色变化时自动重取五个光斑颜色
         color_manager.accent_color_changed.connect(self.refresh_colors)
-        # 主窗口失焦（main.py changeEvent 广播）时暂停帧，重新聚焦时恢复
+        # 主窗口焦点变化：非跟随页时即便失焦也要继续跑帧，跟随页失焦则停帧
         global_signals.window_active_changed.connect(self._on_window_active_changed)
+
+        page_router.page_action.connect(self._on_page_changed)
 
     # ---------- 装配 ----------
     @classmethod
@@ -149,7 +149,6 @@ class BackgroundWidget(QWidget):
         host.installEventFilter(bg)
         bg._sync_geometry()
         bg.lower()  # 置底：只覆盖容器底色，不覆盖页面内容
-        bg._visible = host.isVisible()
         bg._sync_running()
         return bg
 
@@ -179,24 +178,28 @@ class BackgroundWidget(QWidget):
         self.update()
 
     # ---------- 生命周期 ----------
-    def showEvent(self, event):
-        super().showEvent(event)
-        self._visible = True
-        self._sync_running()
-
-    def hideEvent(self, event):
-        super().hideEvent(event)
-        self._visible = False
-        self._sync_running()
-
     def _on_window_active_changed(self, is_active: bool):
         """窗口焦点变化（由 main.py 的 changeEvent 广播）：决定是否继续跑帧"""
         self._active = bool(is_active)
         self._sync_running()
 
+    def _on_page_changed(self, _mode, page):
+        if page not in FOLLOW_PAGES:
+            self._sync_running()
+
     def _sync_running(self):
-        """只有「可见且窗口有焦点」时才驱动帧循环"""
-        self._set_running(self._visible and self._active)
+        """可见时才驱动帧循环：
+        - 有焦点：任何页面都跑帧（跟随鼠标 / 散开公转都需要）；
+        - 无焦点：只有当前页不属于跟随页时才继续跑（散开公转与鼠标无关，
+          窗口可能仍露在外面），跟随页则停帧省开销。
+        可见性直接查 isVisible()，不另存标志位：本控件随主窗口显隐，
+        主窗口不会单独 hide 它（隐藏只是移出屏幕），故无需 show/hideEvent。
+        """
+
+        if not self.isVisible():
+            self._set_running(False)
+            return
+        self._set_running(self._active or not self._in_follow_mode())
 
     def _set_running(self, running: bool):
         if running == self._timer.isActive():
