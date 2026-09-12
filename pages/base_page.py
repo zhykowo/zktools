@@ -1,3 +1,4 @@
+# base_page.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPalette, QShortcut
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget

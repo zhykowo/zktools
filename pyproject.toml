@@ -5,7 +5,7 @@ requires-python = ">=3.14"
 dependencies = [
     "httpx>=0.28.1",
     "logging>=0.4.9.6",
-    "nuitka>=4.2",
+    "nuitka>=4.2.1",
     "pynput>=1.8.2",
     "pyside6>=6.11.1",
     "uiautomation>=2.0.29",

@@ -28,13 +28,6 @@ from widgets.svg_button import SvgButton
 from widgets.text_editor import RoundedTextEdit
 
 
-class GridMode(Enum):
-    NONE = auto()
-    ORIGIN_LANG = auto()
-    TARGET_LANG = auto()
-    SERVER = auto()
-
-
 class TranslationHotkey(QObject):
     """一键翻译全局热键
 
@@ -141,39 +134,30 @@ class TranslatorPage(BasePage):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-
         self.translator = Translator()
         self.target_size = (400, 300)
 
-        # 后台翻译线程状态
         self._worker = None
         self._translation_cancelled = False
-
-        # 当前展开的网格类型状态
-        self._current_grid_mode = GridMode.NONE
         self._server_display_to_id: dict[str, str] = {}
 
         layout = self.set_main_layout("v")
         assert layout is not None
 
-        # 2. 文本输入框与结果框（圆角背景 + accent/灰色状态边框 + placeholder）
         self.input_text = RoundedTextEdit(placeholder="Enter or paste text here...", parent=self)
         self.result_text = RoundedTextEdit(placeholder="Translation result", parent=self)
-
         self.result_text.setFixedHeight(0)
 
-        # 3. 通用平铺网格选择面板（独立组件）
         self.selection_grid = SelectionGrid()
+        # 点击网格项后，直接调用 grid 本身的收起逻辑
+        self.selection_grid.item_selected.connect(lambda _: self.selection_grid.collapse())
 
-        # 点击网格项后自动收起（未来组件可按需不连接此信号）
-        self.selection_grid.item_selected.connect(lambda _: self._collapse_grid())
-
-        # 4. 底部控制栏
         self.footer_layout = QHBoxLayout()
-
         self.footer_layout.addStretch()
 
+        # 原语种按钮：启用原生 Checkable
         self.origin_lang = CoreButton(text=CONFIG["translator"]["default_from_lang"])
+        self.origin_lang.setCheckable(True)
         self.origin_lang.clicked.connect(lambda: self.display_lang_list("origin"))
         self.footer_layout.addWidget(self.origin_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
@@ -181,16 +165,18 @@ class TranslatorPage(BasePage):
         self.swap_btn.clicked.connect(self._swap_languages)
         self.footer_layout.addWidget(self.swap_btn)
 
+        # 目标语种按钮：启用原生 Checkable
         self.target_lang = CoreButton(CONFIG["translator"]["default_to_lang"])
+        self.target_lang.setCheckable(True)
         self.target_lang.clicked.connect(lambda: self.display_lang_list("target"))
         self.footer_layout.addWidget(self.target_lang, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self.footer_layout.addStretch()
 
-        # 默认服务：config 指定内部标识符，按钮文本显示 config 中配置的名称
         default_server = CONFIG["translator"].get("default_server", "Baidu")
         self._current_server = default_server if default_server in self.SUPPORTED_SERVERS else self.SUPPORTED_SERVERS[0]
 
+        # 翻译服务按钮：因为触发方式是右键不干预选中状态，不在配置里设 Checkable
         self.translation_server_btn = CoreButton(
             self._server_display_name(self._current_server),
             bg_color="accent",
@@ -201,8 +187,6 @@ class TranslatorPage(BasePage):
         self.translation_server_btn.customContextMenuRequested.connect(self.display_server_list)
         self.footer_layout.addWidget(self.translation_server_btn)
 
-        # 取消按钮：与翻译按钮共存于布局，翻译时通过 hide/show 切换显示，
-        # 隐藏的组件会自动空出布局位置，无需移除/插入操作
         self.cancel_btn = CoreButton("Cancel", parent=self)
         self.cancel_btn.setBgColor("danger")
         self.cancel_btn.hide()
@@ -212,7 +196,6 @@ class TranslatorPage(BasePage):
         self.footer_layout.setContentsMargins(0, 0, 0, 0)
         self.footer_layout.addStretch()
 
-        # 布局组织
         layout.addWidget(self.input_text)
         layout.addSpacing(4)
         layout.addWidget(self.result_text)
@@ -220,10 +203,6 @@ class TranslatorPage(BasePage):
         layout.addLayout(self.footer_layout)
         layout.addWidget(self.selection_grid)
 
-        # 初始状态：网格未展开，from/to 语言按钮均置为灰色（否则默认 accent 高亮）
-        self._set_lang_buttons_active(GridMode.NONE)
-
-        # 一键翻译：注册全局热键（复制选中文本 → 填入输入框 → 默认服务翻译）
         self.one_click_hotkey = TranslationHotkey(self._on_one_click_translate, parent=self)
         self.one_click_hotkey.start()
 
@@ -263,51 +242,18 @@ class TranslatorPage(BasePage):
         self._start_translation()
 
     # ==================== 网格切换核心逻辑 ====================
-    def _request_grid_switch(self, mode: GridMode, items: list[str], current_value: str, on_select_callback):
-        """网格切换控制中心：实现平滑过渡"""
-        if self._current_grid_mode == mode:
-            self._collapse_grid()
-            return
-
-        # 切换准备：更新网格状态、填充新按钮并固定当前高度防止跳变
-        current_height = self.selection_grid.height() if self._current_grid_mode != GridMode.NONE else 0
-        self._current_grid_mode = mode
-        self.selection_grid.populate(items, current_value, on_select_callback)
-        self._set_lang_buttons_active(mode)
-        self.selection_grid.setFixedHeight(current_height)
-
-        # 展开网格，同时收起结果框（若有内容）
-        extra = [(self.result_text, self.result_text.height(), 0)] if self.result_text.height() > 0 else None
-        self.selection_grid.expand_to(len(items), extra_animations=extra)
-
-    def _collapse_grid(self, on_finished=None):
-        """收起当前网格动画"""
-        self._current_grid_mode = GridMode.NONE
-        self._set_lang_buttons_active(GridMode.NONE)
-        self.selection_grid.collapse(on_finished=on_finished)
-
     def display_lang_list(self, target_type="origin"):
-        """显示语言选择网格"""
-        mode = GridMode.ORIGIN_LANG if target_type == "origin" else GridMode.TARGET_LANG
-        current_lang = self.origin_lang.text() if target_type == "origin" else self.target_lang.text()
+        """一句话调度网格呈现，UI与状态交由SelectionGrid自动处理"""
+        trigger_btn = self.origin_lang if target_type == "origin" else self.target_lang
+        current_lang = trigger_btn.text()
 
         def set_language(selected_lang):
-            if target_type == "origin":
-                self.origin_lang.setText(selected_lang)
-            else:
-                self.target_lang.setText(selected_lang)
+            trigger_btn.setText(selected_lang)
 
-        self._request_grid_switch(mode, self.SUPPORTED_LANGUAGES, current_lang, set_language)
-
-    def _server_display_name(self, server_id):
-        """服务按钮显示名：AI1/AI2 使用 config 中指定的名称，其余显示自身标识符"""
-        if server_id in ("AI1", "AI2"):
-            name = CONFIG["translator"].get("apis", {}).get("ai", {}).get(server_id, {}).get("name")
-            return name or server_id
-        return server_id
+        extra = [(self.result_text, self.result_text.height(), 0)] if self.result_text.height() > 0 else None
+        self.selection_grid.toggle(trigger_btn, self.SUPPORTED_LANGUAGES, current_lang, set_language, extra)
 
     def display_server_list(self):
-        """显示翻译服务选择网格（AI1/AI2 显示 config 指定的名称，其余显示自身名称）"""
         items = []
         self._server_display_to_id = {}
         for server_id in self.SUPPORTED_SERVERS:
@@ -321,12 +267,20 @@ class TranslatorPage(BasePage):
             self._current_server = self._server_display_to_id[selected_display]
             self.translation_server_btn.setText(selected_display)
 
-        self._request_grid_switch(GridMode.SERVER, items, current_display, set_server)
+        extra = [(self.result_text, self.result_text.height(), 0)] if self.result_text.height() > 0 else None
+        self.selection_grid.toggle(self.translation_server_btn, items, current_display, set_server, extra)
+
+    # ==================== 杂项 ====================
+
+    def _server_display_name(self, server_id):
+        if server_id in ("AI1", "AI2"):
+            name = CONFIG["translator"].get("apis", {}).get("ai", {}).get(server_id, {}).get("name")
+            return name or server_id
+        return server_id
 
     def _start_translation(self):
-        """后台线程执行翻译，避免阻塞 UI；翻译期间按钮替换为红色 Cancel 按钮"""
         if self._worker is not None:
-            return  # 已有翻译进行中（此时按钮已变为 Cancel，点击即取消）
+            return
 
         text = self.input_text.toPlainText()
         server = self._current_server
@@ -351,73 +305,42 @@ class TranslatorPage(BasePage):
         self._worker.start()
 
     def _set_translating(self, translating: bool):
-        """翻译中显示红色 Cancel 按钮、隐藏翻译按钮；结束时反向。
-
-        隐藏的组件会自动空出布局位置并触发重排，两个按钮在布局中
-        始终占据同一槽位，因此无需移除/插入即可完成切换。
-        """
         self.translation_server_btn.setVisible(not translating)
         self.cancel_btn.setVisible(translating)
 
     def _cancel_translation(self):
-        """取消进行中的翻译：丢弃结果并立即恢复翻译按钮（同步请求无法中断网络传输）"""
         self._translation_cancelled = True
         worker = self._worker
         self._worker = None
         if worker is not None:
             worker.cancel()
-            # 线程结束后自动释放，避免 QThread 对象泄漏
             worker.finished.connect(worker.deleteLater)
         self._set_translating(False)
 
     def _on_translation_done(self, result):
-        """翻译完成（主线程）：显示结果并展开结果框"""
         if self._translation_cancelled:
             self._translation_cancelled = False
             return
 
         self.result_text.setText(result)
-
-        self._current_grid_mode = GridMode.NONE
-        self._set_lang_buttons_active(GridMode.NONE)
-
-        # 收起网格、展开结果框的联动动画
-        self.selection_grid.collapse(
-            extra_animations=[
-                (self.result_text, self.result_text.height(), self.RESULT_TEXT_HEIGHT),
-            ]
-        )
+        # 直接通知网格收起自身即可
+        self.selection_grid.collapse(extra_animations=[(self.result_text, self.result_text.height(), self.RESULT_TEXT_HEIGHT)])
         self._set_translating(False)
 
     def _on_worker_finished(self):
-        """后台线程自然结束（未被取消）：释放 worker"""
         worker = self._worker
         self._worker = None
         if worker is not None:
             worker.deleteLater()
 
-    def _set_lang_buttons_active(self, mode: GridMode):
-        """仅当对应语言网格展开时，from/to 语言按钮才以 accent 高亮，否则显示灰色"""
-        if mode == GridMode.ORIGIN_LANG:
-            self.origin_lang.setBgColor("accent")
-            self.target_lang.setBgColor("gray")
-        elif mode == GridMode.TARGET_LANG:
-            self.origin_lang.setBgColor("gray")
-            self.target_lang.setBgColor("accent")
-        else:  # NONE or SERVER
-            self.origin_lang.setBgColor("gray")
-            self.target_lang.setBgColor("gray")
-
     def _swap_languages(self):
-        """互换源语言与目标语言"""
         temp = self.origin_lang.text()
         self.origin_lang.setText(self.target_lang.text())
         self.target_lang.setText(temp)
 
     def on_back_clicked(self):
-        """返回逻辑：如果网格开启则收起，否则退出页面"""
-        if self._current_grid_mode != GridMode.NONE:
-            self._collapse_grid()
+        if self.selection_grid.is_expanded:
+            self.selection_grid.collapse()
         else:
             page_router.exit_self(self.page_name)
 
@@ -426,10 +349,4 @@ class TranslatorPage(BasePage):
         self.input_text.setText("")
         self.result_text.setText("")
 
-        self._set_lang_buttons_active(GridMode.NONE)
-
-        self.selection_grid.collapse(
-            extra_animations=[
-                (self.result_text, self.result_text.height(), 0),
-            ]
-        )
+        self.selection_grid.collapse(extra_animations=[(self.result_text, self.result_text.height(), 0)])

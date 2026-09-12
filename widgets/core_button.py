@@ -17,10 +17,12 @@ from core.colors import (
 
 
 class CoreButton(QPushButton):
-    def __init__(self, text, bg_color=None, text_color=None, radius=12, parent=None):
+    def __init__(self, text, bg_color=None, text_color=None, checked_color=None, radius=12, parent=None):
         super().__init__(text, parent)
         self._custom_bg_color = QColor(bg_color) if bg_color else None
         self._custom_text_color = QColor(text_color) if text_color else None
+        self._custom_checked_color = QColor(checked_color) if checked_color else get_accent_color()
+
         # 由 setBgColor() 维护；先赋默认值，保证 paintEvent 之前一定可读
         self.bg_color = QColor()
         self.text_color = WHITE
@@ -29,6 +31,7 @@ class CoreButton(QPushButton):
         self._on_accent_changed()
 
         color_manager.accent_color_changed.connect(self._on_accent_changed)
+        self.toggled.connect(self._on_toggled)
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -93,7 +96,16 @@ class CoreButton(QPushButton):
         """系统强调色变化时更新 accent 底色（仅当未自定义 bg_color 时）"""
         self.custom_accent_qcolor = get_accent_color()
 
-        if self._custom_bg_color:
+        if self.isChecked() and self._custom_checked_color:
+            self.setBgColor(self._custom_checked_color)
+        elif self._custom_bg_color:
             self.setBgColor(self._custom_bg_color)
         else:
             self.setBgColor("gray")
+
+    def _on_toggled(self, checked: bool):
+        if checked and self._custom_checked_color:
+            self.setBgColor(self._custom_checked_color)
+        else:
+            # 恢复默认背景（若有自定义 bg_color 则用自定义，否则用默认 "gray"）
+            self.setBgColor(self._custom_bg_color if self._custom_bg_color else "gray")

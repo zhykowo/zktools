@@ -202,11 +202,12 @@ class TextRecognitionPage(BasePage):
 
         # 2. 语言选择网格（选中回调直接绑定 _on_lang_selected，内部 _clear 复用）
         self.selection_grid = SelectionGrid()
-
+        self.selection_grid.item_selected.connect(lambda _: self.selection_grid.collapse())
         # 3. 底部控制栏
         footer = QHBoxLayout()
 
         self.lang_button = CoreButton(text=self._current_lang)
+        self.lang_button.setCheckable(True)
         self.lang_button.clicked.connect(self._toggle_lang_grid)
 
         self.download_serve_button = CoreButton(text="Download")
@@ -361,16 +362,12 @@ class TextRecognitionPage(BasePage):
 
     def _toggle_lang_grid(self):
         """展开/收起语言选择网格"""
-        if self.selection_grid.height() > 0:
-            self.selection_grid.collapse()
-        else:
-            # 展开（populate 内部会先清空旧按钮）
-            self.selection_grid.populate(
-                items=self.SUPPORTED_LANGUAGES,
-                current_value=self._current_lang,
-                on_select_callback=self._on_lang_selected,
-            )
-            self.selection_grid.expand_to(len(self.SUPPORTED_LANGUAGES))
+        self.selection_grid.toggle(
+            trigger_btn=self.lang_button,
+            items=self.SUPPORTED_LANGUAGES,
+            current_value=self._current_lang,
+            callback=self._on_lang_selected,
+        )
 
     def _on_lang_selected(self, display_name: str):
         """语言选择回调：更新当前语言并收起网格"""
@@ -387,5 +384,4 @@ class TextRecognitionPage(BasePage):
     def clear_data(self):
         self._cancel_ocr()
         self.text_edit.setText("")
-        if self.selection_grid.height() > 0:
-            self.selection_grid.collapse()
+        self.selection_grid.collapse()
