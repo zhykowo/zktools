@@ -1,8 +1,6 @@
 [project]
 name = "zktools"
 version = "0.1.0"
-description = ""
-readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "httpx>=0.28.1",
@@ -14,10 +12,6 @@ dependencies = [
 ]
 
 [tool.basedpyright]
-# standard 而非 basedpyright 默认的 recommended：recommended 会报出 1400+ 条
-# "缺类型注解 / 第三方库无 stub" 的噪音，淹没有效信号。
-# 想逐步收紧可改成 "strict"，再逐条处理。
+# recommended (Default) / standard / strict，非standard会报出大量"缺类型注解 / 第三方库无 stub" 的噪音
 typeCheckingMode = "standard"
-# test.py 是未纳入版本管理的临时原型（PySide6 stub 移除了已废弃的枚举简写，
-# 会对 Qt.Horizontal 之类误报），只排除这一个文件，不影响将来的正式测试。
 exclude = ["dist", ".venv", "build", "__pycache__", "test.py"]
