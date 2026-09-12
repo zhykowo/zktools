@@ -7,11 +7,6 @@ from typing import Any
 root_dir = Path(sys.argv[0]).resolve().parent
 
 
-def get_data_file_path(filename: str) -> Path:
-    """返回用户数据文件路径（默认存放在项目根目录）"""
-    return root_dir / filename
-
-
 def load_config() -> dict[str, Any]:
     # 1. 检查 config_dev.json —— 开发/调试用，优先级最高
     dev_config = root_dir / "config_dev.json"

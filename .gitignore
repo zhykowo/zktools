@@ -14,7 +14,6 @@ changes.patch
 .reasonix
 reasonix.toml
 uv.lock
-notes.txt
 .python-version
 data/
 test.py

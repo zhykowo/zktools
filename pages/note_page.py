@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel
 
 from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
-from resources.constants import get_data_file_path
+from resources.constants import root_dir
 from resources.svgs import note_icon
 from widgets.core_button import CoreButton
 from widgets.text_editor import RoundedTextEdit
@@ -34,7 +34,7 @@ class NotePage(BasePage):
         self.target_size = (400, 300)
 
         # 便笺数据文件：开发目录放在项目根目录，打包环境放在 %APPDATA%（与配置文件同目录）
-        self.note_file = get_data_file_path("notes.txt")
+        self.note_file = root_dir / "data" / "notes.txt"
 
         # 防抖保存定时器：textChanged 触发重启计时，超时后写盘
         self._save_timer = QTimer(self)
