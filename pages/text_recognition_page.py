@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel
 
 from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
+from pages.translator_page import translation_global_signals
 from resources.constants import CONFIG, root_dir
 from resources.svgs import text_scan_icon
 from utils.screenshot_region import screenshot_region
@@ -216,6 +217,10 @@ class TextRecognitionPage(BasePage):
 
         self.serve_state = self._make_footer_label()
 
+        self.translate_btn = CoreButton(text="To " + CONFIG["translator"]["default_to_lang"])
+        self.translate_btn.hide()
+        self.translate_btn.clicked.connect(self._start_translate)
+
         self.ocr_button = CoreButton(text="Get Text", bg_color="accent")
         self.ocr_button.clicked.connect(self.capture)
 
@@ -229,6 +234,7 @@ class TextRecognitionPage(BasePage):
         footer.addWidget(self.lang_button)
         footer.addWidget(self.serve_state)
         footer.addStretch()
+        footer.addWidget(self.translate_btn)
         footer.addWidget(self.ocr_button)
         footer.addWidget(self.cancel_btn)
         footer.setContentsMargins(8, 0, 8, 0)
@@ -314,6 +320,9 @@ class TextRecognitionPage(BasePage):
         self.text_edit.setText(text)
         self._set_recognizing(False)
 
+        self.translate_btn.show()
+        self.serve_state.hide()
+
     def _on_ocr_error(self, error_msg: str):
         """OCR 识别出错：显示错误信息"""
         logger.error(f"OCR 识别失败: {error_msg}")
@@ -326,6 +335,9 @@ class TextRecognitionPage(BasePage):
         self._worker = None
         if worker is not None:
             worker.deleteLater()
+
+    def _start_translate(self):
+        translation_global_signals.translate_shortcut_signal.emit(self.text_edit.toPlainText())
 
     # ==================== 服务检测 ====================
 
@@ -385,3 +397,6 @@ class TextRecognitionPage(BasePage):
         self._cancel_ocr()
         self.text_edit.setText("")
         self.selection_grid.collapse()
+
+        self.translate_btn.hide()
+        self.serve_state.show()

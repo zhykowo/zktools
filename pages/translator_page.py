@@ -28,6 +28,14 @@ from widgets.svg_button import SvgButton
 from widgets.text_editor import RoundedTextEdit
 
 
+class _GlobalSignals(QObject):
+    translate_shortcut_signal = Signal(str)
+
+
+# 模块级单例
+translation_global_signals = _GlobalSignals()
+
+
 class TranslationHotkey(QObject):
     """一键翻译全局热键
 
@@ -51,7 +59,6 @@ class TranslationHotkey(QObject):
 
     def start(self):
         """注册全局热键并启动全局键盘监听（幂等）"""
-        hotkey_manager.start()
         if hotkey_manager.register(self._hotkey, self._fire):
             self._registered = True
             logger.info(f"[TranslationHotkey] 一键翻译已启用，快捷键: {self._hotkey}")
@@ -206,6 +213,8 @@ class TranslatorPage(BasePage):
         self.one_click_hotkey = TranslationHotkey(self._on_one_click_translate, parent=self)
         self.one_click_hotkey.start()
 
+        translation_global_signals.translate_shortcut_signal.connect(self.translate_shortcut)
+
     def on_show(self):
         tm = text_manager.get()
         now_time = time.perf_counter()
@@ -224,10 +233,12 @@ class TranslatorPage(BasePage):
         if not selected:
             logger.info("[TranslatorPage] 未获取到选中的文本，一键翻译已取消")
             return
+        self.translate_shortcut(text=selected)
 
+    def translate_shortcut(self, text: str):
         # 1. 切换到翻译页并展示选中文本
         page_router.immediate_switch("translator")
-        self.input_text.setText(selected)
+        self.input_text.setText(text)
         self.input_text.setFocus()
 
         self.origin_lang.setText(

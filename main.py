@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from core.background import BackgroundWidget
 from core.colors import WHITE, color_manager
+from core.hotkey_manager import hotkey_manager
 from core.page_animation import PageAnimationManager
 from core.page_router import page_router
 from core.signal import global_signals
@@ -203,6 +204,7 @@ if __name__ == "__main__":
 
     app.setFont(font)
 
+    hotkey_manager.init()
     clipboard_monitor.init()
     color_manager.init()
     text_manager.init()

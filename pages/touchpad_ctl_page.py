@@ -137,7 +137,6 @@ class TouchpadCtlPage(VirtualPage):
         self._register_hotkeys()
 
     def _register_hotkeys(self):
-        hotkey_manager.start()
         test_ok = hotkey_manager.register(CONFIG["touchpad_ctl"]["hotkeys"]["test"], self._on_test_hotkey)
         switch_ok = hotkey_manager.register(CONFIG["touchpad_ctl"]["hotkeys"]["switch"], self.controller.request_switch)
         if not test_ok or not switch_ok:

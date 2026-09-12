@@ -225,7 +225,7 @@ class HotkeyManager(QAbstractNativeEventFilter):
             self._free_hotkey_id(hotkey_id)
             logger.info(f"[HotkeyManager] 已注销快捷键: {formatted_hotkey}")
 
-    def start(self):
+    def init(self):
         """将热键监听挂到 Qt 事件循环上（幂等）"""
         if self._installed:
             return

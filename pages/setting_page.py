@@ -2,7 +2,6 @@
 import logging
 import os
 import sys
-from venv import logger
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel

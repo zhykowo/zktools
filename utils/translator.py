@@ -202,7 +202,7 @@ class Translator:
         result = response.json()
 
         if "trans_result" in result:
-            return result["trans_result"][0]["dst"]
+            return "\n".join(item["dst"] for item in result["trans_result"])
         # 错误码形式: {"error_code": "...", "error_msg": "..."}
         return f"错误: {result.get('error_msg') or result}"
 
