@@ -19,6 +19,7 @@ data/
 test.py
 tools/ocr
 tools/newbee_ocr
+tools/qr_cli
 models/
 .workbuddy/
 ruff.toml

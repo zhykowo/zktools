@@ -11,16 +11,15 @@ from typing import ClassVar
 logger = logging.getLogger(__name__)
 
 from PySide6.QtCore import QThread, Signal
-from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtWidgets import QHBoxLayout
 
-from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
 from pages.translator_page import translation_global_signals
 from resources.constants import CONFIG, root_dir
 from resources.svgs import text_scan_icon
 from utils.screenshot_region import screenshot_region
 from widgets.core_button import CoreButton
+from widgets.footer_label import FooterLabel
 from widgets.selection_grid import SelectionGrid
 from widgets.text_editor import RoundedTextEdit
 
@@ -215,7 +214,7 @@ class TextRecognitionPage(BasePage):
         self.download_serve_button.hide()
         self.download_serve_button.clicked.connect(self._download_ocr_service)
 
-        self.serve_state = self._make_footer_label()
+        self.serve_state = FooterLabel(parent=self)
 
         self.translate_btn = CoreButton(text="To " + CONFIG["translator"]["default_to_lang"])
         self.translate_btn.hide()
@@ -248,18 +247,6 @@ class TextRecognitionPage(BasePage):
 
         # 截图信号连接
         screenshot_region.region_selected.connect(self.save_pixmap)
-
-    def _make_footer_label(self) -> QLabel:
-        """底部状态栏的灰色小字标签"""
-        label = QLabel(self)
-        label_font = label.font()
-        label_font.setPixelSize(11)
-        label.setFont(label_font)
-
-        palette = label.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, NEUTRAL_4)
-        label.setPalette(palette)
-        return label
 
     # ==================== 截图流程 ====================
 

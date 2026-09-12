@@ -3,14 +3,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPalette, QTextCursor
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtGui import QTextCursor
+from PySide6.QtWidgets import QHBoxLayout
 
-from core.colors import NEUTRAL_4
 from pages.base_page import BasePage
 from resources.constants import root_dir
 from resources.svgs import note_icon
 from widgets.core_button import CoreButton
+from widgets.footer_label import FooterLabel
 from widgets.text_editor import RoundedTextEdit
 
 
@@ -53,8 +53,8 @@ class NotePage(BasePage):
         self.note_editor.textChanged.connect(self._on_text_changed)
 
         # 底部状态栏：保存状态 + 字数统计 + 清空按钮
-        self.status_label = self._make_footer_label()
-        self.char_count_label = self._make_footer_label()
+        self.status_label = FooterLabel(parent=self)
+        self.char_count_label = FooterLabel(parent=self)
 
         self.clear_btn = CoreButton("Clear", parent=self)
         self.clear_btn.setBgColor("gray")
@@ -76,18 +76,6 @@ class NotePage(BasePage):
         layout.addSpacing(4)
 
         self._load_note()
-
-    def _make_footer_label(self) -> QLabel:
-        """底部状态栏的灰色小字标签"""
-        label = QLabel(self)
-        label_font = label.font()
-        label_font.setPixelSize(11)
-        label.setFont(label_font)
-
-        palette = label.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, NEUTRAL_4)
-        label.setPalette(palette)
-        return label
 
     # ==================== 数据读写 ====================
     def _load_note(self):

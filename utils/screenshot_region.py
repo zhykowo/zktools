@@ -273,10 +273,14 @@ class ScreenshotRegionManager(QObject):
 
     def _on_region_selected(self, pixmap):
         self._overlay = None
+        callback = self._callback
+        self._callback = None
+        if callback is not None:
+            # 一次性回调属“私有投递”：本次截图只交给发起方，不再广播 region_selected，
+            # 否则所有常驻订阅者（如 OCR 页）都会被同一次截图误触发。
+            callback(pixmap)
+            return
         self.region_selected.emit(pixmap)
-        if self._callback is not None:
-            self._callback(pixmap)
-            self._callback = None
 
     def _on_cancelled(self):
         self._overlay = None
