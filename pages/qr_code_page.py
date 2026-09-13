@@ -194,7 +194,7 @@ class QrCodePage(BasePage):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.target_size = (420, 300)
+        self.target_size = (360, 200)
 
         self.qr_cli_path = root_dir / "tools" / "qr_cli" / "qr_cli.exe"
         self.scan_image_path = root_dir / "data" / "qr_scan.png"

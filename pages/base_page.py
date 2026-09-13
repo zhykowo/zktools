@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QW
 from core.colors import COLOR_DANGER, WHITE
 from core.page_router import page_router
 from core.window_manager import drag_bus
-from resources.svgs import arrow_left_icon, close_icon, drag_icon, square_icon
+from resources.svgs import arrow_left_icon, close_icon, drag_icon, home_icon, square_icon
 from widgets.svg_button import SvgButton
 
 
@@ -39,19 +39,6 @@ class BasePage(QWidget):
         # 创建页面级 Esc 快捷键
         self.esc_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
         self.esc_shortcut.activated.connect(self.on_back_clicked)
-        # 全局关闭按钮
-        self.close_btn = SvgButton(
-            self,
-            icon_size=20,
-            svg_data=close_icon,
-            hover_color=COLOR_DANGER,
-            enable_rotation=True,
-        )
-        app = QApplication.instance()
-        if app is not None:
-            self.close_btn.clicked.connect(app.quit)
-        else:
-            raise RuntimeError("QApplication must be instantiated before creating BasePage")
 
     @property
     def module_name(self) -> str | None:
@@ -84,9 +71,26 @@ class BasePage(QWidget):
             self.main_layout.setContentsMargins(0, 0, 0, 0)
             self.content_layout = QHBoxLayout()
             self.main_layout.addLayout(self.content_layout)
-            self.main_layout.addWidget(self.close_btn)
+            close_btn = self.set_close_btn()
+            self.main_layout.addWidget(close_btn)
 
         return self.content_layout
+
+    def set_close_btn(self):
+        # 全局关闭按钮
+        close_btn = SvgButton(
+            self,
+            icon_size=20,
+            svg_data=close_icon,
+            hover_color=COLOR_DANGER,
+            enable_rotation=True,
+        )
+        app = QApplication.instance()
+        if app is not None:
+            close_btn.clicked.connect(app.quit)
+        else:
+            raise RuntimeError("QApplication must be instantiated before creating BasePage")
+        return close_btn
 
     def set_header(self, main_layout: QVBoxLayout, title: str):
         header_layout = QHBoxLayout()
@@ -114,15 +118,24 @@ class BasePage(QWidget):
         drag_btn = SvgButton(self, icon_size=20, svg_data=drag_icon)
         drag_bus.register_drag_handle_requested.emit(drag_btn)
 
+        home_btn = SvgButton(self, icon_size=20, svg_data=home_icon)
+        home_btn.clicked.connect(self.to_home)
+
         header_left.addWidget(back_btn)
         header_right.addWidget(drag_btn)
-        header_right.addWidget(self.close_btn)
+        header_right.addWidget(home_btn)
         header_left.addWidget(title_label)
         header_left.addStretch()
 
         header_layout.addLayout(header_left)
         header_layout.addLayout(header_right)
         main_layout.addLayout(header_layout)
+
+    def to_home(self):
+        # print("当前列表：" + str(page_router.page_queue))
+        for pg in page_router.page_queue[::-1]:  # 遍历副本
+            # print("退出 " + pg)
+            page_router.exit_self(pg)
 
     def on_show(self):
         """页面显示时调用，子类可以重写"""
