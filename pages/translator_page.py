@@ -3,7 +3,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 import time
-from enum import Enum, auto
 from typing import ClassVar
 
 from PySide6.QtCore import (
@@ -345,9 +344,14 @@ class TranslatorPage(BasePage):
             worker.deleteLater()
 
     def _swap_languages(self):
+        self.origin_lang.flash()
+        self.target_lang.flash()
         temp = self.origin_lang.text()
         self.origin_lang.setText(self.target_lang.text())
-        self.target_lang.setText(temp)
+        if temp == "Auto":
+            self.target_lang.setText("English")
+        else:
+            self.target_lang.setText(temp)
 
     def on_back_clicked(self):
         if self.selection_grid.is_expanded:

@@ -3,8 +3,7 @@ import logging
 import os
 import sys
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QHBoxLayout, QLabel
+from PySide6.QtWidgets import QHBoxLayout
 
 from pages.base_page import BasePage
 from resources.constants import root_dir
