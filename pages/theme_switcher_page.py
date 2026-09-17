@@ -275,9 +275,9 @@ class ThemeSwitcherController(QObject):
         self._is_switching = False
         if success:
             self._record_applied_theme(theme_file)
-            notify("主题已切换", icon=theme_icon, duration=3000)
+            notify("Theme Switched", icon=theme_icon, duration=3000)
         else:
-            notify("主题切换失败", icon=theme_icon, duration=3000)
+            notify("Failed to Switch Theme", icon=theme_icon, duration=3000)
         self.state_changed.emit("on")
 
         # 每次切换完成（无论成功失败）后，设置下一个定时点

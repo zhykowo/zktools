@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from PySide6.QtWidgets import QHBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout
 
 from pages.base_page import BasePage
 from resources.constants import root_dir
@@ -28,14 +28,20 @@ class SettingPage(BasePage):
 
         h_layout = QHBoxLayout()
 
+        buttons_layout = QVBoxLayout()
+
         open_config_btn = CoreButton(text="Open Config File")
         open_config_btn.clicked.connect(self.open_config)
 
         restrat_btn = CoreButton(text="Restart", bg_color="danger")
         restrat_btn.clicked.connect(self.restart)
 
+        buttons_layout.addWidget(open_config_btn)
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(restrat_btn)
+
         h_layout.addStretch()
-        h_layout.addWidget(open_config_btn)
+        h_layout.addLayout(buttons_layout)
         h_layout.addStretch()
 
         layout.addStretch()

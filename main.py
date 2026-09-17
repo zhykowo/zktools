@@ -22,6 +22,7 @@ from core.signal import global_signals
 from core.system_tray import SystemTrayManager
 from core.window_manager import WindowManager, drag_bus
 from pages.clipboard_ctl_page import ClipboardCtlPage
+from pages.ffplay_progress_page import FfplayProgressPage
 from pages.homepage import HomePage, on_drag_bus
 from pages.module_center_page import ModuleCenterPage
 from pages.note_page import NotePage
@@ -35,7 +36,7 @@ from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
 from pages.touchpad_ctl_page import TouchpadCtlPage
 from pages.translator_page import TranslatorPage
 from resources.constants import root_dir
-from utils import clipboard_monitor, text_manager
+from utils import clipboard_monitor, ffplay_progress_monitor, text_manager
 from utils.mouse_tracker import MouseHoverEventFilter
 from widgets.main_container import MainContainerWidget
 
@@ -118,6 +119,8 @@ class MainShellWindow(QWidget):
         self.register_page(NotePage.PAGE_NAME, NotePage())
         self.register_page(TextRecognitionPage.PAGE_NAME, TextRecognitionPage())
         self.register_page(QrCodePage.PAGE_NAME, QrCodePage())
+        # ffplay 进度页：仅由管道数据驱动显示（MODULE_NAME 为空，不进模块中心）
+        self.register_page(FfplayProgressPage.PAGE_NAME, FfplayProgressPage())
 
         page_router.page_queue = ["home"]  # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])
@@ -210,6 +213,7 @@ if __name__ == "__main__":
     clipboard_monitor.init()
     color_manager.init()
     text_manager.init()
+    ffplay_progress_monitor.init()  # ffplay 进度管道监听（进度页构造时也会自动拉起）
     theme_controller.init()  # 延迟初始化（WinUnlockListener + 启动触发）
 
     # 安装全局鼠标追踪事件过滤器
