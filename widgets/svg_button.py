@@ -3,6 +3,7 @@ from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
 from core.colors import WHITE, color_manager, get_accent_color
+from resources.svgs import square_icon
 from widgets.hover import HoverShape, HoverWidget
 
 
@@ -14,7 +15,7 @@ class SvgButton(HoverWidget):
         parent=None,
         size=36,
         icon_size=16,
-        svg_data=None,
+        svg_data=square_icon,
         hover_color=None,
         enable_rotation=False,
     ):

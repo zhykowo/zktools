@@ -1,10 +1,10 @@
 from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, Qt, Signal
-from PySide6.QtWidgets import QLabel, QSizePolicy
+from PySide6.QtWidgets import QApplication, QLabel, QSizePolicy
 
-from core.colors import COLOR_TRANSPARENT, NEUTRAL_4, WHITE, to_qss_color
+from core.colors import COLOR_DANGER, COLOR_TRANSPARENT, NEUTRAL_4, WHITE, to_qss_color
 from core.page_router import page_router
 from pages.base_page import BasePage
-from resources.svgs import app_center_icon, settings_icon
+from resources.svgs import app_center_icon, close_icon, settings_icon
 from utils.drag_drop_mixin import DragDropMixin
 from widgets.svg_button import SvgButton
 
@@ -47,13 +47,33 @@ class HomePage(DragDropMixin, BasePage):
         self.drop_hint_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.drop_hint_label.setMaximumWidth(0)
 
+        close_btn = self.set_close_btn()
+
         layout.addWidget(setting_btn)
         layout.addWidget(app_center_btn)
-        layout.addWidget(self.drop_hint_label)
+        layout.addWidget(close_btn)
+
+        # layout.addWidget(self.drop_hint_label)
 
         self.drop_anim = QPropertyAnimation(self.drop_hint_label, b"maximumWidth")
         self.drop_anim.setDuration(800)
         self.drop_anim.setEasingCurve(QEasingCurve.Type.OutQuart)
+
+    def set_close_btn(self):
+        # 全局关闭按钮
+        close_btn = SvgButton(
+            self,
+            icon_size=20,
+            svg_data=close_icon,
+            hover_color=COLOR_DANGER,
+            enable_rotation=True,
+        )
+        app = QApplication.instance()
+        if app is not None:
+            close_btn.clicked.connect(app.quit)
+        else:
+            raise RuntimeError("QApplication must be instantiated before creating BasePage")
+        return close_btn
 
     def on_drag_enter(self):
         self.drop_hint_label.setStyleSheet(_DROP_HINT_ACTIVE_QSS)

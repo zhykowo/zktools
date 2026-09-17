@@ -371,8 +371,8 @@ class NotifyPage(BasePage):
         fm = QFontMetrics(self.label.font())
         assert self.main_layout is not None
         icon_w = (self.icon_btn.width() + self.main_layout.spacing()) if icon else 0
-        # 固定开销：容器左右边距 20 + 关闭按钮 36 + 与内容区的间距 6 + 度量余量 12
-        chrome = 20 + 36 + 6 + 15
+        # 固定开销：容器左右边距 20 + 关闭按钮 0 + 与内容区的间距 6 + 度量余量 12
+        chrome = 20 + 0 + 6 + 15
 
         text_w = fm.horizontalAdvance(message)
         width = max(chrome + icon_w + text_w, self.MIN_WIDTH)

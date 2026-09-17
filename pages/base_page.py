@@ -1,9 +1,9 @@
 # base_page.py
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeySequence, QPalette, QShortcut
-from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from core.colors import COLOR_DANGER, WHITE
+from core.colors import WHITE
 from core.page_router import page_router
 from core.window_manager import drag_bus
 from resources.svgs import arrow_left_icon, close_icon, drag_icon, home_icon, square_icon
@@ -71,26 +71,10 @@ class BasePage(QWidget):
             self.main_layout.setContentsMargins(0, 0, 0, 0)
             self.content_layout = QHBoxLayout()
             self.main_layout.addLayout(self.content_layout)
-            close_btn = self.set_close_btn()
-            self.main_layout.addWidget(close_btn)
+            # close_btn = self.set_close_btn()
+            # self.main_layout.addWidget(close_btn)
 
         return self.content_layout
-
-    def set_close_btn(self):
-        # 全局关闭按钮
-        close_btn = SvgButton(
-            self,
-            icon_size=20,
-            svg_data=close_icon,
-            hover_color=COLOR_DANGER,
-            enable_rotation=True,
-        )
-        app = QApplication.instance()
-        if app is not None:
-            close_btn.clicked.connect(app.quit)
-        else:
-            raise RuntimeError("QApplication must be instantiated before creating BasePage")
-        return close_btn
 
     def set_header(self, main_layout: QVBoxLayout, title: str):
         header_layout = QHBoxLayout()
