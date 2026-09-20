@@ -338,12 +338,13 @@ class TextRecognitionPage(BasePage):
 
     def on_show(self):
         """页面显示时检测 OCR 服务是否存在，动态切换 UI 状态"""
+        model_state = CONFIG.get("text_recognition", {}).get("ocr_model", "v6-small")
         proxy = self._proxy_config()
-        proxy_state = f" · Proxy" if proxy else ""
+        proxy_state = "Proxy" if proxy else ""
         if self.ocr_script_path.exists():
             self.lang_button.show()
             self.download_serve_button.hide()
-            self.serve_state.setText(f"OCR Service Ready{proxy_state}")
+            self.serve_state.setText(f"{model_state} · {proxy_state}")
         else:
             self.lang_button.hide()
             self.download_serve_button.show()
