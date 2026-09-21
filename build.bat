@@ -1,4 +1,4 @@
-uv run nuitka --enable-plugin=pyside6 --windows-console-mode=disable --standalone --output-dir=dist main.py
+uv run nuitka --enable-plugin=pyside6 --windows-console-mode=disable --standalone --output-dir=dist --output-filename="zktools" main.py 
 
 robocopy tools dist\main.dist\tools /E /NJH /NJS /NP
 robocopy assets dist\main.dist\assets /E /NJH /NJS /NP
