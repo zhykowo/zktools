@@ -72,6 +72,9 @@ class CoreButton(QPushButton):
         # 1. 状态判断 (Disabled -> Pressed -> Hover -> Normal)
         if not self.isEnabled():
             bg_color = NEUTRAL_4
+        elif self._flash_factor > 0:
+            # 闪光动画期间固定基色，避免按下/抬起切换导致二次闪动
+            bg_color = self.bg_color
         elif self.isDown():  # 点击按下状态
             bg_color = self.bg_color.darker(120)
         elif self.underMouse():  # 悬停 Hover 状态
