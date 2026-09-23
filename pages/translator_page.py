@@ -2,7 +2,6 @@
 import logging
 
 logger = logging.getLogger(__name__)
-import time
 from typing import ClassVar
 
 from PySide6.QtCore import (
@@ -19,7 +18,7 @@ from core.page_router import page_router
 from pages.base_page import BasePage
 from resources.constants import CONFIG
 from resources.svgs import arrow_right_icon, translate_icon
-from utils import text_manager
+from utils import clipboard_monitor
 from utils.translator import Translator
 from widgets.core_button import CoreButton
 from widgets.selection_grid import SelectionGrid
@@ -215,24 +214,16 @@ class TranslatorPage(BasePage):
         translation_global_signals.translate_shortcut_signal.connect(self.translate_shortcut)
 
     def on_show(self):
-        tm = text_manager.get()
-        now_time = time.perf_counter()
-        elapsed = now_time - tm.selection_time
-        if elapsed <= 10 and self.input_text.toPlainText() == "":
-            selected_text = tm.selected_text
-            if selected_text:
-                self.input_text.setText(selected_text)
-            elif (now_time - tm.copy_time) <= 10:
-                self.input_text.setText(tm.clipboard_text)
+        pass
 
     def _on_one_click_translate(self):
         """一键翻译：复制选中文本 → 填入输入框 → 使用默认服务翻译"""
-        tm = text_manager.get()
-        selected = tm.copy_selected_text()
-        if not selected:
-            logger.info("[TranslatorPage] 未获取到选中的文本，一键翻译已取消")
+        cm = clipboard_monitor.get()
+        cpoied = cm.cb_text
+        if not cpoied:
+            logger.info("[TranslatorPage] 未获取到文本，一键翻译已取消")
             return
-        self.translate_shortcut(text=selected)
+        self.translate_shortcut(text=cpoied)
 
     def translate_shortcut(self, text: str):
         # 1. 切换到翻译页并展示选中文本

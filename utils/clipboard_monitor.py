@@ -7,14 +7,16 @@ class _ClipboardMonitor(QObject):
 
     def __init__(self):
         super().__init__()
+
+        self.cb_text = ""
         self.clipboard = QApplication.clipboard()
         self.clipboard.dataChanged.connect(self._on_change)
 
     @Slot()
     def _on_change(self):
-        text = self.clipboard.text()
-        if text:
-            self.cbChanged.emit(text)
+        self.cb_text = self.clipboard.text()
+        if self.cb_text:
+            self.cbChanged.emit(self.cb_text)
 
 
 _instance = None

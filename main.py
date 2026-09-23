@@ -36,7 +36,7 @@ from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
 from pages.touchpad_ctl_page import TouchpadCtlPage
 from pages.translator_page import TranslatorPage
 from resources.constants import root_dir
-from utils import clipboard_monitor, ffplay_progress_monitor, text_manager
+from utils import clipboard_monitor, ffplay_progress_monitor
 from utils.mouse_tracker import MouseHoverEventFilter
 from widgets.main_container import MainContainerWidget
 
@@ -212,7 +212,6 @@ if __name__ == "__main__":
     hotkey_manager.init()
     clipboard_monitor.init()
     color_manager.init()
-    text_manager.init()
     ffplay_progress_monitor.init()  # ffplay 进度管道监听（进度页构造时也会自动拉起）
     theme_controller.init()  # 延迟初始化（WinUnlockListener + 启动触发）
 
