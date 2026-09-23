@@ -1,3 +1,4 @@
+# hotkey_manager.py
 import ctypes
 import ctypes.wintypes
 import logging
@@ -224,6 +225,42 @@ class HotkeyManager(QAbstractNativeEventFilter):
             self.user32.UnregisterHotKey(None, hotkey_id)
             self._free_hotkey_id(hotkey_id)
             logger.info(f"[HotkeyManager] 已注销快捷键: {formatted_hotkey}")
+
+    def trigger(self, hotkey_str: str) -> bool:
+        """
+        模拟按下并释放指定快捷键（如 'ctrl+alt+a'），向系统注入按键事件，
+        可用于主动触发其他程序（或本进程）注册的快捷键。
+
+        注意：
+        - 需在 Qt 主线程调用；
+        - 注入的按键同样会命中本进程已注册的热键回调，注意避免逻辑自环。
+        """
+        try:
+            mods, vk = self._parse_hotkey_str(hotkey_str.lower().replace(" ", ""))
+        except ValueError:
+            logger.exception(f"[HotkeyManager] 触发快捷键 '{hotkey_str}' 失败：解析错误")
+            return False
+
+        mod_vks = []
+        if mods & MOD_CONTROL:
+            mod_vks.append(VK_CONTROL)
+        if mods & MOD_ALT:
+            mod_vks.append(VK_MENU)
+        if mods & MOD_SHIFT:
+            mod_vks.append(VK_SHIFT)
+        if mods & MOD_WIN:
+            mod_vks.append(VK_LWIN)
+
+        # 按下修饰键 → 按下主键 → 抬起主键 → 逆序抬起修饰键
+        for m in mod_vks:
+            self.user32.keybd_event(m, 0, 0, 0)
+        self.user32.keybd_event(vk, 0, 0, 0)
+        self.user32.keybd_event(vk, 0, KEYEVENTF_KEYUP, 0)
+        for m in reversed(mod_vks):
+            self.user32.keybd_event(m, 0, KEYEVENTF_KEYUP, 0)
+
+        logger.info(f"[HotkeyManager] 已模拟触发快捷键: {hotkey_str}")
+        return True
 
     def init(self):
         """将热键监听挂到 Qt 事件循环上（幂等）"""

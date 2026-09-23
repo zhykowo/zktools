@@ -22,7 +22,8 @@ from core.signal import global_signals
 from core.system_tray import SystemTrayManager
 from core.window_manager import WindowManager, drag_bus
 from pages.clipboard_ctl_page import ClipboardCtlPage
-from pages.ffplay_progress_page import FfplayProgressPage
+
+# from pages.ffplay_progress_page import FfplayProgressPage
 from pages.homepage import HomePage, on_drag_bus
 from pages.module_center_page import ModuleCenterPage
 from pages.note_page import NotePage
@@ -120,7 +121,7 @@ class MainShellWindow(QWidget):
         self.register_page(TextRecognitionPage.PAGE_NAME, TextRecognitionPage())
         self.register_page(QrCodePage.PAGE_NAME, QrCodePage())
         # ffplay 进度页：仅由管道数据驱动显示（MODULE_NAME 为空，不进模块中心）
-        self.register_page(FfplayProgressPage.PAGE_NAME, FfplayProgressPage())
+        # self.register_page(FfplayProgressPage.PAGE_NAME, FfplayProgressPage())
 
         page_router.page_queue = ["home"]  # 队首即当前页，初始为 home
         self.stacked_widget.setCurrentWidget(page_router.pages["home"])

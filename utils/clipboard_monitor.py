@@ -1,3 +1,4 @@
+# clipboard_monitor.py
 from PySide6.QtCore import QObject, Signal, Slot
 from PySide6.QtWidgets import QApplication
 

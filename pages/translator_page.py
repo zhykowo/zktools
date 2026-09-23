@@ -38,7 +38,7 @@ class TranslationHotkey(QObject):
     """一键翻译全局热键
 
     按下快捷键后自动完成：复制选中文本 → 填入输入框 → 使用默认服务翻译。
-    pynput 的回调运行在监听线程，不能直接操作 Qt 控件，
+    回调运行在监听线程，不能直接操作 Qt 控件，
     因此通过信号以 QueuedConnection 转发到 Qt 主线程执行。
     """
 
@@ -70,7 +70,7 @@ class TranslationHotkey(QObject):
             self._registered = False
 
     def _fire(self):
-        """pynput 监听线程回调：仅转发信号，不做任何 Qt 操作"""
+        """监听线程回调：仅转发信号，不做任何 Qt 操作"""
         self._triggered.emit()
 
     @Slot()
@@ -146,6 +146,9 @@ class TranslatorPage(BasePage):
         self._translation_cancelled = False
         self._server_display_to_id: dict[str, str] = {}
 
+        self._pending_one_click = False
+        clipboard_monitor.get().cbChanged.connect(self._on_clipboard_for_one_click)
+
         layout = self.set_main_layout("v")
         assert layout is not None
 
@@ -217,13 +220,19 @@ class TranslatorPage(BasePage):
         pass
 
     def _on_one_click_translate(self):
-        """一键翻译：复制选中文本 → 填入输入框 → 使用默认服务翻译"""
-        cm = clipboard_monitor.get()
-        cpoied = cm.cb_text
-        if not cpoied:
+        """只负责触发复制，具体拿到文本在槽里做"""
+        self._pending_one_click = True
+        hotkey_manager.trigger("ctrl+c")
+
+    @Slot(str)
+    def _on_clipboard_for_one_click(self, text: str):
+        if not self._pending_one_click:
+            return
+        self._pending_one_click = False
+        if not text:
             logger.info("[TranslatorPage] 未获取到文本，一键翻译已取消")
             return
-        self.translate_shortcut(text=cpoied)
+        self.translate_shortcut(text=text)
 
     def translate_shortcut(self, text: str):
         # 1. 切换到翻译页并展示选中文本
