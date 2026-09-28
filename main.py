@@ -21,6 +21,7 @@ from core.page_router import page_router
 from core.signal import global_signals
 from core.system_tray import SystemTrayManager
 from core.window_manager import WindowManager, drag_bus
+from modules.translator.controller import TranslatorController
 from pages.clipboard_ctl_page import ClipboardCtlPage
 
 # from pages.ffplay_progress_page import FfplayProgressPage
@@ -35,7 +36,6 @@ from pages.setting_page import SettingPage
 from pages.text_recognition_page import TextRecognitionPage
 from pages.theme_switcher_page import ThemeSwitcherPage, theme_controller
 from pages.touchpad_ctl_page import TouchpadCtlPage
-from pages.translator_page import TranslatorPage
 from resources.constants import root_dir
 from utils import clipboard_monitor, ffplay_progress_monitor
 from utils.mouse_tracker import MouseHoverEventFilter
@@ -116,7 +116,10 @@ class MainShellWindow(QWidget):
         page_router.register_virtual(RestartExplorerPage())
         page_router.register_virtual(OpenFileLocationPage())
         self.register_page(ModuleCenterPage.PAGE_NAME, ModuleCenterPage())
-        self.register_page(TranslatorPage.PAGE_NAME, TranslatorPage())
+        # 新三层结构模块（modules/）：controller 负责组装 script + view，
+        # 需常驻引用以维持连线生命周期，故挂在窗口实例上
+        self.translator_module = TranslatorController()
+        self.register_page(TranslatorController.PAGE_NAME, self.translator_module.page)
         self.register_page(NotePage.PAGE_NAME, NotePage())
         self.register_page(TextRecognitionPage.PAGE_NAME, TextRecognitionPage())
         self.register_page(QrCodePage.PAGE_NAME, QrCodePage())

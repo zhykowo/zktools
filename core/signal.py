@@ -13,5 +13,8 @@ class GlobalSignalBus(QObject):
 
     window_active_changed = Signal(bool)
 
+    # 跨模块入口：请求翻译一段文本（由翻译模块订阅，发送方无需认识翻译模块）
+    translate_shortcut = Signal(str)
+
 
 global_signals = GlobalSignalBus()

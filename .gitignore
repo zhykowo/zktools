@@ -22,4 +22,5 @@ tools/newbee_ocr
 tools/qr_cli
 models/
 .workbuddy/
+.workbuddy-ai/
 ruff.toml

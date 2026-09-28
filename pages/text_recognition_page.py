@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import QHBoxLayout
 
+from core.signal import global_signals
 from pages.base_page import BasePage
-from pages.translator_page import translation_global_signals
 from resources.constants import CONFIG, root_dir
 from resources.svgs import text_scan_icon
 from utils.screenshot_region import screenshot_region
@@ -324,7 +324,7 @@ class TextRecognitionPage(BasePage):
             worker.deleteLater()
 
     def _start_translate(self):
-        translation_global_signals.translate_shortcut_signal.emit(self.text_edit.toPlainText())
+        global_signals.translate_shortcut.emit(self.text_edit.toPlainText())
 
     # ==================== 服务检测 ====================
 
