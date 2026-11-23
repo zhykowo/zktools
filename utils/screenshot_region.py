@@ -12,7 +12,7 @@
     # 方式二：回调函数（一次性）
     screenshot_region.capture(callback=lambda img: img.save("shot.png"))
 
-    # 截图前临时隐藏本应用窗口（避免把自己截进图里），抓屏后自动恢复
+    # 截图前临时隐藏本应用窗口（避免把自己截进图里），框选结束后自动恢复
     screenshot_region.capture(hide_widgets=[self.window()])
 
     # 方式三：阻塞式（适合流程式代码，如热键回调里同步取图）
@@ -227,8 +227,9 @@ class ScreenshotRegionManager(QObject):
                 截图成功时调用一次；用户取消时不调用。
                 未传此参数时，请订阅 region_selected 信号获取结果。
             hide_widgets: 可选，截图前需要临时隐藏的顶层控件列表（如本应用主窗口）。
-                隐藏后等系统合成器刷新完成再抓屏，抓屏结束立即恢复，
-                避免把本应用界面截进图里。传空或不传则不做隐藏。
+                隐藏后等系统合成器刷新完成再抓屏，整个框选过程保持隐藏，
+                选区确定或取消后立即恢复，避免把本应用界面截进图里、
+                也避免它盖在遮罩上遮挡屏幕。传空或不传则不做隐藏。
         """
         # 若已有截图流程进行中，先取消旧的
         if self._overlay is not None:
@@ -299,9 +300,11 @@ class ScreenshotRegionManager(QObject):
 
         # 先抓取全屏背景（此时遮罩尚未显示，不会截进遮罩本身）
         background = screen.grabWindow(0)
-        # 抓完立即恢复被隐藏的窗口；遮罩在恢复之后才显示，保证它仍在最上层
-        self._restore_hidden_widgets()
 
+        # 注意：这里【不能】恢复被隐藏的窗口。
+        # 主窗口和遮罩同为 StaysOnTop，窗口重新 show() 会盖到遮罩之上，
+        # 用户看到的就是“界面挡住整屏”；而且遮罩底图早已抓好，视觉与识别结果会对不上。
+        # 因此整个框选过程都保持窗口隐藏，等选区确定 / 取消时再恢复（见 _on_region_selected / _on_cancelled）。
         overlay = _RegionSelectorOverlay(background)
         self._overlay = overlay
         overlay.region_selected.connect(self._on_region_selected)
@@ -317,6 +320,9 @@ class ScreenshotRegionManager(QObject):
         for widget in widgets:
             with contextlib.suppress(RuntimeError):  # 底层 C++ 对象已销毁
                 widget.show()
+                # 遮罩关闭后把窗口重新提到前台，用户能直接看到识别结果
+                widget.raise_()
+                widget.activateWindow()
 
     # ---- 内部信号处理 ----
 
@@ -324,7 +330,7 @@ class ScreenshotRegionManager(QObject):
         self._overlay = None
         callback = self._callback
         self._callback = None
-        self._restore_hidden_widgets()  # 兜底：异常流程下也不留下隐藏窗口
+        self._restore_hidden_widgets()  # 框选结束才恢复窗口
         if callback is not None:
             # 一次性回调属“私有投递”：本次截图只交给发起方，不再广播 region_selected，
             # 否则所有常驻订阅者（如 OCR 页）都会被同一次截图误触发。

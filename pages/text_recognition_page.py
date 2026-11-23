@@ -272,8 +272,9 @@ class TextRecognitionPage(BasePage):
     def capture(self):
         """启动区域截图
 
-        截图前把本应用主窗口临时隐藏（含遮罩背景），抓屏后自动恢复，
-        避免把自己截进图里；结果通过 region_selected 广播给本页。
+        截图前把本应用主窗口临时隐藏（含遮罩背景），框选结束/取消后再恢复，
+        避免自己出现在截图里、也避免窗口盖在遮罩上遮挡屏幕；
+        结果通过 region_selected 广播给本页。
         """
         screenshot_region.capture(hide_widgets=[self.window()])
 
