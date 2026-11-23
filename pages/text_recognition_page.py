@@ -10,9 +10,11 @@ from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import QHBoxLayout
 
+from core.hotkey_manager import hotkey_manager
+from core.page_router import page_router
 from pages.base_page import BasePage
 from pages.translator_page import translation_global_signals
 from resources.constants import CONFIG, root_dir
@@ -22,6 +24,9 @@ from widgets.core_button import CoreButton
 from widgets.footer_label import FooterLabel
 from widgets.selection_grid import SelectionGrid
 from widgets.text_editor import RoundedTextEdit
+
+# 未在配置中指定时的默认截图快捷键
+DEFAULT_HOTKEY = "ctrl+shift+o"
 
 
 class OcrWorker(QThread):
@@ -170,6 +175,9 @@ class TextRecognitionPage(BasePage):
     MODULE_NAME = "OCR"
     MODULE_ICON = text_scan_icon
 
+    # 全局快捷键回调 → 主线程的转发信号（回调里不做任何 UI 操作）
+    _hotkey_triggered = Signal()
+
     SUPPORTED_LANGUAGES: ClassVar[list[str]] = [
         "Auto",
         "English",
@@ -189,6 +197,9 @@ class TextRecognitionPage(BasePage):
 
         self.screenshot_path = root_dir / "data" / "screenshot.png"
         self.ocr_script_path = root_dir / "tools" / "newbee_ocr" / "nbocr.exe"
+
+        # 截图快捷键（config.json → text_recognition.hotkey，改配置重启生效）
+        self.hotkey = str(CONFIG.get("text_recognition", {}).get("hotkey") or DEFAULT_HOTKEY).strip()
 
         # 后台 OCR 线程状态
         self._worker: OcrWorker | None = None
@@ -222,6 +233,7 @@ class TextRecognitionPage(BasePage):
 
         self.ocr_button = CoreButton(text="Get Text", bg_color="accent")
         self.ocr_button.clicked.connect(self.capture)
+        self.ocr_button.setToolTip(f"Screenshot & OCR ({self.hotkey.upper()})")
 
         self.cancel_btn = CoreButton("Cancel", parent=self)
         self.cancel_btn.setBgColor("danger")
@@ -248,11 +260,39 @@ class TextRecognitionPage(BasePage):
         # 截图信号连接
         screenshot_region.region_selected.connect(self.save_pixmap)
 
+        # 全局截图快捷键：回调仅转发信号，实际的页面切换/截图在主线程执行
+        self._hotkey_triggered.connect(self._on_hotkey_capture, Qt.ConnectionType.QueuedConnection)
+        if hotkey_manager.register(self.hotkey, self._hotkey_triggered.emit):
+            logger.info(f"[TextRecognitionPage] 截图快捷键已启用: {self.hotkey}")
+        else:
+            logger.error(f"[TextRecognitionPage] 截图快捷键 {self.hotkey} 注册失败（可能被占用）")
+
     # ==================== 截图流程 ====================
 
     def capture(self):
-        """启动区域截图"""
-        screenshot_region.capture()
+        """启动区域截图
+
+        截图前把本应用主窗口临时隐藏（含遮罩背景），抓屏后自动恢复，
+        避免把自己截进图里；结果通过 region_selected 广播给本页。
+        """
+        screenshot_region.capture(hide_widgets=[self.window()])
+
+    def _on_hotkey_capture(self):
+        """全局快捷键触发：切到本页并直接开始截图识别
+
+        - 页面已在队首时不重复发切换请求（dispatch 会重放切换动画）；
+        - 上一个识别还在跑时先取消，让新截图不落空。
+        """
+        if not self.ocr_script_path.exists():
+            logger.warning("[TextRecognitionPage] OCR 服务不存在，快捷键截图已忽略")
+            return
+
+        if self._worker is not None:
+            self._cancel_ocr()
+        if not page_router.page_queue or page_router.page_queue[0] != self.PAGE_NAME:
+            page_router.immediate_switch(self.PAGE_NAME)
+
+        self.capture()
 
     def save_pixmap(self, pixmap):
         """保存截图并自动触发 OCR 识别"""

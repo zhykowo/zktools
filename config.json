@@ -14,7 +14,8 @@
   },
   "text_recognition": {
     "proxy": "http://127.0.0.1:7890",
-    "ocr_model": "v6-small"
+    "ocr_model": "v6-small",
+    "hotkey": "ctrl+shift+o"
   },
   "translator": {
     "hotkey": "ctrl+shift+s",

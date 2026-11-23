@@ -12,6 +12,9 @@
     # 方式二：回调函数（一次性）
     screenshot_region.capture(callback=lambda img: img.save("shot.png"))
 
+    # 截图前临时隐藏本应用窗口（避免把自己截进图里），抓屏后自动恢复
+    screenshot_region.capture(hide_widgets=[self.window()])
+
     # 方式三：阻塞式（适合流程式代码，如热键回调里同步取图）
     img = screenshot_region.capture_blocking()
     if img is not None:
@@ -26,7 +29,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from PySide6.QtCore import QEventLoop, QObject, QRect, Qt, Signal
+from PySide6.QtCore import QEventLoop, QObject, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QBrush, QColor, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -36,6 +39,9 @@ from core.colors import get_accent_color
 MIN_SELECT_SIZE = 5
 # 遮罩暗化程度（0-255，越大越暗）
 MASK_ALPHA = 120
+# 临时隐藏窗口后，等待系统合成器真正把它从屏幕上抹掉再抓屏的时间
+# （立刻 grabWindow 常会截到窗口残影，尤其是带透明度/圆角的窗口）
+HIDE_DELAY_MS = 120
 
 
 class _RegionSelectorOverlay(QWidget):
@@ -208,16 +214,21 @@ class ScreenshotRegionManager(QObject):
         super().__init__(parent)
         self._overlay = None  # 当前活跃的遮罩实例
         self._callback = None  # 当前截图回调
+        self._hidden_widgets: list[QWidget] = []  # 为截图临时隐藏的窗口（抓屏后恢复）
+        self._capture_token = 0  # 抓屏任务序号：新任务发起后旧任务作废
 
     # ---- 公开 API ----
 
-    def capture(self, callback=None):
+    def capture(self, callback=None, hide_widgets=None):
         """启动一次区域截图（非阻塞，结果通过信号/回调分发）。
 
         Args:
             callback: 可选回调函数，签名 callback(pixmap: QPixmap)。
                 截图成功时调用一次；用户取消时不调用。
                 未传此参数时，请订阅 region_selected 信号获取结果。
+            hide_widgets: 可选，截图前需要临时隐藏的顶层控件列表（如本应用主窗口）。
+                隐藏后等系统合成器刷新完成再抓屏，抓屏结束立即恢复，
+                避免把本应用界面截进图里。传空或不传则不做隐藏。
         """
         # 若已有截图流程进行中，先取消旧的
         if self._overlay is not None:
@@ -225,29 +236,32 @@ class ScreenshotRegionManager(QObject):
 
         if QApplication.instance() is None:
             raise RuntimeError("screenshot_region.capture() 必须在 QApplication 创建后调用")
-        screen = QApplication.primaryScreen()
 
-        if screen is None:
-            logger.error("未找到可用屏幕，无法截图")
-            return
-
-        # 先抓取全屏背景（此时遮罩尚未显示，不会截进遮罩本身）
-        background = screen.grabWindow(0)
+        # 上一次抓屏任务还没完成的隐藏窗口先恢复（保证下面的 isVisible 判断准确）
+        self._restore_hidden_widgets()
 
         self._callback = callback
-        overlay = _RegionSelectorOverlay(background)
-        self._overlay = overlay
-        overlay.region_selected.connect(self._on_region_selected)
-        overlay.cancelled.connect(self._on_cancelled)
-        overlay.show()
-        overlay.raise_()
-        overlay.activateWindow()
+        self._capture_token += 1
+        token = self._capture_token
 
-    def capture_blocking(self):
+        targets = [w for w in (hide_widgets or []) if w is not None and w.isVisible()]
+        if not targets:
+            self._show_selector(token)
+            return
+
+        self._hidden_widgets = targets
+        for widget in targets:
+            widget.hide()
+
+        # 等窗口真正从屏幕上消失后再抓屏，否则会截到窗口残影
+        QTimer.singleShot(HIDE_DELAY_MS, lambda: self._show_selector(token))
+
+    def capture_blocking(self, hide_widgets=None):
         """阻塞式截图：用户框选完成后返回 QPixmap；取消返回 None。
 
         内部使用嵌套事件循环，不阻塞 Qt 事件分发，
         适合在热键回调等流程式代码中同步取图。
+        hide_widgets 语义同 capture()。
         """
         loop = QEventLoop()
         result = {"pixmap": None}
@@ -261,7 +275,7 @@ class ScreenshotRegionManager(QObject):
 
         self.capture_cancelled.connect(_cancelled)
         try:
-            self.capture(callback=_done)
+            self.capture(callback=_done, hide_widgets=hide_widgets)
             loop.exec()
         finally:
             # 避免信号在多次调用间累积（已断开时会抛 RuntimeError，忽略即可）
@@ -269,12 +283,48 @@ class ScreenshotRegionManager(QObject):
                 self.capture_cancelled.disconnect(_cancelled)
         return result["pixmap"]
 
+    # ---- 内部流程 ----
+
+    def _show_selector(self, token: int):
+        """抓取全屏背景并显示框选遮罩（token 过期则作废）"""
+        if token != self._capture_token:
+            return  # 期间又发起了新的截图，本次抓屏不再需要
+
+        screen = QApplication.primaryScreen()
+        if screen is None:
+            logger.error("未找到可用屏幕，无法截图")
+            self._restore_hidden_widgets()
+            self._callback = None
+            return
+
+        # 先抓取全屏背景（此时遮罩尚未显示，不会截进遮罩本身）
+        background = screen.grabWindow(0)
+        # 抓完立即恢复被隐藏的窗口；遮罩在恢复之后才显示，保证它仍在最上层
+        self._restore_hidden_widgets()
+
+        overlay = _RegionSelectorOverlay(background)
+        self._overlay = overlay
+        overlay.region_selected.connect(self._on_region_selected)
+        overlay.cancelled.connect(self._on_cancelled)
+        overlay.show()
+        overlay.raise_()
+        overlay.activateWindow()
+
+    def _restore_hidden_widgets(self):
+        """恢复所有因截图被临时隐藏的窗口"""
+        widgets = self._hidden_widgets
+        self._hidden_widgets = []
+        for widget in widgets:
+            with contextlib.suppress(RuntimeError):  # 底层 C++ 对象已销毁
+                widget.show()
+
     # ---- 内部信号处理 ----
 
     def _on_region_selected(self, pixmap):
         self._overlay = None
         callback = self._callback
         self._callback = None
+        self._restore_hidden_widgets()  # 兜底：异常流程下也不留下隐藏窗口
         if callback is not None:
             # 一次性回调属“私有投递”：本次截图只交给发起方，不再广播 region_selected，
             # 否则所有常驻订阅者（如 OCR 页）都会被同一次截图误触发。
@@ -285,6 +335,7 @@ class ScreenshotRegionManager(QObject):
     def _on_cancelled(self):
         self._overlay = None
         self._callback = None
+        self._restore_hidden_widgets()
         self.capture_cancelled.emit()
 
 
