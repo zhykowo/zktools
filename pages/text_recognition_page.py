@@ -344,12 +344,21 @@ class TextRecognitionPage(BasePage):
         self._set_recognizing(False)
 
     def _on_ocr_done(self, text: str):
-        """OCR 识别完成：显示结果文本"""
+        """OCR 识别完成：显示结果文本并立即全选"""
         self.text_edit.setText(text)
         self._set_recognizing(False)
 
         self.translate_btn.show()
         self.serve_state.hide()
+
+        self._select_all_result()
+
+    def _select_all_result(self):
+        """识别结果落进输入框后立刻全选，方便直接 Ctrl+C 或覆盖输入"""
+        if not self.text_edit.toPlainText():
+            return
+        self.text_edit.setFocus(Qt.FocusReason.OtherFocusReason)
+        self.text_edit.selectAll()
 
     def _on_ocr_error(self, error_msg: str):
         """OCR 识别出错：显示错误信息"""
